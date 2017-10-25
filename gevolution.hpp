@@ -51,7 +51,7 @@ using namespace LATfield2;
 //////////////////////////
 
 template <class FieldType>
-void prepareFTsource(Field<FieldType> & phi,Field<FieldType> & pi_k,Field<FieldType> & pi_k_old,double coeff_k_ess, double omega, double cs2, double a,double dtau, Field<FieldType> & Tij, Field<FieldType> & Sij, const double coeff)
+void prepareFTsource(Field<FieldType> & phi, Field<FieldType> & Tij, Field<FieldType> & Sij, const double coeff)
 {
     Site x(phi.lattice());
 
@@ -59,8 +59,8 @@ void prepareFTsource(Field<FieldType> & phi,Field<FieldType> & pi_k,Field<FieldT
     for (x.first(); x.test(); x.next())
     {
         // 0-0-component:
-        Sij(x, 0, 0) = coeff * (Tij(x, 0, 0)+coeff_k_ess*(  1.+(2.-(1.+omega)/cs2) phi(x)+(1.+omega)*(pi_k-pi_k_old)/(c2*dtau));
-
+   //     Sij(x, 0, 0) = coeff * (Tij(x, 0, 0)+coeff_k_ess*(  1.+(2.-(1.+omega)/cs2) phi(x)+(1.+omega)*(pi_k-pi_k_old)/(c2*dtau));
+ Sij(x, 0, 0) = coeff * Tij(x, 0, 0);
 #ifdef PHINONLINEAR
 #ifdef ORIGINALMETRIC
         Sij(x, 0, 0) -= 4. * phi(x) * (phi(x-0) + phi(x+0) - 2. * phi(x));

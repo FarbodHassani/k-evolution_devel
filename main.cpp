@@ -598,11 +598,11 @@ for (x.first(); x.test(); x.next()){
 
 
 
-//K-Essence Updates
+//K-Essence Updates // Phi is not updated
 //:::::::::::::::::
       if(cycle==0){
 					for (i=1;i<counter;i++){
- 				update_pi_k_v( dtau /(2* (counter-1.)),dx,a,phi,phi_old,chi,pi_k, 						pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a, fourpiG, cosmo)*a);
+ 				update_pi_k_v( dtau /(2* (counter-1.)),dx,a,phi,phi_old,chi,pi_k, pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a, fourpiG, cosmo)*a);
 // 				update_pi_k( dtau/(counter-1.),dx,phi,pi_k, pi_v_k);
 				rungekutta4bg(a, fourpiG, cosmo,  dtau / (counter-1.)); 
 
@@ -614,6 +614,7 @@ for (x.first(); x.test(); x.next()){
 															}
 }
 else{
+// Phi is not updated
 					for (i=1;i<counter;i++){
  				update_pi_k( dtau/(counter-1.),dx,phi,pi_k, pi_v_k);
  				update_pi_k_v( dtau/(counter-1) ,dx,a,phi,phi_old,chi,pi_k, 						pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a, fourpiG, cosmo)*a);
@@ -651,7 +652,7 @@ else{
 		}
 		// done recording background data
 		
-		prepareFTsource<Real>(phi,pi_k,pi_k_old,3*fourpiG*cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,a,dtau,Sij, Sij, 2. * fourpiG * dx * dx / a);  // prepare nonlinear source for additional equations
+		prepareFTsource<Real>(phi,Sij, Sij, 2. * fourpiG * dx * dx / a);  // prepare nonlinear source for additional equations
 
 #ifdef BENCHMARK
 		ref2_time= MPI_Wtime();
