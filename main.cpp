@@ -7,10 +7,10 @@
 // to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 // copies of the Software, and to permit persons to whom the Software is
 // furnished to do so, subject to the following conditions:
-//  
+//
 // The above copyright notice and this permission notice shall be included in
 // all copies or substantial portions of the Software.
-//  
+//
 // THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESSED OR
 // IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 // FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -23,7 +23,7 @@
 //////////////////////////
 // main.cpp
 //////////////////////////
-// 
+//
 // main control sequence of Geneva N-body code with evolution of metric perturbations (gevolution)
 //
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris)
@@ -64,12 +64,12 @@ using namespace LATfield2;
 
 int main(int argc, char **argv)
 {
-	
+
 #ifdef BENCHMARK
 	//benchmarking variables
-	
+
 	double ref_time, ref2_time, cycle_start_time;
-	
+
 	double initialization_time;
 	double run_time;
 	double cycle_time=0;
@@ -78,18 +78,18 @@ int main(int argc, char **argv)
 	double spectra_output_time = 0;
 	double gravity_solver_time = 0;
 	double fft_time = 0;
-	int fft_count = 0;   
+	int fft_count = 0;
 	double update_q_time = 0;
 	int update_q_count = 0;
 	double moveParts_time = 0;
 	int  moveParts_count =0;
-	
+
 #endif  //BENCHMARK
-	
+
 	int n = 0, m = 0;
 	int io_size = 0;
 	int io_group_size = 0;
-	
+
 	int i, j, cycle = 0, snapcount = 0, pkcount = 0, restartcount = 0, usedparams, numparam = 0, numsteps, numspecies;
 	int numsteps_ncdm[MAX_PCL_SPECIES-2];
 	long numpts3d;
@@ -110,7 +110,7 @@ int main(int argc, char **argv)
 #ifndef H5_DEBUG
 	H5Eset_auto2 (H5E_DEFAULT, NULL, NULL);
 #endif
-	
+
 	for (i=1 ; i < argc ; i++ ){
 		if ( argv[i][0] != '-' )
 			continue;
@@ -148,31 +148,31 @@ int main(int argc, char **argv)
 	else
 	{
 #endif
-	
-	COUT << COLORTEXT_WHITE << endl;	
+
+	COUT << COLORTEXT_WHITE << endl;
 	COUT << "  _   _      _         __ ,  _" << endl;
 	COUT << " (_| (-' \\/ (_) (_ (_| (  ( (_) /\\/	version 1.1         running on " << n*m << " cores." << endl;
 	COUT << "  -'" << endl << COLORTEXT_RESET << endl;
-	
+
 	if (settingsfile == NULL)
 	{
 		COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": no settings file specified!" << endl;
 		parallel.abortForce();
 	}
-	
+
 	COUT << " initializing..." << endl;
-	
+
 	start_time = MPI_Wtime();
-	
+
 	numparam = loadParameterFile(settingsfile, params);
-	
+
 	usedparams = parseMetadata(params, numparam, sim, cosmo, ic);
-	
+
 	COUT << " parsing of settings file completed. " << numparam << " parameters found, " << usedparams << " were used." << endl;
-	
+
 	sprintf(filename, "%s%s_settings_used.ini", sim.output_path, sim.basename_generic);
 	saveParameterFile(filename, params, numparam);
-	
+
 	free(params);
 
 #ifdef HAVE_CLASS
@@ -180,19 +180,19 @@ int main(int argc, char **argv)
   	perturbs class_perturbs;
   	spectra class_spectra;
 #endif
-	
+
 	h5filename.reserve(2*PARAM_MAX_LENGTH);
 	h5filename.assign(sim.output_path);
 	h5filename += sim.basename_snapshot;
-	
+
 	box[0] = sim.numpts;
 	box[1] = sim.numpts;
 	box[2] = sim.numpts;
-	
+
 	Lattice lat(3,box,1);
 	Lattice latFT;
 	latFT.initializeRealFFT(lat,0);
-	
+
 	Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> pcls_cdm;
 	Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> pcls_b;
 	Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> pcls_ncdm[MAX_PCL_SPECIES-2];
@@ -251,7 +251,7 @@ int main(int argc, char **argv)
 	update_cdm_fields[1] = &chi;
 	update_cdm_fields[2] = &Bi;
 //	update_cdm_fields[3] = &pi_k;
-//	update_cdm_fields[4] = &pi_v_k;	
+//	update_cdm_fields[4] = &pi_v_k;
 
 	update_b_fields[0] = &phi;
     update_b_fields[1] = &chi;
@@ -272,7 +272,7 @@ int main(int argc, char **argv)
 
 	dx = 1.0 / (double) sim.numpts;
 	numpts3d = (long) sim.numpts * (long) sim.numpts * (long) sim.numpts;
-	
+
 	for (i = 0; i < 3; i++) // particles may never move farther than to the adjacent domain
 	{
 		if (lat.sizeLocal(i)-1 < sim.movelimit)
@@ -284,21 +284,21 @@ int main(int argc, char **argv)
 	a = 1. / (1. + sim.z_in);
 	tau = particleHorizon(a, fourpiG, cosmo);
 	tau_Lambda = -1.0;
-	
+
 	if (sim.Cf * dx < sim.steplimit / Hconf(a, fourpiG, cosmo))
 		dtau = sim.Cf * dx;
 	else
 		dtau = sim.steplimit / Hconf(a, fourpiG, cosmo);
-		
+
 	dtau_old = 0.;
-        
+
 //								for (y.first(); y.test(); y.next())
 //									{
 //									phi_old(y) =0.;
 //									cout<<"Phi"<<phi_old(y)<<endl;
 //									}
-	//								phi_old.updateHalo(); 
-            
+	//								phi_old.updateHalo();
+
 //	pi_v_k.updateHalo();
 //	pi_k.updateHalo();
 //	pi_k.updateHalo();
@@ -323,16 +323,16 @@ int main(int argc, char **argv)
 		COUT << " error: IC generator not implemented!" << endl;
 		parallel.abortForce();
 	}
-	
+
 	if (sim.baryon_flag > 1)
 	{
 		COUT << " error: baryon_flag > 1 after IC generation, something went wrong in IC generator!" << endl;
 		parallel.abortForce();
 	}
-	
-	numspecies = 1 + sim.baryon_flag + cosmo.num_ncdm;	
+
+	numspecies = 1 + sim.baryon_flag + cosmo.num_ncdm;
 	parallel.max<double>(maxvel, numspecies);
-	
+
 	if (sim.gr_flag > 0)
 	{
 		for (i = 0; i < numspecies; i++)
@@ -350,7 +350,7 @@ int main(int argc, char **argv)
 		}
 	}
 #endif
-	
+
 	for (i = 0; i < 6; i++)
 	{
 		hdr.npart[i] = 0;
@@ -367,7 +367,7 @@ int main(int argc, char **argv)
 	hdr.flag_feedback = 0;
 	for (i = 0; i < 256 - 6 * 4 - 6 * 8 - 2 * 8 - 2 * 4 - 6 * 4 - 2 * 4 - 4 * 8; i++)
 		hdr.fill[i] = 0;
-	
+
 #ifdef BENCHMARK
 	initialization_time = MPI_Wtime() - start_time;
 	parallel.sum(initialization_time);
@@ -425,34 +425,28 @@ pi_v_k.updateHalo();
 
 
 
-int counter=10;
+//int sim.nKe_numsteps=10;
 
 
 
 	while (true)    // main loop
 	{
 
-
-
-
-
-	for (x.first(); x.test(); x.next()){
+	//TODO: is phi_old already set at cycle 0
+	for (x.first(); x.test(); x.next())
+		{
 			phi_old(x) =phi(x);
-
-
-																			}
+		}
 	phi_old.updateHalo();
 
-
-for (x.first(); x.test(); x.next()){
+	for (x.first(); x.test(); x.next())
+		{
 			pi_k_old(x) =pi_k(x);
-
-
-																			}
+		}
 	pi_k_old.updateHalo();
 
 
-#ifdef BENCHMARK		
+#ifdef BENCHMARK
 		cycle_start_time = MPI_Wtime();
 #endif
 		// construct stress-energy tensor
@@ -466,7 +460,7 @@ for (x.first(); x.test(); x.next()){
 			projection_T00_project(&pcls_cdm, &source, a, &phi);
 
 
-		
+
 
 			if (sim.baryon_flag)
 				projection_T00_project(&pcls_b, &source, a, &phi );
@@ -508,7 +502,7 @@ for (x.first(); x.test(); x.next()){
 			}
 			projection_T0i_comm(&Bi);
 		}
-		
+
 		projection_init(&Sij);
 		projection_Tij_project(&pcls_cdm, &Sij, a, &phi);
 		if (sim.baryon_flag)
@@ -519,25 +513,25 @@ for (x.first(); x.test(); x.next()){
 				projection_Tij_project(pcls_ncdm+i, &Sij, a, &phi);
 		}
 		projection_Tij_comm(&Sij);
-		
-#ifdef BENCHMARK 
+
+#ifdef BENCHMARK
 		projection_time += MPI_Wtime() - cycle_start_time;
 		ref_time = MPI_Wtime();
 #endif
 
 		if (sim.gr_flag > 0)
-		{	
+		{
 			T00hom = 0.;
 			for (x.first(); x.test(); x.next())
 				T00hom += source(x);
 			parallel.sum<Real>(T00hom);
 			T00hom /= (Real) numpts3d;
-			
+
 			if (cycle % CYCLE_INFO_INTERVAL == 0)
 			{
 				COUT << " cycle " << cycle << ", background information: z = " << (1./a) - 1. << ", average T00 = " << T00hom << ", background model = " << cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo) << endl;
 			}
-			
+
 			if (dtau_old > 0.)
 			{
 				prepareFTsource<Real>(phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hconf(a, fourpiG, cosmo) * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hconf(a, fourpiG, cosmo) * Hconf(a, fourpiG, cosmo) * dx * dx);  // prepare nonlinear source for phi update
@@ -550,14 +544,14 @@ for (x.first(); x.test(); x.next()){
 				fft_time += MPI_Wtime() - ref2_time;
 				fft_count++;
 #endif
-		
-				solveModifiedPoissonFT(scalarFT, scalarFT, 1. / (dx * dx), 3. * Hconf(a, fourpiG, cosmo) / dtau_old);  // phi update (k-space)
- 
 
-	
+				solveModifiedPoissonFT(scalarFT, scalarFT, 1. / (dx * dx), 3. * Hconf(a, fourpiG, cosmo) / dtau_old);  // phi update (k-space)
+
+
+
 #ifdef BENCHMARK
 				ref2_time= MPI_Wtime();
-#endif		
+#endif
 				plan_phi.execute(FFT_BACKWARD);	 // go back to position space
 
 
@@ -565,7 +559,7 @@ for (x.first(); x.test(); x.next()){
 #ifdef BENCHMARK
 				fft_time += MPI_Wtime() - ref2_time;
 				fft_count++;
-#endif	
+#endif
 			}
 		}
 		else
@@ -578,7 +572,7 @@ for (x.first(); x.test(); x.next()){
 			fft_time += MPI_Wtime() - ref2_time;
 			fft_count++;
 #endif
-		
+
 			solveModifiedPoissonFT(scalarFT, scalarFT, fourpiG / a);  // Newton: phi update (k-space)
 
 
@@ -586,52 +580,15 @@ for (x.first(); x.test(); x.next()){
 
 #ifdef BENCHMARK
 			ref2_time= MPI_Wtime();
-#endif		
+#endif
 			plan_phi.execute(FFT_BACKWARD);	 // go back to position space
 //            plan_pi_k.execute(FFT_BACKWARD);	 // go back to position space
-            
+
 #ifdef BENCHMARK
 			fft_time += MPI_Wtime() - ref2_time;
 			fft_count++;
-#endif	
+#endif
 		}
-
-
-
-//K-Essence Updates // Phi is not updated
-//:::::::::::::::::
-      if(cycle==0){
-					for (i=1;i<counter;i++){
- 				update_pi_k_v( dtau /(2* (counter-1.)),dx,a,phi,phi_old,chi,pi_k, pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a, fourpiG, cosmo)*a);
-// 				update_pi_k( dtau/(counter-1.),dx,phi,pi_k, pi_v_k);
-				rungekutta4bg(a, fourpiG, cosmo,  dtau / (counter-1.)); 
-
-//phi.updateHalo();  // communicate halo values
-//		phi_old.updateHalo();  // communicate halo values
-		pi_k.updateHalo(); 
-    pi_v_k.updateHalo();  
-
-															}
-}
-else{
-// Phi is not updated
-					for (i=1;i<counter;i++){
- 				update_pi_k( dtau/(counter-1.),dx,phi,pi_k, pi_v_k);
- 				update_pi_k_v( dtau/(counter-1) ,dx,a,phi,phi_old,chi,pi_k, 						pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a, fourpiG, cosmo)*a);
-				rungekutta4bg(a, fourpiG, cosmo,  dtau / (counter-1.)); 
-
-//		phi.updateHalo();  // communicate halo values
-//		phi_old.updateHalo();  // communicate halo values
-		pi_k.updateHalo();  
-    pi_v_k.updateHalo();  
-															}
-     }
-
-//       for(x.first();x.test();x.next())
-//			{
-//if (x.coord(0)==5 && x.coord(1)==5 && x.coord(2)==5) cout<<"x: "<< x <<"Pi: "<<pi_k(x)<<endl;
-//			}
-
 
 		// record some background data
 		if (kFT.setCoord(0, 0, 0))
@@ -651,12 +608,12 @@ else{
 			}
 		}
 		// done recording background data
-		
+
 		prepareFTsource<Real>(phi,Sij, Sij, 2. * fourpiG * dx * dx / a);  // prepare nonlinear source for additional equations
 
 #ifdef BENCHMARK
 		ref2_time= MPI_Wtime();
-#endif		
+#endif
 		plan_Sij.execute(FFT_FORWARD);  // go to k-space
 #ifdef BENCHMARK
 		fft_time += MPI_Wtime() - ref2_time;
@@ -670,17 +627,17 @@ else{
 			projectFTscalar(SijFT, scalarFT, 1);
 		}
 		else
-#endif		
+#endif
 		projectFTscalar(SijFT, scalarFT);  // construct chi by scalar projection (k-space)
 
 #ifdef BENCHMARK
 		ref2_time= MPI_Wtime();
-#endif		
+#endif
 		plan_chi.execute(FFT_BACKWARD);	 // go back to position space
 #ifdef BENCHMARK
 		fft_time += MPI_Wtime() - ref2_time;
 		fft_count++;
-#endif	
+#endif
 		chi.updateHalo();  // communicate halo values
 
 		if (sim.vector_flag == VECTOR_ELLIPTIC)
@@ -695,7 +652,7 @@ else{
 #endif
 			projectFTvector(BiFT, BiFT, fourpiG * dx * dx); // solve B using elliptic constraint (k-space)
 #ifdef CHECK_B
-			evolveFTvector(SijFT, BiFT_check, a * a * dtau_old); 
+			evolveFTvector(SijFT, BiFT_check, a * a * dtau_old);
 #endif
 		}
 		else
@@ -705,7 +662,7 @@ else{
 		{
 #ifdef BENCHMARK
 			ref2_time= MPI_Wtime();
-#endif				
+#endif
 			plan_Bi.execute(FFT_BACKWARD);  // go back to position space
 #ifdef BENCHMARK
 			fft_time += MPI_Wtime() - ref2_time;
@@ -714,7 +671,7 @@ else{
 			Bi.updateHalo();  // communicate halo values
 		}
 
-#ifdef BENCHMARK 
+#ifdef BENCHMARK
 		gravity_solver_time += MPI_Wtime() - ref_time;
 		ref_time = MPI_Wtime();
 #endif
@@ -733,18 +690,18 @@ else{
 			snapcount++;
 
 		}
-		
+
 #ifdef BENCHMARK
 		snapshot_output_time += MPI_Wtime() - ref_time;
 		ref_time = MPI_Wtime();
 #endif
-		
+
 		// power spectra
 		if (pkcount < sim.num_pk && 1. / a < sim.z_pk[pkcount] + 1.)
 		{
 			COUT << COLORTEXT_CYAN << " writing power spectra" << COLORTEXT_RESET << " at z = " << ((1./a) - 1.) <<  " (cycle " << cycle << "), tau/boxsize = " << tau << endl;
 
-#ifdef CHECK_B			
+#ifdef CHECK_B
 			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k,&pi_v_k, &chi, &Bi, &source, &Sij, &scalarFT,&scalarFT_pi,&scalarFT_pi_v, &BiFT, &SijFT, &plan_phi,&plan_pi_k,&plan_pi_v_k , &plan_chi, &plan_Bi, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
 #else
 				writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k,&pi_v_k, &chi, &Bi, &source, &Sij, &scalarFT,&scalarFT_pi,&scalarFT_pi_v, &BiFT, &SijFT, &plan_phi , &plan_pi_k , &plan_pi_v_k , &plan_chi, &plan_Bi, &plan_source, &plan_Sij);
@@ -752,13 +709,13 @@ else{
 
 			pkcount++;
 		}
-		
+
 #ifdef BENCHMARK
 		spectra_output_time += MPI_Wtime() - ref_time;
-#endif 
+#endif
 
 		if (pkcount >= sim.num_pk && snapcount >= sim.num_snapshot) break; // simulation complete
-		
+
 		// compute number of step subdivisions for particle updates
 		numsteps = 1;
 		for (i = 0; i < cosmo.num_ncdm; i++)
@@ -766,17 +723,17 @@ else{
 			if (dtau * maxvel[i+1+sim.baryon_flag] > dx * sim.movelimit)
 				numsteps_ncdm[i] = (int) ceil(dtau * maxvel[i+1+sim.baryon_flag] / dx / sim.movelimit);
 			else numsteps_ncdm[i] = 1;
-			
+
 			if (numsteps < numsteps_ncdm[i]) numsteps = numsteps_ncdm[i];
 		}
 		if (numsteps > 1 && numsteps % 2 > 0) numsteps++;   // if >1, make it an even number
-		
+
 		for (i = 0; i < cosmo.num_ncdm; i++)
 		{
 			if (numsteps / numsteps_ncdm[i] <= 1) numsteps_ncdm[i] = numsteps;
 			else if (numsteps_ncdm[i] > 1) numsteps_ncdm[i] = numsteps / 2;
 		}
-		
+
 		if (cycle % CYCLE_INFO_INTERVAL == 0)
 		{
 			COUT << " cycle " << cycle << ", time integration information: max |v| = " << maxvel[0] << " (cdm Courant factor = " << maxvel[0] * dtau / dx;
@@ -784,9 +741,9 @@ else{
 			{
 				COUT << "), baryon max |v| = " << maxvel[1] << " (Courant factor = " << maxvel[1] * dtau / dx;
 			}
-			
+
 			COUT << "), time step / Hubble time = " << Hconf(a, fourpiG, cosmo) * dtau;
-			
+
 			for (i = 0; i < cosmo.num_ncdm; i++)
 			{
 				if (i == 0)
@@ -799,10 +756,10 @@ else{
 					COUT << ", ";
 				}
 			}
-			
+
 			COUT << endl;
 		}
-        
+
 		for (j = 0; j < numsteps; j++) // particle update
 		{
 #ifdef BENCHMARK
@@ -829,7 +786,7 @@ else{
 				update_q_count++;
 #endif
 			}
-				
+
 			for (i = 0; i < cosmo.num_ncdm; i++)
 			{
 				if (j % (numsteps / numsteps_ncdm[i]) == 0)
@@ -848,7 +805,7 @@ else{
 			update_q_time += MPI_Wtime() - ref2_time;
 			ref2_time = MPI_Wtime();
 #endif
-		
+
 
 			for (i = 0; i < cosmo.num_ncdm; i++)
 			{
@@ -863,11 +820,42 @@ else{
 						moveParts_time += MPI_Wtime() - ref2_time;
 						ref2_time = MPI_Wtime();
 #endif
-				}	  
+				}
 			}
 
 			if (numsteps == 1)
-				rungekutta4bg(a, fourpiG, cosmo, 0.5 * dtau / numsteps);  // evolve background by half a time step
+			{
+				//Evolving Kessence + background:
+				//:::::::::::::::::
+				if(cycle==0)
+				{
+					for (i=0;i<sim.nKe_numsteps;i++)
+					{
+				 		update_pi_k_v( 0.5 * dtau / numsteps / sim.nKe_numsteps,dx,a,phi,phi_old,chi,pi_k, pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a, fourpiG, cosmo)*a);
+						//update_pi_k( dtau/(sim.nKe_numsteps-1.),dx,phi,pi_k, pi_v_k);
+						rungekutta4bg(a, fourpiG, cosmo,  0.5 * dtau / numsteps / sim.nKe_numsteps);
+						pi_k.updateHalo();
+				    pi_v_k.updateHalo();
+					}
+				}
+				else
+				{
+					for (i=0;i<sim.nKe_numsteps;i++)
+					{
+				 		update_pi_k(0.5 * dtau / numsteps / sim.nKe_numsteps, dx,phi, pi_k, pi_v_k);
+				 		update_pi_k_v(0.5 * dtau / numsteps / sim.nKe_numsteps, dx, a, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo)*a);
+						rungekutta4bg(a, fourpiG, cosmo,  0.5 * dtau / numsteps / sim.nKe_numsteps);
+						pi_k.updateHalo();
+				    pi_v_k.updateHalo();
+					}
+				}
+				//       for(x.first();x.test();x.next())
+				//			{
+				//if (x.coord(0)==5 && x.coord(1)==5 && x.coord(2)==5) cout<<"x: "<< x <<"Pi: "<<pi_k(x)<<endl;
+				//			}
+				/////////////////////////////////////////////////
+			}
+
 
 			f_params[0] = a;
 			f_params[1] = a * a * sim.numpts;
@@ -894,10 +882,44 @@ else{
 			}
 
 			if (numsteps != 1)
-				rungekutta4bg(a, fourpiG, cosmo, 0.5 * dtau / numsteps);  // evolve background by half a time step
-			
+			{
+				//Evolving Kessence + background:
+				//:::::::::::::::::
+				if(cycle==0)
+				{
+					for (i=0;i<sim.nKe_numsteps;i++)
+					{
+				 		update_pi_k_v( 0.5 * dtau / numsteps / sim.nKe_numsteps,dx,a,phi,phi_old,chi,pi_k, pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a, fourpiG, cosmo)*a);
+						//update_pi_k( dtau/(sim.nKe_numsteps-1.),dx,phi,pi_k, pi_v_k);
+						rungekutta4bg(a, fourpiG, cosmo,  0.5 * dtau / numsteps / sim.nKe_numsteps);
+						pi_k.updateHalo();
+				    pi_v_k.updateHalo();
+					}
+				}
+				else
+				{
+					for (i=0;i<sim.nKe_numsteps;i++)
+					{
+				 		update_pi_k(0.5 * dtau / numsteps / sim.nKe_numsteps, dx,phi, pi_k, pi_v_k);
+				 		update_pi_k_v(0.5 * dtau / numsteps / sim.nKe_numsteps, dx, a, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo)*a);
+						rungekutta4bg(a, fourpiG, cosmo,  0.5 * dtau / numsteps / sim.nKe_numsteps);
+						pi_k.updateHalo();
+				    pi_v_k.updateHalo();
+					}
+				}
+				//       for(x.first();x.test();x.next())
+				//			{
+				//if (x.coord(0)==5 && x.coord(1)==5 && x.coord(2)==5) cout<<"x: "<< x <<"Pi: "<<pi_k(x)<<endl;
+				//			}
+				/////////////////////////////////////////////////
+
+
+
+
+			}
+
 			f_params[0] = a;
-			f_params[1] = a * a * sim.numpts;	
+			f_params[1] = a * a * sim.numpts;
 			for (i = 0; i < cosmo.num_ncdm; i++)
 			{
 				if (numsteps_ncdm[i] == numsteps)
@@ -913,26 +935,58 @@ else{
 #endif
 				}
 			}
+			//Evolving Kessence + background:
+			//:::::::::::::::::
+			if(cycle==0)
+			{
+				for (i=0;i<sim.nKe_numsteps;i++)
+				{
+					update_pi_k_v( 0.5 * dtau / numsteps / sim.nKe_numsteps,dx,a,phi,phi_old,chi,pi_k, pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a, fourpiG, cosmo)*a);
+					//update_pi_k( dtau/(sim.nKe_numsteps-1.),dx,phi,pi_k, pi_v_k);
+					rungekutta4bg(a, fourpiG, cosmo,  0.5 * dtau / numsteps / sim.nKe_numsteps);
+					pi_k.updateHalo();
+					pi_v_k.updateHalo();
+				}
+			}
+			else
+			{
+				for (i=0;i<sim.nKe_numsteps;i++)
+				{
+					update_pi_k(0.5 * dtau / numsteps / sim.nKe_numsteps, dx,phi, pi_k, pi_v_k);
+					update_pi_k_v(0.5 * dtau / numsteps / sim.nKe_numsteps, dx, a, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo)*a);
+					rungekutta4bg(a, fourpiG, cosmo,  0.5 * dtau / numsteps / sim.nKe_numsteps);
+					pi_k.updateHalo();
+					pi_v_k.updateHalo();
+				}
+			}
+			//       for(x.first();x.test();x.next())
+			//			{
+			//if (x.coord(0)==5 && x.coord(1)==5 && x.coord(2)==5) cout<<"x: "<< x <<"Pi: "<<pi_k(x)<<endl;
+			//			}
+			/////////////////////////////////////////////////
 
-			rungekutta4bg(a, fourpiG, cosmo, 0.5 * dtau / numsteps);  // evolve background by half a time step
+
+
+
+
 		}   // particle update done
-		
+
 		parallel.max<double>(maxvel, numspecies);
-		
+
 		if (sim.gr_flag > 0)
 		{
 			for (i = 0; i < numspecies; i++)
 				maxvel[i] /= sqrt(maxvel[i] * maxvel[i] + 1.0);
 		}
-		
+
 		tau += dtau;
-		
+
 		if (tau_Lambda < 0. && (cosmo.Omega_m / a / a / a) < cosmo.Omega_Lambda)
 		{
 			tau_Lambda = tau;
 			COUT << "matter-dark energy equality at z=" << ((1./a) - 1.) << endl;
 		}
-		
+
 		if (sim.wallclocklimit > 0.)   // check for wallclock time limit
 		{
 			tmp = MPI_Wtime() - start_time;
@@ -955,7 +1009,7 @@ else{
 				break;
 			}
 		}
-		
+
 		if (restartcount < sim.num_restart && 1. / a < sim.z_restart[restartcount] + 1.)
 		{
 			COUT << COLORTEXT_CYAN << " writing hibernation point" << COLORTEXT_RESET << " at z = " << ((1./a) - 1.) <<  " (cycle " << cycle << "), tau/boxsize = " << tau << endl;
@@ -972,23 +1026,23 @@ else{
 			hibernate(sim, ic, cosmo, &pcls_cdm, &pcls_b, pcls_ncdm, phi,pi_k, chi, Bi, a, tau, dtau, cycle, restartcount);
 			restartcount++;
 		}
-		
+
 		dtau_old = dtau;
-		
+
 		if (sim.Cf * dx < sim.steplimit / Hconf(a, fourpiG, cosmo))
 			dtau = sim.Cf * dx;
 		else
 			dtau = sim.steplimit / Hconf(a, fourpiG, cosmo);
-		   
+
 		cycle++;
-		
+
 #ifdef BENCHMARK
 		cycle_time += MPI_Wtime()-cycle_start_time;
 #endif
 	}
-	
+
 	COUT << COLORTEXT_GREEN << " simulation complete." << COLORTEXT_RESET << endl;
-	
+
 #ifdef BENCHMARK
 	run_time = MPI_Wtime() - start_time;
 
@@ -1006,14 +1060,14 @@ else{
 	parallel.sum(fft_time);
 	parallel.sum(update_q_time);
 	parallel.sum(moveParts_time);
-	
-	COUT << endl << "BENCHMARK" << endl;   
+
+	COUT << endl << "BENCHMARK" << endl;
 	COUT << "total execution time  : "<<hourMinSec(run_time) << endl;
 	COUT << "total number of cycles: "<< cycle << endl;
 	COUT << "time consumption breakdown:" << endl;
 	COUT << "initialization   : "  << hourMinSec(initialization_time) << " ; " << 100. * initialization_time/run_time <<"%."<<endl;
 	COUT << "main loop        : "  << hourMinSec(cycle_time) << " ; " << 100. * cycle_time/run_time <<"%."<<endl;
-	
+
 	COUT << "----------- main loop: components -----------"<<endl;
 	COUT << "projections                : "<< hourMinSec(projection_time) << " ; " << 100. * projection_time/cycle_time <<"%."<<endl;
 	COUT << "snapshot outputs           : "<< hourMinSec(snapshot_output_time) << " ; " << 100. * snapshot_output_time/cycle_time <<"%."<<endl;
@@ -1024,11 +1078,10 @@ else{
 	COUT << "-- thereof Fast Fourier Transforms (count: " << fft_count <<"): "<< hourMinSec(fft_time) << " ; " << 100. * fft_time/gravity_solver_time <<"%."<<endl;
 #endif
 
-#ifdef EXTERNAL_IO	
+#ifdef EXTERNAL_IO
 		ioserver.stop();
 	}
 #endif
 
 	return 0;
 }
-
