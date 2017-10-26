@@ -1,3 +1,5 @@
+// K-essence
+// To do list:
 //////////////////////////
 // Copyright (c) 2015-2016 Julian Adamek (Université de Genève)
 //

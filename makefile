@@ -1,7 +1,7 @@
 # programming environment
 COMPILER     := mpic++
-INCLUDE      := -I/home/farbod/packages/gsl  -I/home/farbod/packages/LATfield2-master  -I /home/farbod/packages/hdf5-1.8.17/hdf5/include    # add the path to LATfield2 and other libraries (if necessary)
-LIB          :=-L/home/farbod/packages/hdf5-1.8.17/hdf5/lib -lfftw3 -lm -lhdf5 -lgsl -lgslcblas
+INCLUDE      := -I/usr/local/include/gsl  -I../LATfield2-master  -I /Users/farbod/Packages/hdf5-1.10.0-patch1/hdf5/include    # add the path to LATfield2 and other libraries (if necessary)
+LIB          :=-L/Users/farbod/Packages/hdf5-1.10.0-patch1/hdf5/lib -lfftw3 -lm -lhdf5 -lgsl -lgslcblas
 
 # target and source
 EXEC         := gevolution
