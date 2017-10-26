@@ -1,5 +1,9 @@
+<<<<<<< HEAD
 // K-essence
 // To do list:
+=======
+// K-essence...
+>>>>>>> f528afc147a5f34de758f78d3f9abab009bb0292
 //////////////////////////
 // Copyright (c) 2015-2016 Julian Adamek (Université de Genève)
 //
