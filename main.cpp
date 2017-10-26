@@ -1,3 +1,4 @@
+// K-essence...
 //////////////////////////
 // Copyright (c) 2015-2016 Julian Adamek (Université de Genève)
 //
