@@ -379,6 +379,11 @@ int main(int argc, char **argv)
 #endif
 
 
+//Todo:
+// 1- Write down and check the field equation (including non-linear part)
+// 2- Test stress tensor
+// 3-Stability of equations
+// 4- Initial condition and normalization factors
 
 ///****IC for sclar field is set by hand****/////
 ///*****************************************////
