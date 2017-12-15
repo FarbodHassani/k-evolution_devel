@@ -463,10 +463,6 @@ int main(int argc, char **argv)
 		if (sim.gr_flag > 0)
 		{
 			projection_T00_project(&pcls_cdm, &source, a, &phi);
-// Add projection_ kessence here
-		  projection_Tmunu_kessence( source, dx, a, phi, phi_old, chi,  pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG );
-
-
 
 			if (sim.baryon_flag)
 				projection_T00_project(&pcls_b, &source, a, &phi );
@@ -524,6 +520,17 @@ int main(int argc, char **argv)
 		projection_time += MPI_Wtime() - cycle_start_time;
 		ref_time = MPI_Wtime();
 #endif
+
+// Add projection_ kessence here
+		if (sim.vector_flag == VECTOR_ELLIPTIC)
+		{
+			projection_Tmunu_kessence( source,Bi,Sij, dx, a, phi, phi_old, chi,  pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG );
+		}
+		else
+		{
+			projection_Tmunu_kessence( source,NULL,Sij, dx, a, phi, phi_old, chi,  pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG );
+		}
+
 
 		if (sim.gr_flag > 0)
 		{

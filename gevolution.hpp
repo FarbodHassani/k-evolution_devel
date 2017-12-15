@@ -224,7 +224,7 @@ void update_pi_k_v(double dtau, double dx,double a, Field<FieldType> & phi,Field
 //////////////////////////
 // Field<FieldType> & Tij
 template <class FieldType>
-void projection_Tmunu_kessence( Field<FieldType> & Tij, double dx,double a, Field<FieldType> & phi,Field<FieldType> & phi_old, Field<FieldType> & chi, Field<FieldType> & pi_k, Field<FieldType> & pi_v_k,double Omega_fld ,double w,double cs2, double Hcon, double fourpig )
+void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, Field<FieldType> & Tij, double dx,double a, Field<FieldType> & phi,Field<FieldType> & phi_old, Field<FieldType> & chi, Field<FieldType> & pi_k, Field<FieldType> & pi_v_k,double Omega_fld ,double w,double cs2, double Hcon, double fourpig )
 {
     Site xField(phi.lattice());
     double coeff1, coeff2, coeff3, Hdot, psi;
@@ -235,7 +235,8 @@ void projection_Tmunu_kessence( Field<FieldType> & Tij, double dx,double a, Fiel
     coeff3=a*a*a*(1.+w);
 
       for (xField.first(); xField.test(); xField.next())
-        {
+      {
+        
     		gradient_pi2 =(pi_k(xField+0) - pi_k(xField-0))* (pi_k(xField+0) - pi_k(xField-0));
         gradient_pi2+=(pi_k(xField+1) - pi_k(xField-1))* (pi_k(xField+1) - pi_k(xField-1));
         gradient_pi2+=(pi_k(xField+1) - pi_k(xField-2))* (pi_k(xField+1) - pi_k(xField-2));
@@ -243,40 +244,33 @@ void projection_Tmunu_kessence( Field<FieldType> & Tij, double dx,double a, Fiel
         psi=phi(xField) - chi(xField);
 
         // 0-0-component:
-        Tij(xField, 0, 0)       +=  coeff1*(-3*Hcon*cs2*pi_k(xField) - psi + pi_v_k(xField) - (1.-2.*cs2) * gradient_pi2/2. );
+        T00(xField)       +=  coeff1*(-3*Hcon*cs2*pi_k(xField) - psi + pi_v_k(xField) - (1.-2.*cs2) * gradient_pi2/2. );
         // 1-1-component:
-        Tij(xField, 1, 1)       +=  coeff2*(w + (1.+w)*(-3*Hcon*w*pi_k(xField) - psi + pi_v_k(xField) +  gradient_pi2/2. ));
-        // 2-2-component:
-        Tij(xField, 2, 2)       +=  coeff2*(w + (1.+w)*(-3*Hcon*w*pi_k(xField) - psi + pi_v_k(xField) +  gradient_pi2/2. ));
-        // 3-3-component:
-        Tij(xField, 3, 3)       +=  coeff2*(w + (1.+w)*(-3*Hcon*w*pi_k(xField) - psi + pi_v_k(xField) +  gradient_pi2/2. ));
-        // 0-1-component:
-        Tij(xField, 0, 1)       +=  coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*(-psi + pi_v_k(xField) - gradient_pi2/2.) )* (pi_k(xField+0)-pi_k(xField-0))/2.; // T_0^i=-T_i^0
-        // 0-2-component:
-        Tij(xField, 0, 2)       +=  coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+1)-pi_k(xField-1))/2.;
-        // 0-3-component:
-        Tij(xField, 0, 3)       +=  coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+2)-pi_k(xField-2))/2.;
-        // 1-0-component:
-        Tij(xField, 1, 0)       +=  -coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+0)-pi_k(xField-0))/2.;
-        // 2-0-component:
-        Tij(xField, 2, 0)       +=  -coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+1)-pi_k(xField-1))/2.;
-        // 3-0-component:
-        Tij(xField, 3, 0)       +=  -coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+2)-pi_k(xField-2))/2.;
+        Tij(xField, 0, 0) +=  coeff2*(w + (1.+w)*(-3*Hcon*w*pi_k(xField) - psi + pi_v_k(xField) +  gradient_pi2/2. ));
         // 1-2-component:
-        Tij(xField, 1, 2)       +=  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+1)-pi_k(xField-1))/4.;
+        Tij(xField, 0, 1) +=  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+1)-pi_k(xField-1))/4.;
         // 1-3-component:
-        Tij(xField, 1, 3)       +=  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+2)-pi_k(xField-2))/4.;
-        // 2-1-component:
-        Tij(xField, 2, 1)       +=  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+1)-pi_k(xField-1))/4.;
+        Tij(xField, 0, 2) +=  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+2)-pi_k(xField-2))/4.;
+        // 2-2-component:
+        Tij(xField, 1, 1) +=  coeff2*(w + (1.+w)*(-3*Hcon*w*pi_k(xField) - psi + pi_v_k(xField) +  gradient_pi2/2. ));
         // 2-3-component:
-        Tij(xField, 2, 3)       +=  coeff3*(pi_k(xField+1)-pi_k(xField-1))*(pi_k(xField+2)-pi_k(xField-2))/4.;
-        // 3-1-component:
-        Tij(xField, 3, 1)       +=  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+2)-pi_k(xField-2))/4.;
-        // 3-2-component:
-        Tij(xField, 3, 2)       +=  coeff3*(pi_k(xField+1)-pi_k(xField-1))*(pi_k(xField+2)-pi_k(xField-2))/4.;
+        Tij(xField, 1, 2) +=  coeff3*(pi_k(xField+1)-pi_k(xField-1))*(pi_k(xField+2)-pi_k(xField-2))/4.;
+        // 3-3-component:
+        Tij(xField, 2, 2) +=  coeff2*(w + (1.+w)*(-3*Hcon*w*pi_k(xField) - psi + pi_v_k(xField) +  gradient_pi2/2. ));
+
+        if(T0i!=NULL)
+        {
+          T0i(xField, 0)  +=  -coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+0)-pi_k(xField-0))/2.;
+          T0i(xField, 1)  +=  -coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+1)-pi_k(xField-1))/2.;
+          T0i(xField, 2)  +=  -coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+2)-pi_k(xField-2))/2.;
         }
 
+
+      }
+
+
 }
+
 
 //////////////////////////
 // prepareFTsource (2)
