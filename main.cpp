@@ -1,9 +1,6 @@
-<<<<<<< HEAD
 // K-essence
 // To do list:
-=======
 // K-essence...
->>>>>>> f528afc147a5f34de758f78d3f9abab009bb0292
 //////////////////////////
 // Copyright (c) 2015-2016 Julian Adamek (Université de Genève)
 //
@@ -237,7 +234,6 @@ int main(int argc, char **argv)
 	PlanFFT<Cplx> plan_pi_k(&pi_k, &scalarFT_pi);
 	PlanFFT<Cplx> plan_pi_k_old(&pi_k_old, &scalarFT_pi);
 	PlanFFT<Cplx> plan_pi_v_k(&pi_v_k, &scalarFT_pi_v);
- //PlanFFT<Cplx> plan_pi_v_k(&pi_v_k, &scalarFT_pi_v);
 	PlanFFT<Cplx> plan_chi(&chi, &scalarFT);
 	Sij.initialize(lat,3,3,symmetric);
 	SijFT.initialize(latFT,3,3,symmetric);
@@ -256,29 +252,23 @@ int main(int argc, char **argv)
 	update_cdm_fields[0] = &phi;
 	update_cdm_fields[1] = &chi;
 	update_cdm_fields[2] = &Bi;
-//	update_cdm_fields[3] = &pi_k;
-//	update_cdm_fields[4] = &pi_v_k;
+
 
 	update_b_fields[0] = &phi;
-    update_b_fields[1] = &chi;
+  update_b_fields[1] = &chi;
 	update_b_fields[2] = &Bi;
-//	update_b_fields[3] = &pi_k;
-//	update_b_fields[4] = &pi_v_k;
+
 
 	update_ncdm_fields[0] = &phi;
 	update_ncdm_fields[1] = &chi;
 	update_ncdm_fields[2] = &Bi;
-//	update_ncdm_fields[3] = &pi_k;
-//	update_ncdm_fields[4] = &pi_v_k;
+
 
 	Site x(lat);
-//	Site y(lat);
 	rKSite kFT(latFT);
-	    //    Assigning the IC value for k-essence field
 
 	dx = 1.0 / (double) sim.numpts;
 	numpts3d = (long) sim.numpts * (long) sim.numpts * (long) sim.numpts;
-
 	for (i = 0; i < 3; i++) // particles may never move farther than to the adjacent domain
 	{
 		if (lat.sizeLocal(i)-1 < sim.movelimit)
@@ -298,16 +288,7 @@ int main(int argc, char **argv)
 
 	dtau_old = 0.;
 
-//								for (y.first(); y.test(); y.next())
-//									{
-//									phi_old(y) =0.;
-//									cout<<"Phi"<<phi_old(y)<<endl;
-//									}
-	//								phi_old.updateHalo();
 
-//	pi_v_k.updateHalo();
-//	pi_k.updateHalo();
-//	pi_k.updateHalo();
         if (ic.generator == ICGEN_BASIC)
 		generateIC_basic(sim, ic, cosmo, fourpiG, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi,&pi_k,&pi_v_k, &chi, &Bi, &source, &Sij, &scalarFT,&scalarFT_pi,&scalarFT_pi_v, &BiFT, &SijFT, &plan_phi, &plan_pi_k,&plan_pi_v_k, &plan_chi, &plan_Bi, &plan_source, &plan_Sij); // generates ICs on the fly
 
@@ -397,34 +378,47 @@ int main(int argc, char **argv)
 	}
 #endif
 
-double distance;
-double sigma=1;
-double sigma2=1;
-          for(x.first();x.test();x.next())
-        {
-
-						distance=pow(0.51 + x.coord(0) - lat.size(0)/2.,2.);
-						distance+=pow(0.5l + x.coord(1) - lat.size(0)/2.,2.);
-						distance+=pow(0.5l + x.coord(2) - lat.size(0)/2.,2.);
-            pi_k(x) =2.*exp(-distance/(2.*sigma*sigma)) ;
-            pi_v_k(x)=1.0;
-
-        }
-pi_v_k.updateHalo();
-	pi_k.updateHalo();
 
 
+///****IC for sclar field is set by hand****/////
+///*****************************************////
 
-//               for(x.first();x.test();x.next())
-//        {
-//            pi_v_k(x) =0.003;
-//            pi_k(x)=0.001;
+// double distance;
+// double sigma=1;
+// double sigma2=1;
+//           for(x.first();x.test();x.next())
+//         {
+//
+// 						distance=pow(0.51 + x.coord(0) - lat.size(0)/2.,2.);
+// 						distance+=pow(0.5l + x.coord(1) - lat.size(0)/2.,2.);
+// 						distance+=pow(0.5l + x.coord(2) - lat.size(0)/2.,2.);
+//             pi_k(x) =2.*exp(-distance/(2.*sigma*sigma)) ;
+//             pi_v_k(x)=1.0;
+//
+//         }
+// pi_v_k.updateHalo();
+// 	pi_k.updateHalo();
+///*****************************************////
+///*****************************************////
 
-////						cout<<"pi_k: "<<pi_k(x)<<" pi_v(x): "<<pi_v_k(x)<<endl;
-//        }
-//	pi_v_k.updateHalo();
-//	pi_k.updateHalo();
+// k-essence output field in real space
+      //         for(x.first();x.test();x.next())
+      //  {
+      //     //  pi_v_k(x) =0.003;
+      //     //  pi_k(x)=0.001;
+			 //
+			// 			// cout<<"pi_k: "<<pi_k(x)<<" pi_v(x): "<<pi_v_k(x)<<endl;
+			// 			// cout<<"phi: "<<phi(x)<<endl;
+			 //
+      //  }
+	// pi_v_k.updateHalo();
+	// pi_k.updateHalo();
 
+// #ifdef CHECK_B
+// 			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k,&pi_v_k, &chi, &Bi, &source, &Sij, &scalarFT,&scalarFT_pi,&scalarFT_pi_v, &BiFT, &SijFT, &plan_phi,&plan_pi_k,&plan_pi_v_k , &plan_chi, &plan_Bi, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
+// #else
+// 				writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &pi_v_k, &chi, &Bi, &source, &Sij, &scalarFT,&scalarFT_pi,&scalarFT_pi_v, &BiFT, &SijFT, &plan_phi , &plan_pi_k , &plan_pi_v_k , &plan_chi, &plan_Bi, &plan_source, &plan_Sij);
+// #endif
 
 
 
@@ -464,7 +458,8 @@ pi_v_k.updateHalo();
 		if (sim.gr_flag > 0)
 		{
 			projection_T00_project(&pcls_cdm, &source, a, &phi);
-
+// Add projection_ kessence here
+		  projection_Tmunu_kessence( source, dx, a, phi, phi_old, chi,  pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG );
 
 
 
@@ -766,11 +761,41 @@ pi_v_k.updateHalo();
 			COUT << endl;
 		}
 
+		double a_kess=a;
+			//Evolving Kessence + background:x
+			//:::::::::::::::::
+			if(cycle==0)
+			{
+				for (i=0;i<sim.nKe_numsteps;i++)
+				{
+					update_pi_k_v( 0.5 * dtau/ sim.nKe_numsteps ,dx,a_kess,phi,phi_old,chi,pi_k, pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a_kess, fourpiG, cosmo)*a_kess);
+					//update_pi_k( dtau/(sim.nKe_numsteps-1.),dx,phi,pi_k, pi_v_k);
+					// rungekutta4bg(a_kess, fourpiG, cosmo,  0.5 * dtau  / sim.nKe_numsteps);
+					pi_k.updateHalo();
+					pi_v_k.updateHalo();
+				}
+				}
+
+			else
+			{
+				for (i=0;i<sim.nKe_numsteps;i++)
+				{
+					update_pi_k( dtau  / sim.nKe_numsteps, dx,phi, pi_k, pi_v_k);
+					rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps);
+					update_pi_k_v( dtau  / sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo)*a_kess);
+					pi_k.updateHalo();
+					pi_v_k.updateHalo();
+
+				}
+			}
+
+
+
 		for (j = 0; j < numsteps; j++) // particle update
 		{
-#ifdef BENCHMARK
+	#ifdef BENCHMARK
 			ref2_time = MPI_Wtime();
-#endif
+	#endif
 			f_params[0] = a;
 			f_params[1] = a * a * sim.numpts;
 			if (j == 0)
@@ -788,9 +813,9 @@ pi_v_k.updateHalo();
 						maxvel[1] = pcls_b.updateVel(update_q_Newton, (dtau + dtau_old) / 2., update_b_fields, ((sim.radiation_flag > 0 && a < 1. / (sim.z_switch_linearchi + 1.)) ? 2 : 1), f_params);
 				}
 
-#ifdef BENCHMARK
+	#ifdef BENCHMARK
 				update_q_count++;
-#endif
+	#endif
 			}
 
 			for (i = 0; i < cosmo.num_ncdm; i++)
@@ -802,16 +827,15 @@ pi_v_k.updateHalo();
 					else
 						maxvel[i+1+sim.baryon_flag] = pcls_ncdm[i].updateVel(update_q_Newton, (dtau + dtau_old) / 2. / numsteps_ncdm[i], update_ncdm_fields, ((sim.radiation_flag > 0 && a < 1. / (sim.z_switch_linearchi + 1.)) ? 2 : 1), f_params);
 
-#ifdef BENCHMARK
+	#ifdef BENCHMARK
 					update_q_count++;
-#endif
+	#endif
 				}
 			}
-#ifdef BENCHMARK
+	#ifdef BENCHMARK
 			update_q_time += MPI_Wtime() - ref2_time;
 			ref2_time = MPI_Wtime();
-#endif
-
+	#endif
 
 			for (i = 0; i < cosmo.num_ncdm; i++)
 			{
@@ -821,47 +845,16 @@ pi_v_k.updateHalo();
 						pcls_ncdm[i].moveParticles(update_pos, dtau / numsteps_ncdm[i], update_ncdm_fields, (1. / a < ic.z_relax + 1. ? 3 : 2), f_params);
 					else
 						pcls_ncdm[i].moveParticles(update_pos_Newton, dtau / numsteps_ncdm[i], NULL, 0, f_params);
-#ifdef BENCHMARK
+	#ifdef BENCHMARK
 						moveParts_count++;
 						moveParts_time += MPI_Wtime() - ref2_time;
 						ref2_time = MPI_Wtime();
-#endif
+	#endif
 				}
 			}
 
 			if (numsteps == 1)
-			{
-				//Evolving Kessence + background:
-				//:::::::::::::::::
-				if(cycle==0)
-				{
-					for (i=0;i<sim.nKe_numsteps;i++)
-					{
-				 		update_pi_k_v( 0.5 * dtau / numsteps / sim.nKe_numsteps,dx,a,phi,phi_old,chi,pi_k, pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a, fourpiG, cosmo)*a);
-						//update_pi_k( dtau/(sim.nKe_numsteps-1.),dx,phi,pi_k, pi_v_k);
-						rungekutta4bg(a, fourpiG, cosmo,  0.5 * dtau / numsteps / sim.nKe_numsteps);
-						pi_k.updateHalo();
-				    pi_v_k.updateHalo();
-					}
-				}
-				else
-				{
-					for (i=0;i<sim.nKe_numsteps;i++)
-					{
-				 		update_pi_k(0.5 * dtau / numsteps / sim.nKe_numsteps, dx,phi, pi_k, pi_v_k);
-				 		update_pi_k_v(0.5 * dtau / numsteps / sim.nKe_numsteps, dx, a, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo)*a);
-						rungekutta4bg(a, fourpiG, cosmo,  0.5 * dtau / numsteps / sim.nKe_numsteps);
-						pi_k.updateHalo();
-				    pi_v_k.updateHalo();
-					}
-				}
-				//       for(x.first();x.test();x.next())
-				//			{
-				//if (x.coord(0)==5 && x.coord(1)==5 && x.coord(2)==5) cout<<"x: "<< x <<"Pi: "<<pi_k(x)<<endl;
-				//			}
-				/////////////////////////////////////////////////
-			}
-
+				rungekutta4bg(a, fourpiG, cosmo, 0.5 * dtau / numsteps);  // evolve background by half a time step
 
 			f_params[0] = a;
 			f_params[1] = a * a * sim.numpts;
@@ -880,49 +873,15 @@ pi_v_k.updateHalo();
 						pcls_b.moveParticles(update_pos_Newton, dtau, NULL, 0, f_params);
 				}
 
-#ifdef BENCHMARK
+	#ifdef BENCHMARK
 				moveParts_count++;
 				moveParts_time += MPI_Wtime() - ref2_time;
 				ref2_time = MPI_Wtime();
-#endif
+	#endif
 			}
 
 			if (numsteps != 1)
-			{
-				//Evolving Kessence + background:
-				//:::::::::::::::::
-				if(cycle==0)
-				{
-					for (i=0;i<sim.nKe_numsteps;i++)
-					{
-				 		update_pi_k_v( 0.5 * dtau / numsteps / sim.nKe_numsteps,dx,a,phi,phi_old,chi,pi_k, pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a, fourpiG, cosmo)*a);
-						//update_pi_k( dtau/(sim.nKe_numsteps-1.),dx,phi,pi_k, pi_v_k);
-						rungekutta4bg(a, fourpiG, cosmo,  0.5 * dtau / numsteps / sim.nKe_numsteps);
-						pi_k.updateHalo();
-				    pi_v_k.updateHalo();
-					}
-				}
-				else
-				{
-					for (i=0;i<sim.nKe_numsteps;i++)
-					{
-				 		update_pi_k(0.5 * dtau / numsteps / sim.nKe_numsteps, dx,phi, pi_k, pi_v_k);
-				 		update_pi_k_v(0.5 * dtau / numsteps / sim.nKe_numsteps, dx, a, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo)*a);
-						rungekutta4bg(a, fourpiG, cosmo,  0.5 * dtau / numsteps / sim.nKe_numsteps);
-						pi_k.updateHalo();
-				    pi_v_k.updateHalo();
-					}
-				}
-				//       for(x.first();x.test();x.next())
-				//			{
-				//if (x.coord(0)==5 && x.coord(1)==5 && x.coord(2)==5) cout<<"x: "<< x <<"Pi: "<<pi_k(x)<<endl;
-				//			}
-				/////////////////////////////////////////////////
-
-
-
-
-			}
+				rungekutta4bg(a, fourpiG, cosmo, 0.5 * dtau / numsteps);  // evolve background by half a time step
 
 			f_params[0] = a;
 			f_params[1] = a * a * sim.numpts;
@@ -934,47 +893,17 @@ pi_v_k.updateHalo();
 						pcls_ncdm[i].moveParticles(update_pos, dtau / numsteps_ncdm[i], update_ncdm_fields, (1. / a < ic.z_relax + 1. ? 3 : 2), f_params);
 					else
 						pcls_ncdm[i].moveParticles(update_pos_Newton, dtau / numsteps_ncdm[i], NULL, 0, f_params);
-#ifdef BENCHMARK
+	#ifdef BENCHMARK
 						moveParts_count++;
 						moveParts_time += MPI_Wtime() - ref2_time;
 						ref2_time = MPI_Wtime();
-#endif
+	#endif
 				}
 			}
-			//Evolving Kessence + background:
-			//:::::::::::::::::
-			if(cycle==0)
-			{
-				for (i=0;i<sim.nKe_numsteps;i++)
-				{
-					update_pi_k_v( 0.5 * dtau / numsteps / sim.nKe_numsteps,dx,a,phi,phi_old,chi,pi_k, pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a, fourpiG, cosmo)*a);
-					//update_pi_k( dtau/(sim.nKe_numsteps-1.),dx,phi,pi_k, pi_v_k);
-					rungekutta4bg(a, fourpiG, cosmo,  0.5 * dtau / numsteps / sim.nKe_numsteps);
-					pi_k.updateHalo();
-					pi_v_k.updateHalo();
-				}
-			}
-			else
-			{
-				for (i=0;i<sim.nKe_numsteps;i++)
-				{
-					update_pi_k(0.5 * dtau / numsteps / sim.nKe_numsteps, dx,phi, pi_k, pi_v_k);
-					update_pi_k_v(0.5 * dtau / numsteps / sim.nKe_numsteps, dx, a, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo)*a);
-					rungekutta4bg(a, fourpiG, cosmo,  0.5 * dtau / numsteps / sim.nKe_numsteps);
-					pi_k.updateHalo();
-					pi_v_k.updateHalo();
-				}
-			}
-			//       for(x.first();x.test();x.next())
-			//			{
-			//if (x.coord(0)==5 && x.coord(1)==5 && x.coord(2)==5) cout<<"x: "<< x <<"Pi: "<<pi_k(x)<<endl;
-			//			}
-			/////////////////////////////////////////////////
 
+			rungekutta4bg(a, fourpiG, cosmo, 0.5 * dtau / numsteps);  // evolve background by half a time step
 
-
-
-
+// cout<<"a_kess: "<<a_kess<<" a: "<<a<<endl;
 		}   // particle update done
 
 		parallel.max<double>(maxvel, numspecies);

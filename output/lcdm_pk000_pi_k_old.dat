@@ -1,5 +1,5 @@
 # power spectrum of pi_k
-# redshift z=2.840847
+# redshift z=3.000000
 # k              Pk             sigma(k)       sigma(Pk)      count
   3.141593e-02   4.514879e-12   0.000000e+00   1.819870e-12   6
   4.442883e-02   1.542539e-12   0.000000e+00   3.079258e-13   12

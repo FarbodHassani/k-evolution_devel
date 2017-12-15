@@ -216,9 +216,9 @@ struct icsettings
 struct cosmology
 {
 	double Omega_cdm;
-    double Omega_kessence;
-    double w_kessence;
-		double  cs2_kessence;
+  double Omega_kessence;
+  double w_kessence;
+	double  cs2_kessence;
 	double Omega_b;
 	double Omega_m;
 	double Omega_Lambda;

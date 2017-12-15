@@ -1,7 +1,7 @@
 //////////////////////////
 // tools.hpp
 //////////////////////////
-// 
+//
 // Collection of analysis tools for gevolution
 //
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris)
@@ -30,7 +30,7 @@ using namespace LATfield2;
 //////////////////////////
 // Description:
 //   generates the cross spectrum for two Fourier images
-// 
+//
 // Arguments:
 //   fld1FT     reference to the first Fourier image for which the cross spectrum should be extracted
 //   fld2FT     reference to the second Fourier image for which the cross spectrum should be extracted
@@ -47,7 +47,7 @@ using namespace LATfield2;
 //   comp2      for component-wise cross spectra, the component for the second field (ignored if negative)
 //
 // Returns:
-// 
+//
 //////////////////////////
 
 void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbin, Real * power, Real * kscatter, Real * pscatter, int * occupation, const int numbins, const bool deconvolve = true, const int ktype = KTYPE_LINEAR, const int comp1 = -1, const int comp2 = -1)
@@ -59,10 +59,10 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 	Real k2max, k2, s;
 	rKSite k(fld1FT.lattice());
 	Cplx p;
-	
+
 	typek2 = (Real *) malloc(linesize * sizeof(Real));
 	sinc = (Real *) malloc(linesize * sizeof(Real));
-	
+
 	if (ktype == KTYPE_GRID)
 	{
 		for (i = 0; i < linesize; i++)
@@ -84,7 +84,7 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 			typek2[i] *= typek2[i];
 		}
 	}
-	
+
 	sinc[0] = 1.;
 	if (deconvolve)
 	{
@@ -104,9 +104,9 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 	{
 		sinc[i] = sinc[linesize-i];
 	}
-	
+
 	k2max = 3. * typek2[linesize/2];
-	
+
 	for (i = 0; i < numbins; i++)
 	{
 		kbin[i] = 0.;
@@ -115,7 +115,7 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 		pscatter[i] = 0.;
 		occupation[i] = 0;
 	}
-	
+
 	for (k.first(); k.test(); k.next())
 	{
 		if (k.coord(0) == 0 && k.coord(1) == 0 && k.coord(2) == 0)
@@ -126,11 +126,11 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 			weight = 1;
 		else
 			weight = 2;
-			
+
 		k2 = typek2[k.coord(0)] + typek2[k.coord(1)] + typek2[k.coord(2)];
 		s = sinc[k.coord(0)] * sinc[k.coord(1)] * sinc[k.coord(2)];
 		s *= s;
-		
+
 		if (comp1 >= 0 && comp2 >= 0 && comp1 < fld1FT.components() && comp2 < fld2FT.components())
 		{
 			p = fld1FT(k, comp1) * fld2FT(k, comp2).conj();
@@ -151,9 +151,9 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 			for (i = 0; i < fld1FT.components(); i++)
 				p += fld1FT(k, i) * fld2FT(k, i).conj();
 		}
-		
+
 		i = (int) floor((double) ((Real) numbins * sqrt(k2 / k2max)));
-		if (i < numbins) 
+		if (i < numbins)
 		{
 			kbin[i] += weight * sqrt(k2);
 			kscatter[i] += weight * k2;
@@ -162,16 +162,16 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 			occupation[i] += weight;
 		}
 	}
-	
+
 	free(typek2);
 	free(sinc);
-	
+
 	parallel.sum<Real>(kbin, numbins);
 	parallel.sum<Real>(kscatter, numbins);
 	parallel.sum<Real>(power, numbins);
 	parallel.sum<Real>(pscatter, numbins);
 	parallel.sum<int>(occupation, numbins);
-	
+
 	for (i = 0; i < numbins; i++)
 	{
 		if (occupation[i] > 0)
@@ -192,7 +192,7 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 //////////////////////////
 // Description:
 //   generates the power spectrum for a Fourier image
-// 
+//
 // Arguments:
 //   fldFT      reference to the Fourier image for which the power spectrum should be extracted
 //   kbin       allocated array that will contain the central k-value for the bins
@@ -206,7 +206,7 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 //                  1: linear (default)
 //
 // Returns:
-// 
+//
 //////////////////////////
 
 void extractPowerSpectrum(Field<Cplx> & fldFT, Real * kbin, Real * power, Real * kscatter, Real * pscatter, int * occupation, const int numbins, const bool deconvolve = true, const int ktype = KTYPE_LINEAR)
@@ -221,7 +221,7 @@ void extractPowerSpectrum(Field<Cplx> & fldFT, Real * kbin, Real * power, Real *
 //////////////////////////
 // Description:
 //   writes power spectra as tabulated data into ASCII file
-// 
+//
 // Arguments:
 //   kbin           array containing the central values of k for each bin
 //   power          array containing the central values of P(k) for each bin
@@ -236,7 +236,7 @@ void extractPowerSpectrum(Field<Cplx> & fldFT, Real * kbin, Real * power, Real *
 //   a              scale factor for this spectrum
 //
 // Returns:
-// 
+//
 //////////////////////////
 
 void writePowerSpectrum(Real * kbin, Real * power, Real * kscatter, Real * pscatter, int * occupation, const int numbins, const Real rescalek, const Real rescalep, const char * filename, const char * description, const double a)
@@ -269,14 +269,14 @@ void writePowerSpectrum(Real * kbin, Real * power, Real * kscatter, Real * pscat
 //////////////////////////
 // Description:
 //   computes some diagnostics for the spin-1 perturbation
-// 
+//
 // Arguments:
 //   Bi         reference to the real-space vector field to analyze
 //   mdivB      will contain the maximum value of the divergence of Bi
 //   mcurlB     will contain the maximum value of the curl of Bi
 //
 // Returns:
-// 
+//
 //////////////////////////
 
 void computeVectorDiagnostics(Field<Real> & Bi, Real & mdivB, Real & mcurlB)
@@ -284,10 +284,10 @@ void computeVectorDiagnostics(Field<Real> & Bi, Real & mdivB, Real & mcurlB)
 	Real b1, b2, b3, b4;
 	const Real linesize = (Real) Bi.lattice().sizeLocal(0);
 	Site x(Bi.lattice());
-	
+
 	mdivB = 0.;
 	mcurlB = 0.;
-	
+
 	for (x.first(); x.test(); x.next())
 	{
 		b1 = fabs((Bi(x,0)-Bi(x-0,0)) + (Bi(x,1)-Bi(x-1,1)) + (Bi(x,2)-Bi(x-2,2))) * linesize;
@@ -298,7 +298,7 @@ void computeVectorDiagnostics(Field<Real> & Bi, Real & mdivB, Real & mcurlB)
 		b4 = sqrt(b1 * b1 + b2 * b2 + b3 * b3);
 		if (b4 > mcurlB) mcurlB = b4;
 	}
-	
+
 	parallel.max<Real>(mdivB);
 	parallel.max<Real>(mcurlB);
 }
@@ -309,7 +309,7 @@ void computeVectorDiagnostics(Field<Real> & Bi, Real & mdivB, Real & mcurlB)
 //////////////////////////
 // Description:
 //   computes some diagnostics for the spin-2 perturbation
-// 
+//
 // Arguments:
 //   hij        reference to the real-space tensor field to analyze
 //   mdivh      will contain the maximum value of the divergence of hij
@@ -317,7 +317,7 @@ void computeVectorDiagnostics(Field<Real> & Bi, Real & mdivB, Real & mcurlB)
 //   mnormh     will contain the maximum value of the norm of hij
 //
 // Returns:
-// 
+//
 //////////////////////////
 
 void computeTensorDiagnostics(Field<Real> & hij, Real & mdivh, Real & mtraceh, Real & mnormh)
@@ -325,11 +325,11 @@ void computeTensorDiagnostics(Field<Real> & hij, Real & mdivh, Real & mtraceh, R
 	Real d1, d2, d3;
 	const Real linesize = (Real) hij.lattice().sizeLocal(0);
 	Site x(hij.lattice());
-	
+
 	mdivh = 0.;
 	mtraceh = 0.;
 	mnormh = 0.;
-	
+
 	for (x.first(); x.test(); x.next())
 	{
 		d1 = (hij(x+0, 0, 0) - hij(x, 0, 0) + hij(x, 0, 1) - hij(x-1, 0, 1) + hij(x, 0, 2) - hij(x-2, 0, 2)) * linesize;
@@ -342,7 +342,7 @@ void computeTensorDiagnostics(Field<Real> & hij, Real & mdivh, Real & mtraceh, R
 		d1 = sqrt(hij(x, 0, 0) * hij(x, 0, 0) + 2. * hij(x, 0, 1) * hij(x, 0, 1) + 2. * hij(x, 0, 2)* hij(x, 0, 2) + hij(x, 1, 1) * hij(x, 1, 1) + 2. * hij(x, 1, 2) * hij(x, 1, 2) + hij(x, 2, 2) * hij(x, 2, 2));
 		if (d1 > mnormh) mnormh = d1;
 	}
-	
+
 	parallel.max<Real>(mdivh);
 	parallel.max<Real>(mtraceh);
 	parallel.max<Real>(mnormh);
@@ -354,13 +354,13 @@ void computeTensorDiagnostics(Field<Real> & hij, Real & mdivh, Real & mtraceh, R
 //////////////////////////
 // Description:
 //   generates formatted output for cpu-time: hh..h:mm:ss.s
-// 
+//
 // Arguments:
 //   seconds    number of seconds
 //
 // Returns:
 //   formatted string
-// 
+//
 //////////////////////////
 
 string hourMinSec(double seconds)

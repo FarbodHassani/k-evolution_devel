@@ -1049,7 +1049,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	sim.boxsize = -1.;
 	sim.wallclocklimit = -1.;
 	sim.z_in = 0.;
-	sim.nKe_numsteps = 1;
+	sim.nKe_numsteps = 1.;
 
 	if (parseParameter(params, numparam, "vector method", par_string))
 	{

@@ -1,4 +1,4 @@
-# Transfer functions T_i(k) for adiabatic (AD) mode (normalized to initial curvature=1) at redshift z=0
+# Transfer functions T_i(k) for adiabatic (AD) mode (normalized to initial curvature=1) at redshift z=3
 # for k=1.29086e-05 to 1.05742 h/Mpc,
 # number of wavenumbers equal to 111
 # d_i   stands for (delta rho_i/rho_i)(k,z) with above normalization 
