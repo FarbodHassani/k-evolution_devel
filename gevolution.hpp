@@ -162,39 +162,57 @@ void prepareFTsource(Field<FieldType> & phi, Field<FieldType> & Tij, Field<Field
 // Returns:
 //
 //////////////////////////
-template <class FieldType>
-void update_pi_k(double dtau,double dx, Field<FieldType> & phi, Field<FieldType> & pi_k, Field<FieldType> & pi_v_k)
+// template <class FieldType>
+
+void update_pi_k(double dtau,  Field<Cplx> &  phi_FT,  Field<Cplx> & pi_k_FT,  Field<Cplx> & pi_v_k_FT)
 {
-  Site x(phi.lattice());
-    for (x.first(); x.test(); x.next())
-      {
-        pi_k(x)=pi_k(x)+pi_v_k(x)*dtau;
-      }
+  rKSite k(pi_k_FT.lattice());
+  k.first();
+
+    if(parallel.isRoot())
+    {
+     pi_k_FT(k)=0.0;
+     k.next();
+    }
+
+    for(;k.test();k.next())
+    {
+     pi_k_FT(k)+=pi_v_k_FT(k)*dtau;
+    }
+
 }
 
 
-template <class FieldType>
-void update_pi_k_v(double dtau, double dx,double a, Field<FieldType> & phi,Field<FieldType> & phi_old, Field<FieldType> & chi, Field<FieldType> & pi_k, Field<FieldType> & pi_v_k,double Omega_fld ,double w,double cs2, double Hcon )
+// template <class FieldType>
+void update_pi_k_v(double dtau, double dx,double a,double BoxSize, Field<Cplx> &  phi_FT, Field<Cplx> &  phi_old_FT, Field<Cplx> &  chi_FT, Field<Cplx> &  chi_old_FT, Field<Cplx> &  pi_k_FT , Field<Cplx> & pi_v_k_FT ,double Omega_fld ,double w, double cs2, double Hcon, double Hcon_old)
 {
-  Site x(phi.lattice());
-  double C1,C2,C3,C4,C5,Hdot;
-  double Laplacian_pi;
-  C1=1./ (1.-3.*dtau*Hcon/2.);
-  C2=1.+3.*Hcon*dtau/2.;
-  C3=1.+w;
-  Hdot=0.5*Hcon*Hcon*(-1.+3.*w);  // From energy-momentum tensor constraint
-  C4=a*(Hcon*Hcon+2.*Hdot)*(1.+3.*w)/(Hcon*C3);
-  C5=6.*Hcon*w*a/(1.+w);
+  //// TODO: it should not be ksquared!! Mode couplings
 
-    for (x.first(); x.test(); x.next())
-      {
-		    Laplacian_pi =pi_k(x-0) + pi_k(x+0) - 2. * pi_k(x);
-        Laplacian_pi+=pi_k(x+1) + pi_k(x-1)- 2. * pi_k(x);
-        Laplacian_pi+=pi_k(x+2) + pi_k(x-2)- 2. * pi_k(x);
-        pi_v_k(x)=C1*( C2*pi_v_k(x) + dtau* ( -cs2*Laplacian_pi + 3.*a*(phi(x) - phi_old(x))/dtau + C4*phi(x)  - C5*(phi(x) + chi(x)) ) );
+  double Coeff1, Coeff2, Coeff3, Coeff4, Coeff5, Coeff6, Hdot, ksquared, psi, psi_old;
 
-      }
+  Hdot= (Hcon-Hcon_old)/dtau;
+  Coeff1= (1.+3.*w)*Hcon*dtau;
+  Coeff2= (1.-cs2)*dtau/a;
+  Coeff3= 3.*a*cs2*Hcon*(1.-w/cs2);
+  Coeff4= 3.*a*cs2;
+  Coeff5= 3.*cs2*(-Hcon*Hcon+Hdot);
+  Coeff6= Hcon*(2.+3.*w+cs2)/(2*a);
 
+  rKSite k(pik.lattice());
+  k.first();
+  if(parallel.isRoot())
+  {
+      pi_k_FT(k)=0.0;
+			// pi_vk(k)=0.0;
+      k.next();
+  }
+  for(;k.test();k.next())
+   {
+      psi=phi_FT(k)+chi_FT(k);
+      psi_old=phi_old_FT(k) + chi_old_FT(k);
+      ksquared=2.0 *(cos(2.0*M_PI*k.coord(0)/BoxSize)+ cos(2.0*M_PI*k.coord(1)/BoxSize) + cos(2.0*M_PI*k.coord(2)/BoxSize)-3.0)/(dx*dx);
+      pi_v_k_FT(k)=pi_v_k_FT(k)*( 1.+Coeff1-ksquared*Coeff2*pi_k_FT(k) ) -dtau * (1.+Coeff1/2.-ksquared*Coeff2*pi_k_FT(k)/2. )* (-Coeff3* (psi) -a*(psi-psi_old)/dtau -Coeff4*(phi_FT(k)-phi_old_FT(k))/dtau + Coeff5*pi_k_FT(k)- cs2*ksquared* pi_k_FT(k) + (1.-cs2)*ksquared*psi*pi_k_FT(k) -2.*cs2*ksquared*phi_FT(k)*pi_k_FT(k) +  3.*cs2*Hconf*(1.+w)*ksquared*pi_k_FT(k));
+  }
 }
 
 //////////////////////////
@@ -236,7 +254,12 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 
       for (xField.first(); xField.test(); xField.next())
       {
-        
+        // Todo: Check vector elliptic!
+        // Normalisation factors should be checks and see if we get what we expect!
+        //Field update equation (Check!)
+        // Field velocity transfer function in hi-class
+        // Add field velicity into Gevolution with correct Normalisation factor!
+
     		gradient_pi2 =(pi_k(xField+0) - pi_k(xField-0))* (pi_k(xField+0) - pi_k(xField-0));
         gradient_pi2+=(pi_k(xField+1) - pi_k(xField-1))* (pi_k(xField+1) - pi_k(xField-1));
         gradient_pi2+=(pi_k(xField+1) - pi_k(xField-2))* (pi_k(xField+1) - pi_k(xField-2));
@@ -257,13 +280,13 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         Tij(xField, 1, 2) +=  coeff3*(pi_k(xField+1)-pi_k(xField-1))*(pi_k(xField+2)-pi_k(xField-2))/4.;
         // 3-3-component:
         Tij(xField, 2, 2) +=  coeff2*(w + (1.+w)*(-3*Hcon*w*pi_k(xField) - psi + pi_v_k(xField) +  gradient_pi2/2. ));
-
-        if(T0i!=NULL)
-        {
-          T0i(xField, 0)  +=  -coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+0)-pi_k(xField-0))/2.;
-          T0i(xField, 1)  +=  -coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+1)-pi_k(xField-1))/2.;
-          T0i(xField, 2)  +=  -coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+2)-pi_k(xField-2))/2.;
-        }
+// Field<Real> * phi = NULL
+        // if( T0i != NULL)
+        // {
+        //   T0i(xField, 0)  +=  -coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+0)-pi_k(xField-0))/2.;
+        //   T0i(xField, 1)  +=  -coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+1)-pi_k(xField-1))/2.;
+        //   T0i(xField, 2)  +=  -coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+2)-pi_k(xField-2))/2.;
+        // }
 
 
       }

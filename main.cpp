@@ -211,6 +211,7 @@ int main(int argc, char **argv)
   Field<Real> pi_k_old;
   Field<Real> pi_v_k;
 	Field<Real> chi;
+	Field<Real> chi_old;
 	Field<Real> Sij;
 	Field<Real> Bi;
 	Field<Cplx> scalarFT;
@@ -225,16 +226,20 @@ int main(int argc, char **argv)
   pi_v_k.initialize(lat,1);
   pi_k_old.initialize(lat,1);
 	chi.initialize(lat,1);
+	chi_old.initialize(lat,1);
 	scalarFT.initialize(latFT,1);
   scalarFT_pi.initialize(latFT,1);
 	scalarFT_pi_v.initialize(latFT,1);
+	//Todo: why scalarFt is Fourier transform of chi, phi and source wat happens exactly?
 	PlanFFT<Cplx> plan_source(&source, &scalarFT);
 	PlanFFT<Cplx> plan_phi(&phi, &scalarFT);
-	PlanFFT<Cplx> plan_phi_old(&phi_old, &scalarFT);
+	PlanFFT<Cplx> plan_phi_old(&phi_old, &scalarFT_phi_old);
 	PlanFFT<Cplx> plan_pi_k(&pi_k, &scalarFT_pi);
-	PlanFFT<Cplx> plan_pi_k_old(&pi_k_old, &scalarFT_pi);
+	PlanFFT<Cplx> plan_pi_k_old(&pi_k_old, &scalarFT_pi_old);
 	PlanFFT<Cplx> plan_pi_v_k(&pi_v_k, &scalarFT_pi_v);
 	PlanFFT<Cplx> plan_chi(&chi, &scalarFT);
+	PlanFFT<Cplx> plan_chi_old(&chi_old, &scalarFT_chi_old);
+
 	Sij.initialize(lat,3,3,symmetric);
 	SijFT.initialize(latFT,3,3,symmetric);
 	PlanFFT<Cplx> plan_Sij(&Sij, &SijFT);
@@ -441,8 +446,11 @@ int main(int argc, char **argv)
 	for (x.first(); x.test(); x.next())
 		{
 			phi_old(x) =phi(x);
+			chi_old(x) =chi(x);
+
 		}
 	phi_old.updateHalo();
+	chi_old.updateHalo();
 
 	for (x.first(); x.test(); x.next())
 		{
@@ -526,10 +534,10 @@ int main(int argc, char **argv)
 		{
 			projection_Tmunu_kessence( source,Bi,Sij, dx, a, phi, phi_old, chi,  pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG );
 		}
-		else
-		{
-			projection_Tmunu_kessence( source,NULL,Sij, dx, a, phi, phi_old, chi,  pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG );
-		}
+		// else
+		// {
+		// 	projection_Tmunu_kessence( source, NULL , Sij, dx, a, phi, phi_old, chi,  pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG );
+		// }
 
 
 		if (sim.gr_flag > 0)
@@ -595,7 +603,6 @@ int main(int argc, char **argv)
 			ref2_time= MPI_Wtime();
 #endif
 			plan_phi.execute(FFT_BACKWARD);	 // go back to position space
-//            plan_pi_k.execute(FFT_BACKWARD);	 // go back to position space
 
 #ifdef BENCHMARK
 			fft_time += MPI_Wtime() - ref2_time;
@@ -773,34 +780,38 @@ int main(int argc, char **argv)
 			COUT << endl;
 		}
 
-		double a_kess=a;
+
 			//Evolving Kessence + background:x
 			//:::::::::::::::::
+			double Hconf_old= Hconf(a_kess, fourpiG, cosmo);
+			double a_kess=a;
+
+			// TODO: In the first loop H' is zero and also we dont update the background!
+			//  so we should define H' in the background according to Friedmann equation.
 			if(cycle==0)
 			{
 				for (i=0;i<sim.nKe_numsteps;i++)
 				{
-					update_pi_k_v( 0.5 * dtau/ sim.nKe_numsteps ,dx,a_kess,phi,phi_old,chi,pi_k, pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a_kess, fourpiG, cosmo)*a_kess);
+					update_pi_k_v( 0.5 * dtau/ sim.nKe_numsteps ,dx,a_kess,BoxSize,scalarFT, scalarFT_phi_old, scalarFT, scalarFT_chi_old, scalarFT_pi, scalarFT_pi_v, cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a_kess, fourpiG, cosmo), Hconf_old);
 					//update_pi_k( dtau/(sim.nKe_numsteps-1.),dx,phi,pi_k, pi_v_k);
 					// rungekutta4bg(a_kess, fourpiG, cosmo,  0.5 * dtau  / sim.nKe_numsteps);
-					pi_k.updateHalo();
-					pi_v_k.updateHalo();
 				}
-				}
-
+			}
 			else
 			{
 				for (i=0;i<sim.nKe_numsteps;i++)
 				{
-					update_pi_k( dtau  / sim.nKe_numsteps, dx,phi, pi_k, pi_v_k);
+					update_pi_k( dtau  / sim.nKe_numsteps,scalarFT, scalarFT_pi, scalarFT_pi_v);
 					rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps);
-					update_pi_k_v( dtau  / sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo)*a_kess);
-					pi_k.updateHalo();
-					pi_v_k.updateHalo();
-
+					update_pi_k_v( dtau/ sim.nKe_numsteps ,dx,a_kess,BoxSize,scalarFT, scalarFT_phi_old, scalarFT, scalarFT_chi_old, scalarFT_pi, scalarFT_pi_v, cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a_kess, fourpiG, cosmo), Hconf_old);
 				}
 			}
-
+			plan_pi_k.execute(FFT_BACKWARD);
+			plan_pi_v_k.execute(FFT_BACKWARD);
+			pi_k.updateHalo();
+			pi_v_k.updateHalo();
+			//end of Kessence + background:x
+			//:::::::::::::::::
 
 
 		for (j = 0; j < numsteps; j++) // particle update
