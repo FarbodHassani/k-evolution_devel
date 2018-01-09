@@ -204,41 +204,42 @@ int main(int argc, char **argv)
 	Field<Real> * update_ncdm_fields[4];
 	double f_params[5];
 
+
 	Field<Real> phi;
 	Field<Real> phi_old;
 	Field<Real> source;
-  Field<Real> pi_k;
-  Field<Real> pi_k_old;
-  Field<Real> pi_v_k;
+	Field<Real> pi_k;
+	Field<Real> pi_v_k;
 	Field<Real> chi;
 	Field<Real> chi_old;
 	Field<Real> Sij;
 	Field<Real> Bi;
 	Field<Cplx> scalarFT;
-  Field<Cplx> scalarFT_pi;
+	Field<Cplx> scalarFT_phi_old;
+	Field<Cplx> scalarFT_chi_old;
+	Field<Cplx> scalarFT_pi;
 	Field<Cplx> scalarFT_pi_v;
 	Field<Cplx> SijFT;
 	Field<Cplx> BiFT;
 	source.initialize(lat,1);
 	phi.initialize(lat,1);
 	phi_old.initialize(lat,1);
-  pi_k.initialize(lat,1);
-  pi_v_k.initialize(lat,1);
-  pi_k_old.initialize(lat,1);
+	pi_k.initialize(lat,1);
+	pi_v_k.initialize(lat,1);
 	chi.initialize(lat,1);
 	chi_old.initialize(lat,1);
 	scalarFT.initialize(latFT,1);
-  scalarFT_pi.initialize(latFT,1);
+	scalarFT_phi_old.initialize(latFT,1);
+	scalarFT_chi_old.initialize(latFT,1);
+	scalarFT_pi.initialize(latFT,1);
 	scalarFT_pi_v.initialize(latFT,1);
-	//Todo: why scalarFt is Fourier transform of chi, phi and source wat happens exactly?
 	PlanFFT<Cplx> plan_source(&source, &scalarFT);
 	PlanFFT<Cplx> plan_phi(&phi, &scalarFT);
-	PlanFFT<Cplx> plan_phi_old(&phi_old, &scalarFT_phi_old);
-	PlanFFT<Cplx> plan_pi_k(&pi_k, &scalarFT_pi);
-	PlanFFT<Cplx> plan_pi_k_old(&pi_k_old, &scalarFT_pi_old);
-	PlanFFT<Cplx> plan_pi_v_k(&pi_v_k, &scalarFT_pi_v);
 	PlanFFT<Cplx> plan_chi(&chi, &scalarFT);
+	PlanFFT<Cplx> plan_phi_old(&phi_old, &scalarFT_phi_old);
 	PlanFFT<Cplx> plan_chi_old(&chi_old, &scalarFT_chi_old);
+	PlanFFT<Cplx> plan_pi_k(&pi_k, &scalarFT_pi);
+	PlanFFT<Cplx> plan_pi_v_k(&pi_v_k, &scalarFT_pi_v);
 
 	Sij.initialize(lat,3,3,symmetric);
 	SijFT.initialize(latFT,3,3,symmetric);
@@ -246,6 +247,7 @@ int main(int argc, char **argv)
 	Bi.initialize(lat,3);
 	BiFT.initialize(latFT,3);
 	PlanFFT<Cplx> plan_Bi(&Bi, &BiFT);
+
 #ifdef CHECK_B
 	Field<Real> Bi_check;
 	Field<Cplx> BiFT_check;
@@ -294,11 +296,8 @@ int main(int argc, char **argv)
 	dtau_old = 0.;
 
 
-        if (ic.generator == ICGEN_BASIC)
+  if (ic.generator == ICGEN_BASIC)
 		generateIC_basic(sim, ic, cosmo, fourpiG, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi,&pi_k,&pi_v_k, &chi, &Bi, &source, &Sij, &scalarFT,&scalarFT_pi,&scalarFT_pi_v, &BiFT, &SijFT, &plan_phi, &plan_pi_k,&plan_pi_v_k, &plan_chi, &plan_Bi, &plan_source, &plan_Sij); // generates ICs on the fly
-
-//generateIC_basic(sim, ic, cosmo, fourpiG, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi,&pi_k,&pi_v_k, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_pi_k,&plan_pi_v_k, &plan_chi, &plan_Bi, &plan_source, &plan_Sij); // generates ICs on the fly
-
 
 	else if (ic.generator == ICGEN_READ_FROM_DISK)
 		readIC(sim, ic, cosmo, fourpiG, a, tau, dtau, dtau_old, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi,&pi_k, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, & plan_phi, & plan_chi, &plan_Bi, &plan_source, &plan_Sij, cycle, snapcount, pkcount, restartcount);
@@ -377,7 +376,7 @@ int main(int argc, char **argv)
 			prepareFTchiLinear(class_background, class_perturbs, class_spectra, scalarFT, sim, ic, cosmo, fourpiG, a);
 			plan_source.execute(FFT_BACKWARD);
 			for (x.first(); x.test(); x.next())
-				chi(x) += source(x);
+			chi(x) += source(x);
 			chi.updateHalo();
 		}
 	}
@@ -442,7 +441,6 @@ int main(int argc, char **argv)
 	while (true)    // main loop
 	{
 
-	//TODO: is phi_old already set at cycle 0
 	for (x.first(); x.test(); x.next())
 		{
 			phi_old(x) =phi(x);
@@ -451,12 +449,6 @@ int main(int argc, char **argv)
 		}
 	phi_old.updateHalo();
 	chi_old.updateHalo();
-
-	for (x.first(); x.test(); x.next())
-		{
-			pi_k_old(x) =pi_k(x);
-		}
-	pi_k_old.updateHalo();
 
 
 #ifdef BENCHMARK
@@ -531,13 +523,13 @@ int main(int argc, char **argv)
 
 // Add projection_ kessence here
 		if (sim.vector_flag == VECTOR_ELLIPTIC)
-		{
-			projection_Tmunu_kessence( source,Bi,Sij, dx, a, phi, phi_old, chi,  pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG );
-		}
-		// else
-		// {
-		// 	projection_Tmunu_kessence( source, NULL , Sij, dx, a, phi, phi_old, chi,  pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG );
-		// }
+			{
+				projection_Tmunu_kessence( source,Bi,Sij, dx, a, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 1 );
+			}
+		else
+			{
+				projection_Tmunu_kessence( source, Bi,Sij, dx, a, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 0 );
+			}
 
 
 		if (sim.gr_flag > 0)
@@ -783,8 +775,8 @@ int main(int argc, char **argv)
 
 			//Evolving Kessence + background:x
 			//:::::::::::::::::
-			double Hconf_old= Hconf(a_kess, fourpiG, cosmo);
 			double a_kess=a;
+			double Hconf_old= Hconf(a_kess, fourpiG, cosmo);
 
 			// TODO: In the first loop H' is zero and also we dont update the background!
 			//  so we should define H' in the background according to Friedmann equation.
@@ -792,24 +784,25 @@ int main(int argc, char **argv)
 			{
 				for (i=0;i<sim.nKe_numsteps;i++)
 				{
-					update_pi_k_v( 0.5 * dtau/ sim.nKe_numsteps ,dx,a_kess,BoxSize,scalarFT, scalarFT_phi_old, scalarFT, scalarFT_chi_old, scalarFT_pi, scalarFT_pi_v, cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a_kess, fourpiG, cosmo), Hconf_old);
-					//update_pi_k( dtau/(sim.nKe_numsteps-1.),dx,phi,pi_k, pi_v_k);
-					// rungekutta4bg(a_kess, fourpiG, cosmo,  0.5 * dtau  / sim.nKe_numsteps);
+					//Commented
+					update_pi_k_v( 0.5 * dtau_old/ sim.nKe_numsteps ,dx,a_kess,phi,phi_old,chi,chi_old,pi_k, pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a_kess, fourpiG, cosmo),Hconf_old);
+					pi_k.updateHalo();
+					pi_v_k.updateHalo();
 				}
 			}
 			else
 			{
 				for (i=0;i<sim.nKe_numsteps;i++)
 				{
-					update_pi_k( dtau  / sim.nKe_numsteps,scalarFT, scalarFT_pi, scalarFT_pi_v);
-					rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps);
-					update_pi_k_v( dtau/ sim.nKe_numsteps ,dx,a_kess,BoxSize,scalarFT, scalarFT_phi_old, scalarFT, scalarFT_chi_old, scalarFT_pi, scalarFT_pi_v, cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a_kess, fourpiG, cosmo), Hconf_old);
+					//Commented
+					update_pi_k( dtau_old  / sim.nKe_numsteps,phi, pi_k, pi_v_k);
+					rungekutta4bg(a_kess, fourpiG, cosmo,  dtau_old  / sim.nKe_numsteps);
+					update_pi_k_v(dtau_old/ sim.nKe_numsteps ,dx,a_kess,phi,phi_old,chi,chi_old,pi_k, pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a_kess, fourpiG, cosmo),Hconf_old);
+					pi_k.updateHalo();
+					pi_v_k.updateHalo();
 				}
 			}
-			plan_pi_k.execute(FFT_BACKWARD);
-			plan_pi_v_k.execute(FFT_BACKWARD);
-			pi_k.updateHalo();
-			pi_v_k.updateHalo();
+
 			//end of Kessence + background:x
 			//:::::::::::::::::
 

@@ -1817,47 +1817,51 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 gsl_spline * tk_d_kess = NULL;
 gsl_spline * tk_t_kess = NULL;
 double * delta_kess = NULL;
+double * theta_kess = NULL;
 double * k_ess = NULL;
 int npts=0;
 loadTransferFunctions(ic.tkfile, tk_d_kess, tk_t_kess, "fld", sim.boxsize, cosmo.h);	// get transfer functions for k_essence
 npts = tk_d_kess->size;
 delta_kess = (double *) malloc(npts * sizeof(double));
+theta_kess = (double *) malloc(npts * sizeof(double));
 k_ess = (double *) malloc(npts * sizeof(double));
 
 for (i = 0; i < npts; i++)
 {
+// Here we calculate \pi and \pi' power spectrum from \pi and  \pi' in hiclass, so the power is calculated in the
+// in the same way and with the same coefficients, consider that time in Gev nad hi-class is the same and conformal time
+
 	delta_kess[i] = -M_PI * tk_d_kess->y[i] * sqrt(Pk_primordial(tk_d_kess->x[i] * cosmo.h / sim.boxsize, ic) / tk_d_kess->x[i]) / tk_d_kess->x[i];
 	k_ess[i] = tk_d_kess->x[i];
-	// cout<<"K: "<<k_ess[i] <<"  delta_kess: "<<tk_d_kess->y[i]<<endl;
+	theta_kess[i] = -M_PI * tk_t_kess->y[i] * sqrt(Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic) / tk_t_kess->x[i]) / tk_t_kess->x[i];
+	// cout<<"K: "<<k_ess[i] <<"  delta_kess: "<<tk_d_kess->y[i]<<"Theta kesse:"<< tk_t_kess->x[i]<<endl;
 }
 
+// Field realization
 gsl_spline_free(tk_d_kess);
 tk_d_kess = gsl_spline_alloc(gsl_interp_cspline, npts);
 gsl_spline_init(tk_d_kess, k_ess, delta_kess, npts);
 generateRealization(*scalarFT_pi, 0., tk_d_kess, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE);
 plan_pi_k->execute(FFT_BACKWARD);
 pi_k->updateHalo();	// pi_k now is realized in real space
-// plan_pi_k->execute(FFT_FORWARD);
-
 gsl_spline_free(tk_d_kess);
-gsl_spline_free(tk_t_kess);
 free(delta_kess);
-free(k_ess);
 
+// Field derivative realization \pi'
+gsl_spline_free(tk_t_kess);
+tk_t_kess = gsl_spline_alloc(gsl_interp_cspline, npts);
+gsl_spline_init(tk_t_kess, k_ess, theta_kess, npts);
+generateRealization(*scalarFT_pi_v, 0., tk_t_kess, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE);
+plan_pi_v_k->execute(FFT_BACKWARD);
+pi_v_k->updateHalo();	// pi_v_k now is realized in real space
+gsl_spline_free(tk_t_kess);
+free(k_ess);
 
 ///////////////////////////
 ///////////////////////////
 //// End of K_essence IC part//////
 ///////////////////////////
 ///////////////////////////
-
-
-
-
-
-
-
-
 
 
 
