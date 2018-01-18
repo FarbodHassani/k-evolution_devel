@@ -500,6 +500,7 @@ void loadTransferFunctions(const char * filename, gsl_spline * & tk_delta, gsl_s
 	if (parallel.grid_rank()[0] == 0) // read file
 	{
 		FILE * tkfile;
+
 		char line[MAX_LINESIZE];
 		char format[MAX_LINESIZE];
 		char * ptr;
@@ -1054,7 +1055,6 @@ void generateCICKernel(Field<Real> & ker, const long numpcl = 0, float * pcldata
 #ifdef FFT3D
 
 //////////////////////////
-// 		generateDisplacementField(*scalarFT, 0., tk_t1, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE, 0); (generateRealization)
 //////////////////////////
 // Description:
 //   generates particle displacement field
@@ -1086,7 +1086,8 @@ void generateCICKernel(Field<Real> & ker, const long numpcl = 0, float * pcldata
 #endif
 
 template<int ignorekernel = 0>
-void generateDisplacementField(Field<Cplx> & potFT, const Real coeff, const gsl_spline * pkspline, const unsigned int seed, const int ksphere = 0, const int deconvolve_f = 1)
+void generateDisplacementField(Field<Cplx> & potFT, const Real coeff, const gsl_spline * pkspline,
+	const unsigned int seed, const int ksphere = 0, const int deconvolve_f = 1)
 {
 	const int linesize = potFT.lattice().size(1);
 	const int kmax = (linesize / 2) - 1;
@@ -1674,20 +1675,6 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 
 	ic_fields[0] = chi;
 	ic_fields[1] = phi;
-//  ic_fields[3] = pi_k;
-//  ic_fields[4] = pi_v_k;
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -1782,48 +1769,21 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 
 
 
-
-
-
-
-		// loadTransferFunctions(class_background, class_perturbs, class_spectra, tk1, tk2, "tot", sim.boxsize, (1. / a) - 1., cosmo.h);
-		// rescale = Hconf(a, fourpiG, cosmo);
-		//
-		// for (i = 0; i < n; i++)
-		// 	delta[i] -= coeff * (4. * Omega_rad / a + 3. * Omega_ncdm) * rescale * M_PI * tk2->y[i] * sqrt(Pk_primordial(tk2->x[i] * cosmo.h / sim.boxsize, ic) / tk2->x[i]) / tk2->x[i] / tk2->x[i] / tk2->x[i];
-		//
-		// gsl_spline_free(tk1);
-		// gsl_spline_free(tk2);
-		// }
-		//
-		// tk1 = gsl_spline_alloc(gsl_interp_cspline, n);
-		// gsl_spline_init(tk1, k, delta, n);
-		//
-		// generateRealization(scalarFT, 0., tk1, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE);
-		// plan_source->execute(FFT_BACKWARD);
-		//
-		// gsl_spline_free(tk1);
-		// free(delta);
-		// free(k);
-
-
-
 ///////////////////////////
 ///////////////////////////
 ////K_essence IC part//////
 ///////////////////////////
 ///////////////////////////
-
 gsl_spline * tk_d_kess = NULL;
 gsl_spline * tk_t_kess = NULL;
-double * delta_kess = NULL;
-double * theta_kess = NULL;
+double * kess_field = NULL;
+double * kess_field_prime = NULL;
 double * k_ess = NULL;
 int npts=0;
-loadTransferFunctions(ic.tkfile, tk_d_kess, tk_t_kess, "fld", sim.boxsize, cosmo.h);	// get transfer functions for k_essence
+loadTransferFunctions(ic.tk_kessence, tk_d_kess, tk_t_kess, "kess", sim.boxsize, cosmo.h);	// get transfer functions for k_essence
 npts = tk_d_kess->size;
-delta_kess = (double *) malloc(npts * sizeof(double));
-theta_kess = (double *) malloc(npts * sizeof(double));
+kess_field = (double *) malloc(npts * sizeof(double));
+kess_field_prime = (double *) malloc(npts * sizeof(double));
 k_ess = (double *) malloc(npts * sizeof(double));
 
 for (i = 0; i < npts; i++)
@@ -1831,26 +1791,27 @@ for (i = 0; i < npts; i++)
 // Here we calculate \pi and \pi' power spectrum from \pi and  \pi' in hiclass, so the power is calculated in the
 // in the same way and with the same coefficients, consider that time in Gev nad hi-class is the same and conformal time
 
-	delta_kess[i] = -M_PI * tk_d_kess->y[i] * sqrt(Pk_primordial(tk_d_kess->x[i] * cosmo.h / sim.boxsize, ic) / tk_d_kess->x[i]) / tk_d_kess->x[i];
+	kess_field[i] = -M_PI * tk_d_kess->y[i] * sqrt(Pk_primordial(tk_d_kess->x[i] * cosmo.h / sim.boxsize, ic)
+	/ tk_d_kess->x[i]) / tk_d_kess->x[i];
+	kess_field_prime[i] = -M_PI * tk_t_kess->y[i] *cosmo.h* sqrt(Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic)
+	/ tk_t_kess->x[i]) / tk_t_kess->x[i]/	sim.boxsize ;
 	k_ess[i] = tk_d_kess->x[i];
-	theta_kess[i] = -M_PI * tk_t_kess->y[i] * sqrt(Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic) / tk_t_kess->x[i]) / tk_t_kess->x[i];
-	// cout<<"K: "<<k_ess[i] <<"  delta_kess: "<<tk_d_kess->y[i]<<"Theta kesse:"<< tk_t_kess->x[i]<<endl;
 }
 
 // Field realization
 gsl_spline_free(tk_d_kess);
 tk_d_kess = gsl_spline_alloc(gsl_interp_cspline, npts);
-gsl_spline_init(tk_d_kess, k_ess, delta_kess, npts);
-generateRealization(*scalarFT_pi, 0., tk_d_kess, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE);
+gsl_spline_init(tk_d_kess, k_ess, kess_field, npts);
+generateRealization(*scalarFT_pi, 0., tk_d_kess, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE,0);
 plan_pi_k->execute(FFT_BACKWARD);
 pi_k->updateHalo();	// pi_k now is realized in real space
 gsl_spline_free(tk_d_kess);
-free(delta_kess);
+free(kess_field);
 
 // Field derivative realization \pi'
 gsl_spline_free(tk_t_kess);
 tk_t_kess = gsl_spline_alloc(gsl_interp_cspline, npts);
-gsl_spline_init(tk_t_kess, k_ess, theta_kess, npts);
+gsl_spline_init(tk_t_kess, k_ess, kess_field_prime, npts);
 generateRealization(*scalarFT_pi_v, 0., tk_t_kess, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE);
 plan_pi_v_k->execute(FFT_BACKWARD);
 pi_v_k->updateHalo();	// pi_v_k now is realized in real space

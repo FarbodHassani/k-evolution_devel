@@ -144,6 +144,7 @@ void prepareFTsource(Field<FieldType> & phi, Field<FieldType> & Tij, Field<Field
     }
 }
 
+
 //////////////////////////
 // Update K-essence field (1)
 //////////////////////////
@@ -165,6 +166,7 @@ void update_pi_k(double dtau, Field<FieldType> & phi, Field<FieldType> & pi_k, F
     for (x.first(); x.test(); x.next())
       {
         pi_k(x)=pi_k(x)+pi_v_k(x)*dtau;
+        // cout<<""
       }
 
 }
@@ -177,6 +179,7 @@ void update_pi_k_v(double dtau, double dx,double a, Field<FieldType> & phi, Fiel
   double Laplacian_pi, Laplacian_pi_v, Laplacian_Psi, Laplacian_Phi, Gradpsi_Gradpi, Gradphi_Gradpi, Gradpi_Gradpi;
   Site x(phi.lattice());
   H_prime= (Hcon-Hcon_old)/dtau;
+  // cout<<"H_prime: "<<H_prime<<endl;
   Coeff1= (1.+3.*w)*Hcon*dtau/2.;
   Coeff2= (1.-cs2)*dtau;
   Coeff3= 3.*a*cs2*Hcon*(1.-w/cs2);
@@ -216,12 +219,17 @@ void update_pi_k_v(double dtau, double dx,double a, Field<FieldType> & phi, Fiel
       Psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau;
       Phi_prime= (phi(x) - phi_old(x))/dtau;
 
-
-      pi_v_k(x)=(1.+Coeff1)*pi_v_k(x)/(1.-Coeff1) + Coeff2*Laplacian_pi_v*pi_k(x)/(1.-Coeff1)
-      - (dtau/(1.-Coeff1))* ( -Coeff3*(phi(x) - chi(x)) - a*Psi_prime - 3.*a*cs2*Phi_prime
-      + Coeff4*pi_k(x) -cs2*Laplacian_pi + (1.-cs2)*pi_k(x)*Laplacian_Psi - 2.*cs2*pi_k(x)*Laplacian_Phi
-      + 3.*cs2*Hcon*(1.+w)*pi_k(x)*Laplacian_pi - (2.*cs2-1)*Gradpsi_Gradpi + cs2*Gradphi_Gradpi + Coeff5*Gradpi_Gradpi);
-
+      pi_v_k(x)=
+      (1.+Coeff1)*pi_v_k(x)/(1.-Coeff1)
+        - (dtau/(1.-Coeff1))* ( -Coeff3*(phi(x) - chi(x)) - a*Psi_prime - 3.*a*cs2*Phi_prime
+        + Coeff4*pi_k(x) -cs2*Laplacian_pi
+      // Second order part
+        + Coeff2*Laplacian_pi_v*pi_k(x)/(1.-Coeff1)
+        + (1.-cs2)*pi_k(x)*Laplacian_Psi - 2.*cs2*pi_k(x)*Laplacian_Phi
+        + 3.*cs2*Hcon*(1.+w)*pi_k(x)*Laplacian_pi - (2.*cs2-1)*Gradpsi_Gradpi + cs2*Gradphi_Gradpi + Coeff5*Gradpi_Gradpi);
+      //   if(parallel.isRoot()){
+      //   // cout<<"pi_v_k"<<pi_v_k(x)<<endl;
+      // }
     }
 
 }
@@ -253,7 +261,9 @@ void update_pi_k_v(double dtau, double dx,double a, Field<FieldType> & phi, Fiel
 //////////////////////////
 // Field<FieldType> & Tij
 template <class FieldType>
-void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, Field<FieldType> & Tij, double dx,double a, Field<FieldType> & phi,Field<FieldType> & phi_old, Field<FieldType> & chi, Field<FieldType> & pi_k, Field<FieldType> & pi_v_k,double Omega_fld ,double w,double cs2, double Hcon, double fourpig, int method )
+void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, Field<FieldType> & Tij,
+   double dx,double a, Field<FieldType> & phi,Field<FieldType> & phi_old, Field<FieldType> & chi, Field<FieldType> & pi_k,
+    Field<FieldType> & pi_v_k,double Omega_fld ,double w,double cs2, double Hcon, double fourpig, int method )
 {
     Site xField(phi.lattice());
     double coeff1, coeff2, coeff3, Hdot, psi;

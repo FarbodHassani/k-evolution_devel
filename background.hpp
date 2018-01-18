@@ -136,9 +136,16 @@ double bg_ncdm(const double a, const cosmology cosmo)
 
 double Hconf(const double a, const double fourpiG, const cosmology cosmo)
 {
-	return sqrt((2. * fourpiG / 3.) * (((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) / a) + (cosmo.Omega_Lambda * a * a) + (cosmo.Omega_rad / a / a))+ (cosmo.Omega_kessence * pow(a,-1.-3. * cosmo.w_kessence)));
+	return sqrt((2. * fourpiG / 3.) * (((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) / a) + (cosmo.Omega_Lambda * a * a)
+	+ (cosmo.Omega_rad / a / a))+ (cosmo.Omega_kessence * pow(a,-1.-3. * cosmo.w_kessence)));
 }
 
+// double H_prime(const double a, const double fourpiG, const cosmology cosmo)
+// {
+// 	return sqrt((2. * fourpiG / 3.) * ((-(cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo))* Hconf( a, fourpiG,  cosmology cosmo)/ a)
+// 	+ (cosmo.Omega_Lambda * a * a*2.*Hconf( a, fourpiG,  cosmology cosmo))
+// 	+ (-2.*cosmo.Omega_rad*Hconf( a, fourpiG,  cosmology cosmo) / a / a))+ (cosmo.Omega_kessence *Hconf( a, fourpiG,  cosmology cosmo)* pow(a,-1.-3. * cosmo.w_kessence)));
+// }
 
 double Omega_m(const double a, const cosmology cosmo) { return cosmo.Omega_m / (cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo) + cosmo.Omega_Lambda * a * a * a + cosmo.Omega_rad / a); }
 

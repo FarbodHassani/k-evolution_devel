@@ -34,6 +34,9 @@
 // Last modified: December 2016
 //
 //////////////////////////
+// cout<<"Hconf: "<<Hconf_old<<endl;
+// TODO: In the first loop H' is zero and also we dont update the background!
+//  so we should define H' in the background according to Friedmann equation.
 
 #include <stdlib.h>
 #ifdef HAVE_CLASS
@@ -288,10 +291,17 @@ int main(int argc, char **argv)
 	tau = particleHorizon(a, fourpiG, cosmo);
 	tau_Lambda = -1.0;
 
+/*
 	if (sim.Cf * dx < sim.steplimit / Hconf(a, fourpiG, cosmo))
 		dtau = sim.Cf * dx;
 	else
 		dtau = sim.steplimit / Hconf(a, fourpiG, cosmo);
+*/
+	if (sim.Cf * dx < sim.steplimit / Hconf(a, fourpiG, cosmo))
+		dtau = sim.Cf * dx / sim.nKe_numsteps;
+	else
+		dtau = sim.steplimit / Hconf(a, fourpiG, cosmo) / sim.nKe_numsteps;
+
 
 	dtau_old = 0.;
 
@@ -389,49 +399,42 @@ int main(int argc, char **argv)
 // 3-Stability of equations
 // 4- Initial condition and normalization factors
 
-///****IC for sclar field is set by hand****/////
-///*****************************************////
-
+/****IC for sclar field is set by hand****/
+/*****************************************/
+/*****************************************/
 // double distance;
-// double sigma=1;
-// double sigma2=1;
-//           for(x.first();x.test();x.next())
-//         {
-//
-// 						distance=pow(0.51 + x.coord(0) - lat.size(0)/2.,2.);
-// 						distance+=pow(0.5l + x.coord(1) - lat.size(0)/2.,2.);
-// 						distance+=pow(0.5l + x.coord(2) - lat.size(0)/2.,2.);
-//             pi_k(x) =2.*exp(-distance/(2.*sigma*sigma)) ;
-//             pi_v_k(x)=1.0;
-//
-//         }
+// double sigma=2;
+
+        //   for(x.first();x.test();x.next())
+        // {
+				//
+				// 		// distance=pow(0.51 + x.coord(0) - lat.size(0)/2.,2.);
+				// 		// distance+=pow(0.5l + x.coord(1) - lat.size(0)/2.,2.);
+				// 		// distance+=pow(0.5l + x.coord(2) - lat.size(0)/2.,2.);
+        //     // pi_k(x) =1.*exp(-distance/(2.*sigma*sigma))/sqrt(2*3.1415*sigma) ;
+        //     // pi_v_k(x)=1.0;
+				// 		// cout<<"pi_k: "<<pi_k(x)<<endl;
+        // }
 // pi_v_k.updateHalo();
 // 	pi_k.updateHalo();
-///*****************************************////
-///*****************************************////
 
-// k-essence output field in real space
-      //         for(x.first();x.test();x.next())
-      //  {
-      //     //  pi_v_k(x) =0.003;
-      //     //  pi_k(x)=0.001;
-			 //
-			// 			// cout<<"pi_k: "<<pi_k(x)<<" pi_v(x): "<<pi_v_k(x)<<endl;
-			// 			// cout<<"phi: "<<phi(x)<<endl;
-			 //
-      //  }
-	// pi_v_k.updateHalo();
-	// pi_k.updateHalo();
+
+// // k-essence output field in real space
+//               for(x.first();x.test();x.next())
+//        {
+//            pi_v_k(x) =0.0;
+//            pi_k(x)=0.0;
+//
+//
+//        }
+// 	pi_v_k.updateHalo();
+// 	pi_k.updateHalo();
 
 // #ifdef CHECK_B
 // 			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k,&pi_v_k, &chi, &Bi, &source, &Sij, &scalarFT,&scalarFT_pi,&scalarFT_pi_v, &BiFT, &SijFT, &plan_phi,&plan_pi_k,&plan_pi_v_k , &plan_chi, &plan_Bi, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
 // #else
 // 				writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &pi_v_k, &chi, &Bi, &source, &Sij, &scalarFT,&scalarFT_pi,&scalarFT_pi_v, &BiFT, &SijFT, &plan_phi , &plan_pi_k , &plan_pi_v_k , &plan_chi, &plan_Bi, &plan_source, &plan_Sij);
 // #endif
-
-
-
-
 
 
 //int sim.nKe_numsteps=10;
@@ -521,15 +524,15 @@ int main(int argc, char **argv)
 		ref_time = MPI_Wtime();
 #endif
 
-// Add projection_ kessence here
-		if (sim.vector_flag == VECTOR_ELLIPTIC)
-			{
-				projection_Tmunu_kessence( source,Bi,Sij, dx, a, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 1 );
-			}
-		else
-			{
-				projection_Tmunu_kessence( source, Bi,Sij, dx, a, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 0 );
-			}
+// // Add projection_ kessence here
+		// if (sim.vector_flag == VECTOR_ELLIPTIC)
+		// 	{
+		// 		projection_Tmunu_kessence( source,Bi,Sij, dx, a, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 1 );
+		// 	}
+		// else
+		// 	{
+		// 		projection_Tmunu_kessence( source, Bi,Sij, dx, a, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 0 );
+		// 	}
 
 
 		if (sim.gr_flag > 0)
@@ -775,34 +778,34 @@ int main(int argc, char **argv)
 
 			//Evolving Kessence + background:x
 			//:::::::::::::::::
-			double a_kess=a;
-			double Hconf_old= Hconf(a_kess, fourpiG, cosmo);
-
-			// TODO: In the first loop H' is zero and also we dont update the background!
-			//  so we should define H' in the background according to Friedmann equation.
-			if(cycle==0)
+	double a_kess=a;
+	double Hconf_old= Hconf(a_kess, fourpiG, cosmo);
+			/*if(cycle==0)
 			{
 				for (i=0;i<sim.nKe_numsteps;i++)
 				{
-					//Commented
+					dtau_old=0.1;
 					update_pi_k_v( 0.5 * dtau_old/ sim.nKe_numsteps ,dx,a_kess,phi,phi_old,chi,chi_old,pi_k, pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a_kess, fourpiG, cosmo),Hconf_old);
-					pi_k.updateHalo();
 					pi_v_k.updateHalo();
 				}
-			}
-			else
+			}*/
+			if(dtau_old>0)
 			{
 				for (i=0;i<sim.nKe_numsteps;i++)
 				{
-					//Commented
 					update_pi_k( dtau_old  / sim.nKe_numsteps,phi, pi_k, pi_v_k);
-					rungekutta4bg(a_kess, fourpiG, cosmo,  dtau_old  / sim.nKe_numsteps);
-					update_pi_k_v(dtau_old/ sim.nKe_numsteps ,dx,a_kess,phi,phi_old,chi,chi_old,pi_k, pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,Hconf(a_kess, fourpiG, cosmo),Hconf_old);
 					pi_k.updateHalo();
+					rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0);
+					update_pi_k_v(dtau_old/ sim.nKe_numsteps ,
+												dx,a_kess,phi,phi_old,chi,chi_old,pi_k, pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,
+												Hconf(a_kess, fourpiG, cosmo),Hconf_old);
 					pi_v_k.updateHalo();
+					rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0 );
+
+
 				}
 			}
-
+		// }
 			//end of Kessence + background:x
 			//:::::::::::::::::
 

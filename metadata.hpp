@@ -201,6 +201,7 @@ struct icsettings
 	char pclfile[MAX_PCL_SPECIES][PARAM_MAX_LENGTH];
 	char pkfile[PARAM_MAX_LENGTH];
 	char tkfile[PARAM_MAX_LENGTH];
+	char tk_kessence[PARAM_MAX_LENGTH];
 	char metricfile[3][PARAM_MAX_LENGTH];
 	double restart_tau;
 	double restart_dtau;
