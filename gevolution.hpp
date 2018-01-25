@@ -283,26 +283,26 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         psi=phi(xField) - chi(xField);
 
         // 0-0-component:
-        T00(xField)       +=  coeff1*(-3*Hcon*cs2*pi_k(xField) - psi + pi_v_k(xField) - (1.-2.*cs2) * gradient_pi2/2. );
+        T00(xField)       =  coeff1*(-3*Hcon*cs2*pi_k(xField) - psi + pi_v_k(xField) - (1.-2.*cs2) * gradient_pi2/2. );
         // 1-1-component:
-        Tij(xField, 0, 0) +=  coeff2*(w + (1.+w)*(-3*Hcon*w*pi_k(xField) - psi + pi_v_k(xField) +  gradient_pi2/2. ));
+        Tij(xField, 0, 0) =  coeff2*(w + (1.+w)*(-3*Hcon*w*pi_k(xField) - psi + pi_v_k(xField) +  gradient_pi2/2. ));
         // 1-2-component:
-        Tij(xField, 0, 1) +=  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+1)-pi_k(xField-1))/4.;
+        Tij(xField, 0, 1) =  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+1)-pi_k(xField-1))/4.;
         // 1-3-component:
-        Tij(xField, 0, 2) +=  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+2)-pi_k(xField-2))/4.;
+        Tij(xField, 0, 2) =  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+2)-pi_k(xField-2))/4.;
         // 2-2-component:
-        Tij(xField, 1, 1) +=  coeff2*(w + (1.+w)*(-3*Hcon*w*pi_k(xField) - psi + pi_v_k(xField) +  gradient_pi2/2. ));
+        Tij(xField, 1, 1) =  coeff2*(w + (1.+w)*(-3*Hcon*w*pi_k(xField) - psi + pi_v_k(xField) +  gradient_pi2/2. ));
         // 2-3-component:
-        Tij(xField, 1, 2) +=  coeff3*(pi_k(xField+1)-pi_k(xField-1))*(pi_k(xField+2)-pi_k(xField-2))/4.;
+        Tij(xField, 1, 2) =  coeff3*(pi_k(xField+1)-pi_k(xField-1))*(pi_k(xField+2)-pi_k(xField-2))/4.;
         // 3-3-component:
-        Tij(xField, 2, 2) +=  coeff2*(w + (1.+w)*(-3*Hcon*w*pi_k(xField) - psi + pi_v_k(xField) +  gradient_pi2/2. ));
+        Tij(xField, 2, 2) =  coeff2*(w + (1.+w)*(-3*Hcon*w*pi_k(xField) - psi + pi_v_k(xField) +  gradient_pi2/2. ));
         // In the case of Vector parabolic
         }
         if(method==1) // method=1 Turn on vector elliptic
         {
-          T0i(xField, 0)  +=  -coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+0)-pi_k(xField-0))/2.;
-          T0i(xField, 1)  +=  -coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+1)-pi_k(xField-1))/2.;
-          T0i(xField, 2)  +=  -coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+2)-pi_k(xField-2))/2.;
+          T0i(xField, 0)  =  -coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+0)-pi_k(xField-0))/2.;
+          T0i(xField, 1)  =  -coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+1)-pi_k(xField-1))/2.;
+          T0i(xField, 2)  =  -coeff3*(1 + pi_v_k(xField) + (-1 + 1./cs2)*( - psi + pi_v_k(xField) - gradient_pi2/2. ) )* (pi_k(xField+2)-pi_k(xField-2))/2.;
         }
 
 

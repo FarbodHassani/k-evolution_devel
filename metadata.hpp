@@ -51,6 +51,7 @@
 #define MASK_DBARE  8192
 #define MASK_PI_K    16384
 #define MASK_PI_K_V    32768
+#define MASK_T_KESS    65536
 
 #define ICFLAG_CORRECT_DISPLACEMENT 1
 #define ICFLAG_KSPHERE              2
@@ -187,6 +188,7 @@ struct metadata
 	char basename_restart[PARAM_MAX_LENGTH];
 
 	int nKe_numsteps;
+	int Kess_source_gravity;
 
 
 };

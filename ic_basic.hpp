@@ -1774,6 +1774,7 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 ////K_essence IC part//////
 ///////////////////////////
 ///////////////////////////
+/*
 gsl_spline * tk_d_kess = NULL;
 gsl_spline * tk_t_kess = NULL;
 double * kess_field = NULL;
@@ -1823,7 +1824,7 @@ free(k_ess);
 //// End of K_essence IC part//////
 ///////////////////////////
 ///////////////////////////
-
+*/
 
 
 #ifdef HAVE_CLASS

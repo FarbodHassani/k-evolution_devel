@@ -664,6 +664,8 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 					pvalue |= MASK_DELTA;
 				else if (strcmp(item, "delta_N") == 0 || strcmp(item, "deltaN") == 0)
 					pvalue |= MASK_DBARE;
+				else if (strcmp(item, "T_Kess") == 0 || strcmp(item, "T_Kessence") == 0)
+					pvalue |= MASK_T_KESS;
 
 				start = comma+1;
 				while (*start == ' ' || *start == '\t') start++;
@@ -702,6 +704,8 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 				pvalue |= MASK_DELTA;
 			else if (strcmp(start, "delta_N") == 0 || strcmp(start, "deltaN") == 0)
 				pvalue |= MASK_DBARE;
+			else if (strcmp(item, "T_Kess") == 0 || strcmp(item, "T_Kessence") == 0)
+				pvalue |= MASK_T_KESS;
 
 			params[i].used = true;
 			return true;
@@ -1059,7 +1063,8 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	sim.boxsize = -1.;
 	sim.wallclocklimit = -1.;
 	sim.z_in = 0.;
-	sim.nKe_numsteps = 1.;
+	sim.nKe_numsteps = 1;
+	sim.Kess_source_gravity = 0;
 
 	if (parseParameter(params, numparam, "vector method", par_string))
 	{
@@ -1246,6 +1251,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
         cosmo.w_kessence=-1.1;
     }
 	parseParameter(params, numparam, "nKe_numsteps",  sim.nKe_numsteps);
+	parseParameter(params, numparam, "Kessence source gravity",  sim.Kess_source_gravity);
 
 	cosmo.num_ncdm = MAX_PCL_SPECIES-2;
 	if (!parseParameter(params, numparam, "m_ncdm", cosmo.m_ncdm, cosmo.num_ncdm))

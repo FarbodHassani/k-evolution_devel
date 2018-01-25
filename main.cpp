@@ -213,6 +213,12 @@ int main(int argc, char **argv)
 	Field<Real> source;
 	Field<Real> pi_k;
 	Field<Real> pi_v_k;
+	Field<Real> T00_Kess;
+	Field<Real> T0i_Kess;
+	Field<Real> Tij_Kess;
+
+
+
 	Field<Real> chi;
 	Field<Real> chi_old;
 	Field<Real> Sij;
@@ -229,6 +235,15 @@ int main(int argc, char **argv)
 	phi_old.initialize(lat,1);
 	pi_k.initialize(lat,1);
 	pi_v_k.initialize(lat,1);
+
+	T00_Kess.initialize(lat,1);
+	T00_Kess.alloc();
+	T0i_Kess.initialize(lat,3);
+	T0i_Kess.alloc();
+	Tij_Kess.initialize(lat,3,3,symmetric);
+	Tij_Kess.alloc();
+
+
 	chi.initialize(lat,1);
 	chi_old.initialize(lat,1);
 	scalarFT.initialize(latFT,1);
@@ -525,16 +540,25 @@ int main(int argc, char **argv)
 #endif
 
 // // Add projection_ kessence here
-		// if (sim.vector_flag == VECTOR_ELLIPTIC)
+		//  if (sim.vector_flag == VECTOR_ELLIPTIC)
+		//  	{
+		//  		projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 1 );
+		//  	}
+		//  else
+		//  	{
+		//  		projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 0 );
+		//  	}
+		 //
+		// 	for (x.first(); x.test(); x.next())
 		// 	{
-		// 		projection_Tmunu_kessence( source,Bi,Sij, dx, a, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 1 );
-		// 	}
-		// else
-		// 	{
-		// 		projection_Tmunu_kessence( source, Bi,Sij, dx, a, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 0 );
+		// 		source(x) += T00_Kess(x);
+		// 		if (sim.vector_flag == VECTOR_ELLIPTIC)for(int c=0;c<3;c++)Bi(x,c)+=T0i_Kess(x,c);
+		// 		for(int c=0;c<6;c++)Sij(x,c)+=Tij_Kess(x,c);
 		// 	}
 
 
+
+/////////////////////////////////////////
 		if (sim.gr_flag > 0)
 		{
 			T00hom = 0.;
@@ -697,9 +721,9 @@ int main(int argc, char **argv)
 			COUT << COLORTEXT_CYAN << " writing snapshot" << COLORTEXT_RESET << " at z = " << ((1./a) - 1.) <<  " (cycle " << cycle << "), tau/boxsize = " << tau << endl;
 
 #ifdef CHECK_B
-			writeSnapshots(sim, cosmo, fourpiG, hdr, a, snapcount, h5filename, &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k,&pi_v_k, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
+			writeSnapshots(sim, cosmo, fourpiG, hdr, a, snapcount, h5filename, &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k,&pi_v_k, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
 #else
-			writeSnapshots(sim, cosmo, fourpiG, hdr, a, snapcount, h5filename, &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij);
+			writeSnapshots(sim, cosmo, fourpiG, hdr, a, snapcount, h5filename, &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij);
 #endif
 
 			snapcount++;
@@ -789,6 +813,7 @@ int main(int argc, char **argv)
 					pi_v_k.updateHalo();
 				}
 			}*/
+			/*
 			if(dtau_old>0)
 			{
 				for (i=0;i<sim.nKe_numsteps;i++)
@@ -804,7 +829,7 @@ int main(int argc, char **argv)
 
 
 				}
-			}
+			}*/
 		// }
 			//end of Kessence + background:x
 			//:::::::::::::::::
