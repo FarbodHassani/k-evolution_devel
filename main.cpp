@@ -942,6 +942,37 @@ int main(int argc, char **argv)
 		}
 #endif
 #endif
+
+
+double a_kess=a;
+double Hconf_old= Hconf(a_kess, fourpiG, cosmo);
+// if(cycle==0)
+// {
+// 	for (i=0;i<sim.nKe_numsteps;i++)
+// 	{
+// 		dtau_old=0.1;
+// 		update_pi_k_v( 0.5 * dtau_old/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, pi_v_k,cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_old);
+// 		pi_v_k.updateHalo();
+// 	}
+// }
+if(dtau_old>0)
+{
+	for (i=0;i<sim.nKe_numsteps;i++)
+	{
+		update_pi_k( dtau_old  / sim.nKe_numsteps,phi, pi_k, pi_v_k);
+		pi_k.updateHalo();
+		rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0);
+		update_pi_k_v(dtau_old/ sim.nKe_numsteps ,
+									dx,a_kess,phi,phi_old,chi,chi_old,pi_k, pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,
+									Hconf(a_kess, fourpiG, cosmo),Hconf_old);
+		pi_v_k.updateHalo();
+		rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0 );
+		
+	}
+}
+//end of Kessence + background:x
+//:::::::::::::::::
+
 		for (j = 0; j < numsteps; j++) // particle update
 		{
 #ifdef BENCHMARK
