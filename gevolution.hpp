@@ -53,97 +53,95 @@ using namespace LATfield2;
 template <class FieldType>
 void prepareFTsource(Field<FieldType> & phi, Field<FieldType> & Tij, Field<FieldType> & Sij, const double coeff)
 {
-    Site x(phi.lattice());
+	Site x(phi.lattice());
 
-
-    for (x.first(); x.test(); x.next())
-    {
-        // 0-0-component:
-        Sij(x, 0, 0) = coeff * Tij(x, 0, 0);
+	for (x.first(); x.test(); x.next())
+	{
+		// 0-0-component:
+		Sij(x, 0, 0) = coeff * Tij(x, 0, 0);
 #ifdef PHINONLINEAR
 #ifdef ORIGINALMETRIC
-        Sij(x, 0, 0) -= 4. * phi(x) * (phi(x-0) + phi(x+0) - 2. * phi(x));
-        Sij(x, 0, 0) -= 0.5 * (phi(x+0) - phi(x-0)) * (phi(x+0) - phi(x-0));
+		Sij(x, 0, 0) -= 4. * phi(x) * (phi(x-0) + phi(x+0) - 2. * phi(x));
+		Sij(x, 0, 0) -= 0.5 * (phi(x+0) - phi(x-0)) * (phi(x+0) - phi(x-0));
 #else
-        Sij(x, 0, 0) += 0.5 * (phi(x+0) - phi(x-0)) * (phi(x+0) - phi(x-0));
+		Sij(x, 0, 0) += 0.5 * (phi(x+0) - phi(x-0)) * (phi(x+0) - phi(x-0));
 #endif
 #endif
 
-        // 1-1-component:
-        Sij(x, 1, 1) = coeff * Tij(x, 1, 1);
+		// 1-1-component:
+		Sij(x, 1, 1) = coeff * Tij(x, 1, 1);
 #ifdef PHINONLINEAR
 #ifdef ORIGINALMETRIC
-        Sij(x, 1, 1) -= 4. * phi(x) * (phi(x-1) + phi(x+1) - 2. * phi(x));
-        Sij(x, 1, 1) -= 0.5 * (phi(x+1) - phi(x-1)) * (phi(x+1) - phi(x-1));
+		Sij(x, 1, 1) -= 4. * phi(x) * (phi(x-1) + phi(x+1) - 2. * phi(x));
+		Sij(x, 1, 1) -= 0.5 * (phi(x+1) - phi(x-1)) * (phi(x+1) - phi(x-1));
 #else
-        Sij(x, 1, 1) += 0.5 * (phi(x+1) - phi(x-1)) * (phi(x+1) - phi(x-1));
+		Sij(x, 1, 1) += 0.5 * (phi(x+1) - phi(x-1)) * (phi(x+1) - phi(x-1));
 #endif
 #endif
 
-        // 2-2-component:
-        Sij(x, 2, 2) = coeff * Tij(x, 2, 2);
+		// 2-2-component:
+		Sij(x, 2, 2) = coeff * Tij(x, 2, 2);
 #ifdef PHINONLINEAR
 #ifdef ORIGINALMETRIC
-        Sij(x, 2, 2) -= 4. * phi(x) * (phi(x-2) + phi(x+2) - 2. * phi(x));
-        Sij(x, 2, 2) -= 0.5 * (phi(x+2) - phi(x-2)) * (phi(x+2) - phi(x-2));
+		Sij(x, 2, 2) -= 4. * phi(x) * (phi(x-2) + phi(x+2) - 2. * phi(x));
+		Sij(x, 2, 2) -= 0.5 * (phi(x+2) - phi(x-2)) * (phi(x+2) - phi(x-2));
 #else
-        Sij(x, 2, 2) += 0.5 * (phi(x+2) - phi(x-2)) * (phi(x+2) - phi(x-2));
+		Sij(x, 2, 2) += 0.5 * (phi(x+2) - phi(x-2)) * (phi(x+2) - phi(x-2));
 #endif
 #endif
 
-        // 0-1-component:
-        Sij(x, 0, 1) = coeff * Tij(x, 0, 1);
+		// 0-1-component:
+		Sij(x, 0, 1) = coeff * Tij(x, 0, 1);
 #ifdef PHINONLINEAR
-        Sij(x, 0, 1) += phi(x+0) * phi(x+1) - phi(x) * phi(x+0+1);
+		Sij(x, 0, 1) += phi(x+0) * phi(x+1) - phi(x) * phi(x+0+1);
 #ifdef ORIGINALMETRIC
-        Sij(x, 0, 1) -= 1.5 * phi(x) * phi(x);
-        Sij(x, 0, 1) += 1.5 * phi(x+0) * phi(x+0);
-        Sij(x, 0, 1) += 1.5 * phi(x+1) * phi(x+1);
-        Sij(x, 0, 1) -= 1.5 * phi(x+0+1) * phi(x+0+1);
+		Sij(x, 0, 1) -= 1.5 * phi(x) * phi(x);
+		Sij(x, 0, 1) += 1.5 * phi(x+0) * phi(x+0);
+		Sij(x, 0, 1) += 1.5 * phi(x+1) * phi(x+1);
+		Sij(x, 0, 1) -= 1.5 * phi(x+0+1) * phi(x+0+1);
 #else
-        Sij(x, 0, 1) += 0.5 * phi(x) * phi(x);
-        Sij(x, 0, 1) -= 0.5 * phi(x+0) * phi(x+0);
-        Sij(x, 0, 1) -= 0.5 * phi(x+1) * phi(x+1);
-        Sij(x, 0, 1) += 0.5 * phi(x+0+1) * phi(x+0+1);
+		Sij(x, 0, 1) += 0.5 * phi(x) * phi(x);
+		Sij(x, 0, 1) -= 0.5 * phi(x+0) * phi(x+0);
+		Sij(x, 0, 1) -= 0.5 * phi(x+1) * phi(x+1);
+		Sij(x, 0, 1) += 0.5 * phi(x+0+1) * phi(x+0+1);
 #endif
 #endif
 
-        // 0-2-component:
-        Sij(x, 0, 2) = coeff * Tij(x, 0, 2);
+		// 0-2-component:
+		Sij(x, 0, 2) = coeff * Tij(x, 0, 2);
 #ifdef PHINONLINEAR
-        Sij(x, 0, 2) += phi(x+0) * phi(x+2) - phi(x) * phi(x+0+2);
+		Sij(x, 0, 2) += phi(x+0) * phi(x+2) - phi(x) * phi(x+0+2);
 #ifdef ORIGINALMETRIC
-        Sij(x, 0, 2) -= 1.5 * phi(x) * phi(x);
-        Sij(x, 0, 2) += 1.5 * phi(x+0) * phi(x+0);
-        Sij(x, 0, 2) += 1.5 * phi(x+2) * phi(x+2);
-        Sij(x, 0, 2) -= 1.5 * phi(x+0+2) * phi(x+0+2);
+		Sij(x, 0, 2) -= 1.5 * phi(x) * phi(x);
+		Sij(x, 0, 2) += 1.5 * phi(x+0) * phi(x+0);
+		Sij(x, 0, 2) += 1.5 * phi(x+2) * phi(x+2);
+		Sij(x, 0, 2) -= 1.5 * phi(x+0+2) * phi(x+0+2);
 #else
-        Sij(x, 0, 2) += 0.5 * phi(x) * phi(x);
-        Sij(x, 0, 2) -= 0.5 * phi(x+0) * phi(x+0);
-        Sij(x, 0, 2) -= 0.5 * phi(x+2) * phi(x+2);
-        Sij(x, 0, 2) += 0.5 * phi(x+0+2) * phi(x+0+2);
+		Sij(x, 0, 2) += 0.5 * phi(x) * phi(x);
+		Sij(x, 0, 2) -= 0.5 * phi(x+0) * phi(x+0);
+		Sij(x, 0, 2) -= 0.5 * phi(x+2) * phi(x+2);
+		Sij(x, 0, 2) += 0.5 * phi(x+0+2) * phi(x+0+2);
 #endif
 #endif
 
-        // 1-2-component:
-        Sij(x, 1, 2) = coeff * Tij(x, 1, 2);
+		// 1-2-component:
+		Sij(x, 1, 2) = coeff * Tij(x, 1, 2);
 #ifdef PHINONLINEAR
-        Sij(x, 1, 2) += phi(x+1) * phi(x+2) - phi(x) * phi(x+1+2);
+		Sij(x, 1, 2) += phi(x+1) * phi(x+2) - phi(x) * phi(x+1+2);
 #ifdef ORIGINALMETRIC
-        Sij(x, 1, 2) -= 1.5 * phi(x) * phi(x);
-        Sij(x, 1, 2) += 1.5 * phi(x+1) * phi(x+1);
-        Sij(x, 1, 2) += 1.5 * phi(x+2) * phi(x+2);
-        Sij(x, 1, 2) -= 1.5 * phi(x+1+2) * phi(x+1+2);
+		Sij(x, 1, 2) -= 1.5 * phi(x) * phi(x);
+		Sij(x, 1, 2) += 1.5 * phi(x+1) * phi(x+1);
+		Sij(x, 1, 2) += 1.5 * phi(x+2) * phi(x+2);
+		Sij(x, 1, 2) -= 1.5 * phi(x+1+2) * phi(x+1+2);
 #else
-        Sij(x, 1, 2) += 0.5 * phi(x) * phi(x);
-        Sij(x, 1, 2) -= 0.5 * phi(x+1) * phi(x+1);
-        Sij(x, 1, 2) -= 0.5 * phi(x+2) * phi(x+2);
-        Sij(x, 1, 2) += 0.5 * phi(x+1+2) * phi(x+1+2);
+		Sij(x, 1, 2) += 0.5 * phi(x) * phi(x);
+		Sij(x, 1, 2) -= 0.5 * phi(x+1) * phi(x+1);
+		Sij(x, 1, 2) -= 0.5 * phi(x+2) * phi(x+2);
+		Sij(x, 1, 2) += 0.5 * phi(x+1+2) * phi(x+1+2);
 #endif
 #endif
-    }
+	}
 }
-
 
 //////////////////////////
 // Update K-essence field (1)
@@ -163,14 +161,12 @@ template <class FieldType>
 void update_pi_k(double dtau, Field<FieldType> & phi, Field<FieldType> & pi_k, Field<FieldType> & pi_v_k)
 {
   Site x(phi.lattice());
-    for (x.first(); x.test(); x.next())
-      {
-        pi_k(x)=pi_k(x)+pi_v_k(x)*dtau;
-        // cout<<""
-      }
+  for (x.first(); x.test(); x.next())
+    {
+    	pi_k(x)=pi_k(x)+pi_v_k(x)*dtau;
+    }
 
 }
-
 
 template <class FieldType>
 void update_pi_k_v(double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi,Field<FieldType> & chi_old, Field<FieldType> & pi_k, Field<FieldType> & pi_v_k ,double Omega_fld ,double w, double cs2, double Hcon, double Hcon_old)
@@ -179,7 +175,6 @@ void update_pi_k_v(double dtau, double dx,double a, Field<FieldType> & phi, Fiel
   double Laplacian_pi, Laplacian_pi_v, Laplacian_Psi, Laplacian_Phi, Gradpsi_Gradpi, Gradphi_Gradpi, Gradpi_Gradpi;
   Site x(phi.lattice());
   H_prime= (Hcon-Hcon_old)/dtau;
-  // cout<<"H_prime: "<<H_prime<<endl;
   Coeff1= (1.+3.*w)*Hcon*dtau/2.;
   Coeff2= (1.-cs2)*dtau;
   Coeff3= 3.*a*cs2*Hcon*(1.-w/cs2);
@@ -231,22 +226,19 @@ void update_pi_k_v(double dtau, double dx,double a, Field<FieldType> & phi, Fiel
       //   // cout<<"pi_v_k"<<pi_v_k(x)<<endl;
       // }
     }
-
 }
 
 //////////////////////////
-//////////////////////////
 //Kessence Stress tensor
 //////////////////////////
-//////////////////////////
-// projection_T00_project_kessence
-//////////////////////////
 // Description:
-//   Kessence field projection for T00
+//   Kessence field projection for Tmunu
 //
 // Arguments:
 //   T00        pointer to target field
-//   dtau
+//   T0i        pointer to target field
+//   Tij        pointer to target field
+//   dtau				time step which should be the new one not the old one!
 //   dx         lattice unit (unused)
 //   phi        phi field
 //   phi_old    The value of phi in the last step
@@ -255,6 +247,7 @@ void update_pi_k_v(double dtau, double dx,double a, Field<FieldType> & phi, Fiel
 //   phi        pointer to Bardeen potential which characterizes the
 //              geometric corrections (volume distortion); can be set to
 //              NULL which will result in no corrections applied
+//   fourpig
 //
 // Returns:
 //
@@ -308,9 +301,6 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 
       }
 
-
-
-
 //////////////////////////
 // prepareFTsource (2)
 //////////////////////////
@@ -334,28 +324,51 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 template <class FieldType>
 void prepareFTsource(Field<FieldType> & phi, Field<FieldType> & chi, Field<FieldType> & source, const FieldType bgmodel, Field<FieldType> & result, const double coeff, const double coeff2, const double coeff3)
 {
-    Site x(phi.lattice());
+	Site x(phi.lattice());
 
-    for (x.first(); x.test(); x.next())
-    {
-        result(x) = coeff2 * (source(x) - bgmodel);
+	for (x.first(); x.test(); x.next())
+	{
+		result(x) = coeff2 * (source(x) - bgmodel);
 #ifdef PHINONLINEAR
 #ifdef ORIGINALMETRIC
-        result(x) *= 1. - 4. * phi(x);
-        result(x) -= 0.375 * (phi(x-0) - phi(x+0)) * (phi(x-0) - phi(x+0));
-        result(x) -= 0.375 * (phi(x-1) - phi(x+1)) * (phi(x-1) - phi(x+1));
-        result(x) -= 0.375 * (phi(x-2) - phi(x+2)) * (phi(x-2) - phi(x+2));
+		result(x) *= 1. - 4. * phi(x);
+		result(x) -= 0.375 * (phi(x-0) - phi(x+0)) * (phi(x-0) - phi(x+0));
+		result(x) -= 0.375 * (phi(x-1) - phi(x+1)) * (phi(x-1) - phi(x+1));
+		result(x) -= 0.375 * (phi(x-2) - phi(x+2)) * (phi(x-2) - phi(x+2));
 #else
-        result(x) *= 1. - 2. * phi(x);
-        result(x) += 0.125 * (phi(x-0) - phi(x+0)) * (phi(x-0) - phi(x+0));
-        result(x) += 0.125 * (phi(x-1) - phi(x+1)) * (phi(x-1) - phi(x+1));
-        result(x) += 0.125 * (phi(x-2) - phi(x+2)) * (phi(x-2) - phi(x+2));
+		result(x) *= 1. - 2. * phi(x);
+		result(x) += 0.125 * (phi(x-0) - phi(x+0)) * (phi(x-0) - phi(x+0));
+		result(x) += 0.125 * (phi(x-1) - phi(x+1)) * (phi(x-1) - phi(x+1));
+		result(x) += 0.125 * (phi(x-2) - phi(x+2)) * (phi(x-2) - phi(x+2));
 #endif
 #endif
-        result(x) += (coeff3 - coeff) * phi(x) - coeff3 * chi(x);
-    }
+		result(x) += (coeff3 - coeff) * phi(x) - coeff3 * chi(x);
+	}
 }
 
+
+#ifdef VECTOREXTRA
+template <class FieldType>
+void prepareFTvector(Field<FieldType> & phi, Field<FieldType> & Bi, Field<FieldType> & temp, const double coeff)
+{
+	Site x(Bi.lattice());
+
+	for (x.first(); x.test(); x.next())
+	{
+		temp(x, 0) = coeff * 0.5 * Bi(x, 0) * (2. * phi(x-0) + 2. * phi(x+0+0) - 6. * phi(x) - 6. * phi(x+0) + phi(x+1) + phi(x-1) + phi(x+2) + phi(x-2) + phi(x+0+1) + phi(x+0-1) + phi(x+0+2) + phi(x+0-2));
+		temp(x, 0) += coeff * 0.125 * (Bi(x, 1) + Bi(x-1, 1) + Bi(x+0, 1) + Bi(x+0-1, 1)) * (phi(x+0+1) - phi(x+0-1) - phi(x+1) + phi(x-1));
+		temp(x, 0) += coeff * 0.125 * (Bi(x, 2) + Bi(x-2, 2) + Bi(x+0, 2) + Bi(x+0-2, 2)) * (phi(x+0+2) - phi(x+0-2) - phi(x+2) + phi(x-2));
+
+		temp(x, 1) = coeff * 0.5 * Bi(x, 1) * (2. * phi(x-1) + 2. * phi(x+1+1) - 6. * phi(x) - 6. * phi(x+1) + phi(x+0) + phi(x-0) + phi(x+2) + phi(x-2) + phi(x+0+1) + phi(x-0+1) + phi(x+1+2) + phi(x+1-2));
+		temp(x, 1) += coeff * 0.125 * (Bi(x, 0) + Bi(x-0, 0) + Bi(x+1, 0) + Bi(x-0+1, 0)) * (phi(x+0+1) - phi(x-0+1) - phi(x+0) + phi(x-0));
+		temp(x, 1) += coeff * 0.125 * (Bi(x, 2) + Bi(x-2, 2) + Bi(x+1, 2) + Bi(x+1-2, 2)) * (phi(x+1+2) - phi(x+1-2) - phi(x+2) + phi(x-2));
+
+		temp(x, 2) = coeff * 0.5 * Bi(x, 2) * (2. * phi(x-2) + 2. * phi(x+2+2) - 6. * phi(x) - 6. * phi(x+2) + phi(x+1) + phi(x-1) + phi(x+0) + phi(x-0) + phi(x+1+2) + phi(x-1+2) + phi(x+0+2) + phi(x-0+2));
+		temp(x, 2) += coeff * 0.125 * (Bi(x, 1) + Bi(x-1, 1) + Bi(x+2, 1) + Bi(x-1+2, 1)) * (phi(x+1+2) - phi(x-1+2) - phi(x+1) + phi(x-1));
+		temp(x, 2) += coeff * 0.125 * (Bi(x, 0) + Bi(x-0, 0) + Bi(x+2, 0) + Bi(x-0+2, 0)) * (phi(x+0+2) - phi(x-0+2) - phi(x+0) + phi(x-0));
+	}
+}
+#endif
 
 
 #ifdef FFT3D
@@ -384,7 +397,6 @@ void projectFTscalar(Field<Cplx> & SijFT, Field<Cplx> & chiFT, const int add = 0
 	rKSite k(chiFT.lattice());
 
 	gridk2 = (Real *) malloc(linesize * sizeof(Real));
-
 	kshift = (Cplx *) malloc(linesize * sizeof(Cplx));
 
 	for (i = 0; i < linesize; i++)
@@ -650,9 +662,6 @@ void projectFTtensor(Field<Cplx> & SijFT, Field<Cplx> & hijFT)
 }
 
 
-
-
-
 //////////////////////////
 // solveModifiedPoissonFT
 //////////////////////////
@@ -769,7 +778,7 @@ Real update_q(double dtau, double dx, part_simple * part, double * ref_dist, par
 	gradphi[1] *= (v2 + e2) / e2;
 	gradphi[2] *= (v2 + e2) / e2;
 
-	if (nfield >= 2 && fields[1] != NULL)
+	if (nfield>=2 && fields[1] != NULL)
 	{
 		gradphi[0] -= (1.-ref_dist[1]) * (1.-ref_dist[2]) * (chi(xchi+0) - chi(xchi));
 		gradphi[1] -= (1.-ref_dist[0]) * (1.-ref_dist[2]) * (chi(xchi+1) - chi(xchi));
@@ -787,7 +796,7 @@ Real update_q(double dtau, double dx, part_simple * part, double * ref_dist, par
 
 	e2 = sqrt(e2);
 
-	if (nfield >= 3 && fields[2] != NULL)
+	if (nfield>=3 && fields[2] != NULL)
 	{
 		pgradB[0] = ((1.-ref_dist[2]) * (Bi(xB+0,1) - Bi(xB,1)) + ref_dist[2] * (Bi(xB+2+0,1) - Bi(xB+2,1))) * (*part).vel[1];
 		pgradB[0] += ((1.-ref_dist[1]) * (Bi(xB+0,2) - Bi(xB,2)) + ref_dist[1] * (Bi(xB+1+0,2) - Bi(xB+1,2))) * (*part).vel[2];
@@ -816,7 +825,7 @@ Real update_q(double dtau, double dx, part_simple * part, double * ref_dist, par
 	}
 
 	v2 = 0.;
-	for (int i = 0; i < 3; i++)
+	for (int i=0;i<3;i++)
 	{
 		(*part).vel[i] -= dtau * e2 * gradphi[i] / dx;
 		v2 += (*part).vel[i] * (*part).vel[i];
@@ -883,7 +892,7 @@ Real update_q_Newton(double dtau, double dx, part_simple * part, double * ref_di
 	gradpsi[1] += ref_dist[0] * ref_dist[2] * (psi(xpsi+2+1+0) - psi(xpsi+2+0));
 	gradpsi[2] += ref_dist[0] * ref_dist[1] * (psi(xpsi+2+1+0) - psi(xpsi+1+0));
 
-	if (nfield >= 2 && fields[1] != NULL)
+	if (nfield>=2 && fields[1] != NULL)
 	{
 		gradpsi[0] -= (1.-ref_dist[1]) * (1.-ref_dist[2]) * (chi(xchi+0) - chi(xchi));
 		gradpsi[1] -= (1.-ref_dist[0]) * (1.-ref_dist[2]) * (chi(xchi+1) - chi(xchi));
@@ -900,7 +909,7 @@ Real update_q_Newton(double dtau, double dx, part_simple * part, double * ref_di
 	}
 
 	Real v2 = 0.;
-	for (int i = 0; i < 3; i++)
+	for (int i=0;i<3;i++)
 	{
 		(*part).vel[i] -= dtau * params[0] * gradpsi[i] / dx;
 		v2 += (*part).vel[i] * (*part).vel[i];
@@ -1001,11 +1010,11 @@ void update_pos(double dtau, double dx, part_simple * part, double * ref_dist, p
 		b[0] += (*fields[2])(sites[2]+2+1, 0) * ref_dist[1] * ref_dist[2];
 		b[2] += (*fields[2])(sites[2]+1+0, 2) * ref_dist[0] * ref_dist[1];
 
-		for (int i = 0; i < 3; i++) (*part).pos[i] += dtau * (v[i] + b[i] / params[1]);
+		for (int l=0;l<3;l++) (*part).pos[l] += dtau*(v[l] + b[l] / params[1]);
 	}
 	else
 	{
-		for (int i = 0; i < 3 ; i++) (*part).pos[i] += dtau * v[i];
+		for (int l=0;l<3;l++) (*part).pos[l] += dtau*v[l];
 	}
 }
 
@@ -1038,7 +1047,7 @@ void update_pos(double dtau, double dx, part_simple * part, double * ref_dist, p
 
 void update_pos_Newton(double dtau, double dx, part_simple * part, double * ref_dist, part_simple_info partInfo, Field<Real> ** fields, Site * sites, int nfield, double * params, double * outputs, int noutputs)
 {
-	for (int i = 0; i < 3; i++) (*part).pos[i] += dtau * (*part).vel[i] / params[0];
+	for (int l=0;l<3;l++) (*part).pos[l] += dtau * (*part).vel[l] / params[0];
 }
 
 
@@ -1071,10 +1080,8 @@ void projection_T00_project(Particles<part, part_info, part_dataType> * pcls, Fi
 		exit(-1);
 	}
 
-
 	Site xPart(pcls->lattice());
 	Site xField(T00->lattice());
-
 
 	typename std::list<part>::iterator it;
 
@@ -1089,23 +1096,19 @@ void projection_T00_project(Particles<part, part_info, part_dataType> * pcls, Fi
 
 	Real e = a, f = 0.;
 	Real * q;
-//    double alpha=100;
 	size_t offset_q = offsetof(part,vel);
 
 	Real localCube[8]; // XYZ = 000 | 001 | 010 | 011 | 100 | 101 | 110 | 111
 	Real localCubePhi[8];
-//	Real localCubepi_k[8];
 
-//	for (int i = 0; i < 8; i++){ localCubePhi[i] = 0.0; localCubepi_k[i] = 0.0;}
-	   for (int i = 0; i < 8; i++){ localCubePhi[i] = 0.0;}
-	for (xPart.first(), xField.first(); xPart.test(); xPart.next(), xField.next())
+	for (int i=0; i<8; i++) localCubePhi[i] = 0.0;
+
+	for (xPart.first(),xField.first(); xPart.test(); xPart.next(),xField.next())
 	{
-
-
 		if (pcls->field()(xPart).size != 0)
 		{
-			for(int i = 0; i < 3; i++) referPos[i] = xPart.coord(i)*dx;
-			for(int i = 0; i < 8; i++) localCube[i] = 0.0;
+			for(int i=0; i<3; i++) referPos[i] = xPart.coord(i)*dx;
+			for(int i=0; i<8; i++) localCube[i] = 0.0;
 
 			if (phi != NULL)
 			{
@@ -1119,9 +1122,9 @@ void projection_T00_project(Particles<part, part_info, part_dataType> * pcls, Fi
 				localCubePhi[7] = (*phi)(xField+0+1+2);
 			}
 
-			for (it = (pcls->field())(xPart).parts.begin(); it != (pcls->field())(xPart).parts.end(); ++it)
+			for (it=(pcls->field())(xPart).parts.begin(); it != (pcls->field())(xPart).parts.end(); ++it)
 			{
-				for (int i = 0; i < 3; i++)
+				for (int i=0; i<3; i++)
 				{
 					weightScalarGridUp[i] = ((*it).pos[i] - referPos[i]) / dx;
 					weightScalarGridDown[i] = 1.0l - weightScalarGridUp[i];
@@ -1154,21 +1157,17 @@ void projection_T00_project(Particles<part, part_info, part_dataType> * pcls, Fi
 				localCube[7] += weightScalarGridUp[0]*weightScalarGridUp[1]*weightScalarGridUp[2]*(e+f*localCubePhi[7]);
 			}
 
-		}
-
-		//	cout<<" T00 Before:  "<<(*T00)(xField) <<endl;
-
-			(*T00)(xField)       += localCube[0] * mass;
-			(*T00)(xField+2)     += localCube[1] * mass;
-			(*T00)(xField+1)     += localCube[2] * mass;
+			(*T00)(xField)	   += localCube[0] * mass;
+			(*T00)(xField+2)	 += localCube[1] * mass;
+			(*T00)(xField+1)	 += localCube[2] * mass;
 			(*T00)(xField+1+2)   += localCube[3] * mass;
-			(*T00)(xField+0)     += localCube[4] * mass;
+			(*T00)(xField+0)	 += localCube[4] * mass;
 			(*T00)(xField+0+2)   += localCube[5] * mass;
 			(*T00)(xField+0+1)   += localCube[6] * mass;
 			(*T00)(xField+0+1+2) += localCube[7] * mass;
-
 		}
 	}
+}
 
 #define projection_T00_comm scalarProjectionCIC_comm
 
@@ -1219,17 +1218,17 @@ void projection_T0i_project(Particles<part,part_info,part_dataType> * pcls, Fiel
 
 	Real  qi[12];
 	Real  localCubePhi[8];
-//	Real  localCubepi_k[8];
-	for (int i = 0; i < 8; i++) {localCubePhi[i] = 0;}
 
-	for(xPart.first(), xT0i.first(); xPart.test(); xPart.next(), xT0i.next())
+	for (int i=0; i<8; i++) localCubePhi[i] = 0;
+
+	for(xPart.first(),xT0i.first();xPart.test();xPart.next(),xT0i.next())
 	{
 		if(pcls->field()(xPart).size!=0)
         {
         	for(int i=0; i<3; i++)
         		referPos[i] = xPart.coord(i)*dx;
 
-            for(int i = 0; i < 12; i++) qi[i]=0.0;
+            for(int i=0; i<12; i++) qi[i]=0.0;
 
 			if (phi != NULL)
 			{
@@ -1242,9 +1241,10 @@ void projection_T0i_project(Particles<part,part_info,part_dataType> * pcls, Fiel
 				localCubePhi[6] = (*phi)(xT0i+0+1);
 				localCubePhi[7] = (*phi)(xT0i+0+1+2);
 			}
-			for (it = (pcls->field())(xPart).parts.begin(); it != (pcls->field())(xPart).parts.end(); ++it)
+
+			for (it=(pcls->field())(xPart).parts.begin(); it != (pcls->field())(xPart).parts.end(); ++it)
 			{
-				for (int i = 0; i < 3; i++)
+				for (int i =0; i<3; i++)
 				{
 					weightScalarGridUp[i] = ((*it).pos[i] - referPos[i]) / dx;
 					weightScalarGridDown[i] = 1.0l - weightScalarGridUp[i];
@@ -1347,19 +1347,18 @@ void projection_Tij_project(Particles<part, part_info, part_dataType> * pcls, Fi
 	Real  tij[6];           // local cube
 	Real  tii[24];          // local cube
 	Real  localCubePhi[8];
-//	Real  localCubepi_k[8];
 
-	for (int i = 0; i < 8; i++) {localCubePhi[i] = 0;}
+	for (int i=0; i<8; i++) localCubePhi[i] = 0;
 
-	for (xPart.first(), xTij.first(); xPart.test(); xPart.next(), xTij.next())
+	for (xPart.first(),xTij.first(); xPart.test(); xPart.next(),xTij.next())
 	{
 		if (pcls->field()(xPart).size != 0)
 		{
-			for (int i = 0; i < 3; i++)
+			for (int i=0;i<3;i++)
 				referPos[i] = (double)xPart.coord(i)*dx;
 
-			for (int i = 0; i < 6; i++)  tij[i]=0.0;
-			for (int i = 0; i < 24; i++) tii[i]=0.0;
+			for (int i=0; i<6; i++)  tij[i]=0.0;
+			for (int i=0; i<24; i++) tii[i]=0.0;
 
 			if (phi != NULL)
 			{
@@ -1373,9 +1372,9 @@ void projection_Tij_project(Particles<part, part_info, part_dataType> * pcls, Fi
 				localCubePhi[7] = (*phi)(xTij+0+1+2);
 			}
 
-			for (it = (pcls->field())(xPart).parts.begin(); it != (pcls->field())(xPart).parts.end(); ++it)
+			for (it=(pcls->field())(xPart).parts.begin(); it != (pcls->field())(xPart).parts.end(); ++it)
 			{
-				for (int i = 0; i < 3; i++)
+				for (int i =0; i<3; i++)
 				{
 					weightScalarGridUp[i] = ((*it).pos[i] - referPos[i]) / dx;
 					weightScalarGridDown[i] = 1.0l - weightScalarGridUp[i];
@@ -1387,7 +1386,7 @@ void projection_Tij_project(Particles<part, part_info, part_dataType> * pcls, Fi
 				f = 4. + a * a / (f + a * a);
 
 				// diagonal components
-				for (int i = 0; i < 3; i++)
+				for (int i=0; i<3; i++)
 				{
 					w = mass * q[i] * q[i] / e;
 					//000
@@ -1423,24 +1422,24 @@ void projection_Tij_project(Particles<part, part_info, part_dataType> * pcls, Fi
 			}
 
 
-			for (int i = 0; i < 3; i++) (*Tij)(xTij,i,i) += tii[8*i];
+			for (int i=0; i<3; i++) (*Tij)(xTij,i,i) += tii[8*i];
 			(*Tij)(xTij,0,1) += tij[0];
 			(*Tij)(xTij,0,2) += tij[2];
 			(*Tij)(xTij,1,2) += tij[4];
 
-			for (int i = 0; i < 3; i++) (*Tij)(xTij+0,i,i) += tii[4+8*i];
+			for (int i=0; i<3; i++) (*Tij)(xTij+0,i,i) += tii[4+8*i];
 			(*Tij)(xTij+0,1,2) += tij[5];
 
-			for (int i = 0; i < 3; i++) (*Tij)(xTij+1,i,i) += tii[2+8*i];
+			for (int i=0; i<3; i++) (*Tij)(xTij+1,i,i) += tii[2+8*i];
 			(*Tij)(xTij+1,0,2) += tij[3];
 
-			for (int i = 0; i < 3; i++) (*Tij)(xTij+2,i,i) += tii[1+8*i];
+			for (int i=0; i<3; i++) (*Tij)(xTij+2,i,i) += tii[1+8*i];
 			(*Tij)(xTij+2,0,1) += tij[1];
 
-			for (int i = 0; i < 3; i++) (*Tij)(xTij+0+1,i,i) += tii[6+8*i];
-			for (int i = 0; i < 3; i++) (*Tij)(xTij+0+2,i,i) += tii[5+8*i];
-			for (int i = 0; i < 3; i++) (*Tij)(xTij+1+2,i,i) += tii[3+8*i];
-			for (int i = 0; i < 3; i++) (*Tij)(xTij+0+1+2,i,i) += tii[7+8*i];
+			for (int i=0; i<3; i++) (*Tij)(xTij+0+1,i,i) += tii[6+8*i];
+			for (int i=0; i<3; i++) (*Tij)(xTij+0+2,i,i) += tii[5+8*i];
+			for (int i=0; i<3; i++) (*Tij)(xTij+1+2,i,i) += tii[3+8*i];
+			for (int i=0; i<3; i++) (*Tij)(xTij+0+1+2,i,i) += tii[7+8*i];
 		}
 	}
 }

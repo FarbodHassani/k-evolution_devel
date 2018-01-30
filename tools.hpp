@@ -1,12 +1,12 @@
 //////////////////////////
 // tools.hpp
 //////////////////////////
-//
+// 
 // Collection of analysis tools for gevolution
 //
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris)
 //
-// Last modified: July 2016
+// Last modified: February 2017
 //
 //////////////////////////
 
@@ -30,7 +30,7 @@ using namespace LATfield2;
 //////////////////////////
 // Description:
 //   generates the cross spectrum for two Fourier images
-//
+// 
 // Arguments:
 //   fld1FT     reference to the first Fourier image for which the cross spectrum should be extracted
 //   fld2FT     reference to the second Fourier image for which the cross spectrum should be extracted
@@ -47,7 +47,7 @@ using namespace LATfield2;
 //   comp2      for component-wise cross spectra, the component for the second field (ignored if negative)
 //
 // Returns:
-//
+// 
 //////////////////////////
 
 void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbin, Real * power, Real * kscatter, Real * pscatter, int * occupation, const int numbins, const bool deconvolve = true, const int ktype = KTYPE_LINEAR, const int comp1 = -1, const int comp2 = -1)
@@ -59,10 +59,10 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 	Real k2max, k2, s;
 	rKSite k(fld1FT.lattice());
 	Cplx p;
-
+	
 	typek2 = (Real *) malloc(linesize * sizeof(Real));
 	sinc = (Real *) malloc(linesize * sizeof(Real));
-
+	
 	if (ktype == KTYPE_GRID)
 	{
 		for (i = 0; i < linesize; i++)
@@ -84,7 +84,7 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 			typek2[i] *= typek2[i];
 		}
 	}
-
+	
 	sinc[0] = 1.;
 	if (deconvolve)
 	{
@@ -104,9 +104,9 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 	{
 		sinc[i] = sinc[linesize-i];
 	}
-
+	
 	k2max = 3. * typek2[linesize/2];
-
+	
 	for (i = 0; i < numbins; i++)
 	{
 		kbin[i] = 0.;
@@ -115,7 +115,7 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 		pscatter[i] = 0.;
 		occupation[i] = 0;
 	}
-
+	
 	for (k.first(); k.test(); k.next())
 	{
 		if (k.coord(0) == 0 && k.coord(1) == 0 && k.coord(2) == 0)
@@ -126,11 +126,11 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 			weight = 1;
 		else
 			weight = 2;
-
+			
 		k2 = typek2[k.coord(0)] + typek2[k.coord(1)] + typek2[k.coord(2)];
 		s = sinc[k.coord(0)] * sinc[k.coord(1)] * sinc[k.coord(2)];
 		s *= s;
-
+		
 		if (comp1 >= 0 && comp2 >= 0 && comp1 < fld1FT.components() && comp2 < fld2FT.components())
 		{
 			p = fld1FT(k, comp1) * fld2FT(k, comp2).conj();
@@ -151,9 +151,9 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 			for (i = 0; i < fld1FT.components(); i++)
 				p += fld1FT(k, i) * fld2FT(k, i).conj();
 		}
-
+		
 		i = (int) floor((double) ((Real) numbins * sqrt(k2 / k2max)));
-		if (i < numbins)
+		if (i < numbins) 
 		{
 			kbin[i] += weight * sqrt(k2);
 			kscatter[i] += weight * k2;
@@ -162,16 +162,16 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 			occupation[i] += weight;
 		}
 	}
-
+	
 	free(typek2);
 	free(sinc);
-
+	
 	parallel.sum<Real>(kbin, numbins);
 	parallel.sum<Real>(kscatter, numbins);
 	parallel.sum<Real>(power, numbins);
 	parallel.sum<Real>(pscatter, numbins);
 	parallel.sum<int>(occupation, numbins);
-
+	
 	for (i = 0; i < numbins; i++)
 	{
 		if (occupation[i] > 0)
@@ -192,7 +192,7 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 //////////////////////////
 // Description:
 //   generates the power spectrum for a Fourier image
-//
+// 
 // Arguments:
 //   fldFT      reference to the Fourier image for which the power spectrum should be extracted
 //   kbin       allocated array that will contain the central k-value for the bins
@@ -206,7 +206,7 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 //                  1: linear (default)
 //
 // Returns:
-//
+// 
 //////////////////////////
 
 void extractPowerSpectrum(Field<Cplx> & fldFT, Real * kbin, Real * power, Real * kscatter, Real * pscatter, int * occupation, const int numbins, const bool deconvolve = true, const int ktype = KTYPE_LINEAR)
@@ -221,7 +221,7 @@ void extractPowerSpectrum(Field<Cplx> & fldFT, Real * kbin, Real * power, Real *
 //////////////////////////
 // Description:
 //   writes power spectra as tabulated data into ASCII file
-//
+// 
 // Arguments:
 //   kbin           array containing the central values of k for each bin
 //   power          array containing the central values of P(k) for each bin
@@ -236,7 +236,7 @@ void extractPowerSpectrum(Field<Cplx> & fldFT, Real * kbin, Real * power, Real *
 //   a              scale factor for this spectrum
 //
 // Returns:
-//
+// 
 //////////////////////////
 
 void writePowerSpectrum(Real * kbin, Real * power, Real * kscatter, Real * pscatter, int * occupation, const int numbins, const Real rescalek, const Real rescalep, const char * filename, const char * description, const double a)
@@ -269,14 +269,14 @@ void writePowerSpectrum(Real * kbin, Real * power, Real * kscatter, Real * pscat
 //////////////////////////
 // Description:
 //   computes some diagnostics for the spin-1 perturbation
-//
+// 
 // Arguments:
 //   Bi         reference to the real-space vector field to analyze
 //   mdivB      will contain the maximum value of the divergence of Bi
 //   mcurlB     will contain the maximum value of the curl of Bi
 //
 // Returns:
-//
+// 
 //////////////////////////
 
 void computeVectorDiagnostics(Field<Real> & Bi, Real & mdivB, Real & mcurlB)
@@ -284,10 +284,10 @@ void computeVectorDiagnostics(Field<Real> & Bi, Real & mdivB, Real & mcurlB)
 	Real b1, b2, b3, b4;
 	const Real linesize = (Real) Bi.lattice().sizeLocal(0);
 	Site x(Bi.lattice());
-
+	
 	mdivB = 0.;
 	mcurlB = 0.;
-
+	
 	for (x.first(); x.test(); x.next())
 	{
 		b1 = fabs((Bi(x,0)-Bi(x-0,0)) + (Bi(x,1)-Bi(x-1,1)) + (Bi(x,2)-Bi(x-2,2))) * linesize;
@@ -298,7 +298,7 @@ void computeVectorDiagnostics(Field<Real> & Bi, Real & mdivB, Real & mcurlB)
 		b4 = sqrt(b1 * b1 + b2 * b2 + b3 * b3);
 		if (b4 > mcurlB) mcurlB = b4;
 	}
-
+	
 	parallel.max<Real>(mdivB);
 	parallel.max<Real>(mcurlB);
 }
@@ -309,7 +309,7 @@ void computeVectorDiagnostics(Field<Real> & Bi, Real & mdivB, Real & mcurlB)
 //////////////////////////
 // Description:
 //   computes some diagnostics for the spin-2 perturbation
-//
+// 
 // Arguments:
 //   hij        reference to the real-space tensor field to analyze
 //   mdivh      will contain the maximum value of the divergence of hij
@@ -317,7 +317,7 @@ void computeVectorDiagnostics(Field<Real> & Bi, Real & mdivB, Real & mcurlB)
 //   mnormh     will contain the maximum value of the norm of hij
 //
 // Returns:
-//
+// 
 //////////////////////////
 
 void computeTensorDiagnostics(Field<Real> & hij, Real & mdivh, Real & mtraceh, Real & mnormh)
@@ -325,11 +325,11 @@ void computeTensorDiagnostics(Field<Real> & hij, Real & mdivh, Real & mtraceh, R
 	Real d1, d2, d3;
 	const Real linesize = (Real) hij.lattice().sizeLocal(0);
 	Site x(hij.lattice());
-
+	
 	mdivh = 0.;
 	mtraceh = 0.;
 	mnormh = 0.;
-
+	
 	for (x.first(); x.test(); x.next())
 	{
 		d1 = (hij(x+0, 0, 0) - hij(x, 0, 0) + hij(x, 0, 1) - hij(x-1, 0, 1) + hij(x, 0, 2) - hij(x-2, 0, 2)) * linesize;
@@ -342,10 +342,225 @@ void computeTensorDiagnostics(Field<Real> & hij, Real & mdivh, Real & mtraceh, R
 		d1 = sqrt(hij(x, 0, 0) * hij(x, 0, 0) + 2. * hij(x, 0, 1) * hij(x, 0, 1) + 2. * hij(x, 0, 2)* hij(x, 0, 2) + hij(x, 1, 1) * hij(x, 1, 1) + 2. * hij(x, 1, 2) * hij(x, 1, 2) + hij(x, 2, 2) * hij(x, 2, 2));
 		if (d1 > mnormh) mnormh = d1;
 	}
-
+	
 	parallel.max<Real>(mdivh);
 	parallel.max<Real>(mtraceh);
 	parallel.max<Real>(mnormh);
+}
+
+bool pointInShell(double * pos, lightcone_geometry & lightcone, double & outer, double & inner, double * vertex = NULL)
+{
+	double d;
+
+	if (vertex == NULL)
+		vertex = lightcone.vertex;
+
+	d = sqrt((pos[0]-vertex[0])*(pos[0]-vertex[0]) + (pos[1]-vertex[1])*(pos[1]-vertex[1]) + (pos[2]-vertex[2])*(pos[2]-vertex[2]));
+
+	if (d < inner || d >= outer) return false;
+
+	if (lightcone.opening < M_PI)
+	{
+		if (acos(((pos[0]-vertex[0])*lightcone.direction[0] + (pos[1]-vertex[1])*lightcone.direction[1] + (pos[2]-vertex[2])*lightcone.direction[2]) / d) < lightcone.opening) return true;
+		else return false;
+	}
+	else return true;
+}
+
+bool pointInShell(float * pos, lightcone_geometry & lightcone, double & outer, double & inner, double * vertex = NULL)
+{
+        double p[3];
+
+        for (int i = 0; i < 3; i++)
+                p[i] = (double) pos[i];
+
+        return pointInShell(p, lightcone, outer, inner, vertex);
+}
+
+int findIntersectingLightcones(lightcone_geometry & lightcone, double outer, double inner, double * domain, double vertex[MAX_INTERSECTS][3])
+{
+	int range = (int) ceil(outer) + 1;
+	int u, v, w, n = 0;
+	double corner[8][3];
+	double rdom, dist;
+
+	corner[0][0] = domain[0];
+	corner[0][1] = domain[1];
+	corner[0][2] = domain[2];
+
+	corner[1][0] = domain[3];
+	corner[1][1] = domain[1];
+	corner[1][2] = domain[2];
+
+	corner[2][0] = domain[0];
+	corner[2][1] = domain[4];
+	corner[2][2] = domain[2];
+
+	corner[3][0] = domain[3];
+	corner[3][1] = domain[4];
+	corner[3][2] = domain[2];
+
+	corner[4][0] = domain[0];
+	corner[4][1] = domain[1];
+	corner[4][2] = domain[5];
+
+	corner[5][0] = domain[3];
+	corner[5][1] = domain[1];
+	corner[5][2] = domain[5];
+
+	corner[6][0] = domain[0];
+	corner[6][1] = domain[4];
+	corner[6][2] = domain[5];
+
+	corner[7][0] = domain[3];
+	corner[7][1] = domain[4];
+	corner[7][2] = domain[5];
+
+	for (u = -range; u <= range; u++)
+	{
+		for (v = -range; v <= range; v++)
+		{
+			for (w = -range; w <= range; w++)
+			{
+				if (n >= MAX_INTERSECTS)
+				{
+					cout << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": maximum number of lightcone intersects exceeds MAX_INTERSECTS = " << MAX_INTERSECTS << " for domain (" << domain[0] << ", " << domain[1] << ", " << domain[2] << ") - (" << domain[3] << ", " << domain[4] << ", " << domain[5] << "); some data may be missing in output!" << endl;
+					return MAX_INTERSECTS;
+				}
+				vertex[n][0] = lightcone.vertex[0] + u;
+				vertex[n][1] = lightcone.vertex[1] + v;
+				vertex[n][2] = lightcone.vertex[2] + w;
+
+				// first, check if domain lies outside outer sphere
+				if (vertex[n][0] < domain[0])
+				{
+					if (vertex[n][1] < domain[1])
+					{
+						if (vertex[n][2] < domain[2])
+						{
+							if (sqrt((vertex[n][0]-corner[0][0])*(vertex[n][0]-corner[0][0]) + (vertex[n][1]-corner[0][1])*(vertex[n][1]-corner[0][1]) + (vertex[n][2]-corner[0][2])*(vertex[n][2]-corner[0][2])) > outer) continue;
+						}
+						else if (vertex[n][2] > domain[5])
+						{
+							if (sqrt((vertex[n][0]-corner[4][0])*(vertex[n][0]-corner[4][0]) + (vertex[n][1]-corner[4][1])*(vertex[n][1]-corner[4][1]) + (vertex[n][2]-corner[4][2])*(vertex[n][2]-corner[4][2])) > outer) continue;
+						}
+						else if (sqrt((vertex[n][0]-domain[0])*(vertex[n][0]-domain[0]) + (vertex[n][1]-domain[1])*(vertex[n][1]-domain[1])) > outer) continue;
+					}
+					else if (vertex[n][1] > domain[4])
+					{
+						if (vertex[n][2] < domain[2])
+						{
+							if (sqrt((vertex[n][0]-corner[2][0])*(vertex[n][0]-corner[2][0]) + (vertex[n][1]-corner[2][1])*(vertex[n][1]-corner[2][1]) + (vertex[n][2]-corner[2][2])*(vertex[n][2]-corner[2][2])) > outer) continue;
+						}
+						else if (vertex[n][2] > domain[5])
+						{
+							if (sqrt((vertex[n][0]-corner[6][0])*(vertex[n][0]-corner[6][0]) + (vertex[n][1]-corner[6][1])*(vertex[n][1]-corner[6][1]) + (vertex[n][2]-corner[6][2])*(vertex[n][2]-corner[6][2])) > outer) continue;
+						}
+						else if (sqrt((vertex[n][0]-domain[0])*(vertex[n][0]-domain[0]) + (vertex[n][1]-domain[4])*(vertex[n][1]-domain[4])) > outer) continue;
+					}
+					else
+					{
+						if (vertex[n][2] < domain[2])
+						{
+							if (sqrt((vertex[n][0]-domain[0])*(vertex[n][0]-domain[0]) + (vertex[n][2]-domain[2])*(vertex[n][2]-domain[2])) > outer) continue;
+						}
+						else if (vertex[n][2] > domain[5])
+						{
+							if (sqrt((vertex[n][0]-domain[0])*(vertex[n][0]-domain[0]) + (vertex[n][2]-domain[5])*(vertex[n][2]-domain[5])) > outer) continue;
+						}
+						else if (domain[0]-vertex[n][0] > outer) continue;
+					}
+				}
+				else if (vertex[n][0] > domain[3])
+				{
+					if (vertex[n][1] < domain[1])
+					{
+						if (vertex[n][2] < domain[2])
+						{
+							if (sqrt((vertex[n][0]-corner[1][0])*(vertex[n][0]-corner[1][0]) + (vertex[n][1]-corner[1][1])*(vertex[n][1]-corner[1][1]) + (vertex[n][2]-corner[1][2])*(vertex[n][2]-corner[1][2])) > outer) continue;
+						}
+						else if (vertex[n][2] > domain[5])
+						{
+							if (sqrt((vertex[n][0]-corner[5][0])*(vertex[n][0]-corner[5][0]) + (vertex[n][1]-corner[5][1])*(vertex[n][1]-corner[5][1]) + (vertex[n][2]-corner[5][2])*(vertex[n][2]-corner[5][2])) > outer) continue;
+						}
+						else if (sqrt((vertex[n][0]-domain[3])*(vertex[n][0]-domain[3]) + (vertex[n][1]-domain[1])*(vertex[n][1]-domain[1])) > outer) continue;
+					}
+					else if (vertex[n][1] > domain[4])
+					{
+						if (vertex[n][2] < domain[2])
+						{
+							if (sqrt((vertex[n][0]-corner[3][0])*(vertex[n][0]-corner[3][0]) + (vertex[n][1]-corner[3][1])*(vertex[n][1]-corner[3][1]) + (vertex[n][2]-corner[3][2])*(vertex[n][2]-corner[3][2])) > outer) continue;
+						}
+						else if (vertex[n][2] > domain[5])
+						{
+							if (sqrt((vertex[n][0]-corner[7][0])*(vertex[n][0]-corner[7][0]) + (vertex[n][1]-corner[7][1])*(vertex[n][1]-corner[7][1]) + (vertex[n][2]-corner[7][2])*(vertex[n][2]-corner[7][2])) > outer) continue;
+						}
+						else if (sqrt((vertex[n][0]-domain[3])*(vertex[n][0]-domain[3]) + (vertex[n][1]-domain[4])*(vertex[n][1]-domain[4])) > outer) continue;
+					}
+					else
+					{
+						if (vertex[n][2] < domain[2])
+						{
+							if (sqrt((vertex[n][0]-domain[3])*(vertex[n][0]-domain[3]) + (vertex[n][2]-domain[2])*(vertex[n][2]-domain[2])) > outer) continue;
+						}
+						else if (vertex[n][2] > domain[5])
+						{
+							if (sqrt((vertex[n][0]-domain[3])*(vertex[n][0]-domain[3]) + (vertex[n][2]-domain[5])*(vertex[n][2]-domain[5])) > outer) continue;
+						}
+						else if (vertex[n][0]-domain[3] > outer) continue;
+					}
+				}
+				else
+				{
+					if (vertex[n][1] < domain[1])
+					{
+						if (vertex[n][2] < domain[2])
+						{
+							if (sqrt((vertex[n][1]-domain[1])*(vertex[n][1]-domain[1]) + (vertex[n][2]-domain[2])*(vertex[n][2]-domain[2])) > outer) continue;
+						}
+						else if (vertex[n][2] > domain[5])
+						{
+							if (sqrt((vertex[n][1]-domain[1])*(vertex[n][1]-domain[1]) + (vertex[n][2]-domain[5])*(vertex[n][2]-domain[5])) > outer) continue;
+						}
+						else if (domain[1]-vertex[n][1] > outer) continue;
+					}
+					else if (vertex[n][1] > domain[4])
+					{
+						if (vertex[n][2] < domain[2])
+						{
+							if (sqrt((vertex[n][1]-domain[4])*(vertex[n][1]-domain[4]) + (vertex[n][2]-domain[2])*(vertex[n][2]-domain[2])) > outer) continue;
+						}
+						else if (vertex[n][2] > domain[5])
+						{
+							if (sqrt((vertex[n][1]-domain[4])*(vertex[n][1]-domain[4]) + (vertex[n][2]-domain[5])*(vertex[n][2]-domain[5])) > outer) continue;
+						}
+						else if (vertex[n][1]-domain[4] > outer) continue;
+					}
+					else if (vertex[n][2]-domain[5] > outer || domain[2]-vertex[n][2] > outer) continue;
+				}
+				
+				if (sqrt((corner[0][0]-vertex[n][0])*(corner[0][0]-vertex[n][0]) + (corner[0][1]-vertex[n][1])*(corner[0][1]-vertex[n][1]) + (corner[0][2]-vertex[n][2])*(corner[0][2]-vertex[n][2])) < inner && sqrt((corner[1][0]-vertex[n][0])*(corner[1][0]-vertex[n][0]) + (corner[1][1]-vertex[n][1])*(corner[1][1]-vertex[n][1]) + (corner[1][2]-vertex[n][2])*(corner[1][2]-vertex[n][2])) < inner && sqrt((corner[2][0]-vertex[n][0])*(corner[2][0]-vertex[n][0]) + (corner[2][1]-vertex[n][1])*(corner[2][1]-vertex[n][1]) + (corner[2][2]-vertex[n][2])*(corner[2][2]-vertex[n][2])) < inner && sqrt((corner[3][0]-vertex[n][0])*(corner[3][0]-vertex[n][0]) + (corner[3][1]-vertex[n][1])*(corner[3][1]-vertex[n][1]) + (corner[3][2]-vertex[n][2])*(corner[3][2]-vertex[n][2])) < inner && sqrt((corner[4][0]-vertex[n][0])*(corner[4][0]-vertex[n][0]) + (corner[4][1]-vertex[n][1])*(corner[4][1]-vertex[n][1]) + (corner[4][2]-vertex[n][2])*(corner[4][2]-vertex[n][2])) < inner && sqrt((corner[5][0]-vertex[n][0])*(corner[5][0]-vertex[n][0]) + (corner[5][1]-vertex[n][1])*(corner[5][1]-vertex[n][1]) + (corner[5][2]-vertex[n][2])*(corner[5][2]-vertex[n][2])) < inner && sqrt((corner[6][0]-vertex[n][0])*(corner[6][0]-vertex[n][0]) + (corner[6][1]-vertex[n][1])*(corner[6][1]-vertex[n][1]) + (corner[6][2]-vertex[n][2])*(corner[6][2]-vertex[n][2])) < inner && sqrt((corner[7][0]-vertex[n][0])*(corner[7][0]-vertex[n][0]) + (corner[7][1]-vertex[n][1])*(corner[7][1]-vertex[n][1]) + (corner[7][2]-vertex[n][2])*(corner[7][2]-vertex[n][2])) < inner) continue; // domain lies within inner sphere
+
+				rdom = 0.5 * sqrt((domain[3]-domain[0])*(domain[3]-domain[0]) + (domain[4]-domain[1])*(domain[4]-domain[1]) + (domain[5]-domain[2])*(domain[5]-domain[2]));
+				dist = sqrt((0.5*domain[0]+0.5*domain[3]-vertex[n][0])*(0.5*domain[0]+0.5*domain[3]-vertex[n][0]) + (0.5*domain[1]+0.5*domain[4]-vertex[n][1])*(0.5*domain[1]+0.5*domain[4]-vertex[n][1]) + (0.5*domain[2]+0.5*domain[5]-vertex[n][2])*(0.5*domain[2]+0.5*domain[5]-vertex[n][2]));
+
+				if (dist + outer <= rdom) // outer sphere lies within domain enclosing sphere
+				{
+					//cout << "proc#" << parallel.rank() << ": case 1, dist = " << dist << ", outer = " << outer << ", rdom = " << rdom << "; vertex = (" << vertex[n][0] << ", " << vertex[n][1] << ", " << vertex[n][2] << ")" << endl;
+					n++;
+					continue;
+				}
+
+				if (acos(((0.5*domain[0]+0.5*domain[3]-vertex[n][0])*lightcone.direction[0] + (0.5*domain[1]+0.5*domain[4]-vertex[n][1])*lightcone.direction[1] + (0.5*domain[2]+0.5*domain[5]-vertex[n][2])*lightcone.direction[2]) / dist) - lightcone.opening <= acos((outer*outer + dist*dist - rdom*rdom) / (2. * outer * dist))) // enclosing sphere within opening
+				{
+					//cout << "proc#" << parallel.rank() << ": case 2, dist = " << dist << ", outer = " << outer << ", rdom = " << rdom << "; vertex = (" << vertex[n][0] << ", " << vertex[n][1] << ", " << vertex[n][2] << endl;
+					n++;
+				}
+			}
+		}
+	}
+
+	return n;
 }
 
 
@@ -354,13 +569,13 @@ void computeTensorDiagnostics(Field<Real> & hij, Real & mdivh, Real & mtraceh, R
 //////////////////////////
 // Description:
 //   generates formatted output for cpu-time: hh..h:mm:ss.s
-//
+// 
 // Arguments:
 //   seconds    number of seconds
 //
 // Returns:
 //   formatted string
-//
+// 
 //////////////////////////
 
 string hourMinSec(double seconds)

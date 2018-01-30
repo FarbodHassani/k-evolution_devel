@@ -134,27 +134,24 @@ double bg_ncdm(const double a, const cosmology cosmo)
 //
 //////////////////////////
 
+// Hconf normalized to critial density 1 so we have H0^2= 8piG/3
 double Hconf(const double a, const double fourpiG, const cosmology cosmo)
 {
 	return sqrt((2. * fourpiG / 3.) * (((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) / a) + (cosmo.Omega_Lambda * a * a)
-	+ (cosmo.Omega_rad / a / a))+ (cosmo.Omega_kessence * pow(a,-1.-3. * cosmo.w_kessence)));
+	+ (cosmo.Omega_rad / a / a))+ (cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence)* a * a));
 }
 
-// double H_prime(const double a, const double fourpiG, const cosmology cosmo)
-// {
-// 	return sqrt((2. * fourpiG / 3.) * ((-(cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo))* Hconf( a, fourpiG,  cosmology cosmo)/ a)
-// 	+ (cosmo.Omega_Lambda * a * a*2.*Hconf( a, fourpiG,  cosmology cosmo))
-// 	+ (-2.*cosmo.Omega_rad*Hconf( a, fourpiG,  cosmology cosmo) / a / a))+ (cosmo.Omega_kessence *Hconf( a, fourpiG,  cosmology cosmo)* pow(a,-1.-3. * cosmo.w_kessence)));
-// }
 
-double Omega_m(const double a, const cosmology cosmo) { return cosmo.Omega_m / (cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo) + cosmo.Omega_Lambda * a * a * a + cosmo.Omega_rad / a); }
+// Here the normalization factor is not \rho_crit=1, it is what it should be in th enormal unit.
+// So Omega_m is the matter density at arbitrary redshift and is not normalized, since we did not use Hconf in the fomrula
+// While Hconf is normalized to critical density 1 so H^2/H_0^2= H^2/(8piG/3) which is used in the last formula.
+double Omega_m(const double a, const cosmology cosmo) { return cosmo.Omega_m / (cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo) + cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence)* a * a * a + cosmo.Omega_Lambda * a * a * a + cosmo.Omega_rad / a); }
+//
+double Omega_rad(const double a, const cosmology cosmo) { return (cosmo.Omega_rad + (bg_ncdm(a, cosmo) + cosmo.Omega_cdm + cosmo.Omega_b - cosmo.Omega_m) * a) / ((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) * a + cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence)* a * a * a * a + cosmo.Omega_Lambda * a * a * a * a + cosmo.Omega_rad); }
 
-double Omega_rad(const double a, const cosmology cosmo) { return (cosmo.Omega_rad + (bg_ncdm(a, cosmo) + cosmo.Omega_cdm + cosmo.Omega_b - cosmo.Omega_m) * a) / ((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) * a + cosmo.Omega_Lambda * a * a * a * a + cosmo.Omega_rad); }
+//Here Omega_Lambda is both kessence and Lambda
+double Omega_Lambda(const double a, const cosmology cosmo) { return (cosmo.Omega_Lambda+cosmo.Omega_kessence) / ((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) / a / a / a + cosmo.Omega_Lambda + cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence) + cosmo.Omega_rad / a / a / a / a); }
 
-double Omega_Lambda(const double a, const cosmology cosmo) { return cosmo.Omega_Lambda / ((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) / a / a / a + cosmo.Omega_Lambda + cosmo.Omega_rad / a / a / a / a); }
-
-
-//double Omega_kessence(const double a, const cosmology cosmo) { return Omega_kessence/1.; }
 
 //////////////////////////
 // rungekutta4bg
