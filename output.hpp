@@ -30,7 +30,6 @@ using namespace std;
 //   sim            simulation metadata structure
 //   cosmo          cosmological parameter structure
 //   fourpiG        4 pi G (in code units)
-//   hdr            Gadget-2 header structure
 //   a              scale factor
 //   snapcount      snapshot index
 //   h5filename     base name for HDF5 output file
@@ -39,10 +38,15 @@ using namespace std;
 //   pcls_ncdm      array of (uninitialized) particle handlers for
 //                  non-cold DM (may be set to NULL)
 //   phi            pointer to allocated field
+//   pi_k           pointer to allocated field
+//   pi_v_k         pointer to allocated field
 //   chi            pointer to allocated field
 //   Bi             pointer to allocated field
 //   source         pointer to allocated field
 //   Sij            pointer to allocated field
+//   T00_Kess       pointer to allocated field
+//   T0i_Kess       pointer to allocated field
+//   Tij_Kess       pointer to allocated field
 //   scalarFT       pointer to allocated field
 //   BiFT           pointer to allocated field
 //   SijFT          pointer to allocated field
@@ -55,11 +59,12 @@ using namespace std;
 //   BiFT_check     pointer to allocated field (or NULL)
 //   plan_Bi_check  pointer to FFT planner (or NULL)
 //
-// Returns:
+// 	 Returns:
 //
 //////////////////////////
 
-void writeSnapshots(metadata & sim, cosmology & cosmo, const double fourpiG, gadget2_header & hdr, const double a, const int snapcount, string h5filename, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, Field<Real> * phi,Field<Real> * pi_k, Field<Real> * chi, Field<Real> * Bi, Field<Real> * T00_Kess, Field<Real> * T0i_Kess, Field<Real> * Tij_Kess, Field<Real> * source, Field<Real> * Sij, Field<Cplx> * scalarFT, Field<Cplx> * BiFT, Field<Cplx> * SijFT, PlanFFT<Cplx> * plan_phi, PlanFFT<Cplx> * plan_chi, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_source, PlanFFT<Cplx> * plan_Sij, Field<Real> * Bi_check = NULL, Field<Cplx> * BiFT_check = NULL, PlanFFT<Cplx> * plan_Bi_check = NULL)
+
+void writeSnapshots(metadata & sim, cosmology & cosmo, const double fourpiG, gadget2_header & hdr, const double a, const int snapcount, string h5filename, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, Field<Real> * phi, Field<Real> * pi_k, Field<Real> * pi_v_k, Field<Real> * chi, Field<Real> * Bi, Field<Real> * T00_Kess, Field<Real> * T0i_Kess, Field<Real> * Tij_Kess, Field<Real> * source, Field<Real> * Sij, Field<Cplx> * scalarFT, Field<Cplx> * BiFT, Field<Cplx> * SijFT, PlanFFT<Cplx> * plan_phi, PlanFFT<Cplx> * plan_chi, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_source, PlanFFT<Cplx> * plan_Sij, Field<Real> * Bi_check = NULL, Field<Cplx> * BiFT_check = NULL, PlanFFT<Cplx> * plan_Bi_check = NULL)
 {
 	char filename[2*PARAM_MAX_LENGTH+24];
 	char buffer[64];
@@ -93,8 +98,15 @@ void writeSnapshots(metadata & sim, cosmology & cosmo, const double fourpiG, gad
 	if (sim.out_snapshot & MASK_PHI)
 		phi->saveHDF5_server_open(h5filename + filename + "_phi");
 
+	//Kessence
 	if (sim.out_snapshot & MASK_PI_K)
-		pi_k->saveHDF5_server_open(h5filename + filename + "_pi_k");
+			pi_k->saveHDF5_server_open(h5filename + filename + "_pi_k");
+
+	if (sim.out_snapshot & MASK_PI_V_K)
+			pi_k->saveHDF5_server_open(h5filename + filename + "_pi_v_k");
+	//Kessence end
+
+
 	if (sim.out_snapshot & MASK_CHI)
 		chi->saveHDF5_server_open(h5filename + filename + "_chi");
 
@@ -211,15 +223,27 @@ void writeSnapshots(metadata & sim, cosmology & cosmo, const double fourpiG, gad
 #endif
 
 
-	if (sim.out_snapshot & MASK_PI_K)
+//Kessence
+if (sim.out_snapshot & MASK_PI_K)
 #ifdef EXTERNAL_IO
 		pi_k->saveHDF5_server_write(NUMBER_OF_IO_FILES);
 #else
 		if (sim.downgrade_factor > 1)
 			pi_k->saveHDF5_coarseGrain3D(h5filename + filename + "_pi_k.h5", sim.downgrade_factor);
-		else
+	else
 			pi_k->saveHDF5(h5filename + filename + "_pi_k.h5");
 #endif
+
+if (sim.out_snapshot & MASK_PI_V_K)
+#ifdef EXTERNAL_IO
+		pi_v_k->saveHDF5_server_write(NUMBER_OF_IO_FILES);
+#else
+		if (sim.downgrade_factor > 1)
+			pi_v_k->saveHDF5_coarseGrain3D(h5filename + filename + "_pi_v_k.h5", sim.downgrade_factor);
+	else
+			pi_v_k->saveHDF5(h5filename + filename + "_pi_v_k.h5");
+#endif
+//kessence end
 
 	if (sim.out_snapshot & MASK_CHI)
 #ifdef EXTERNAL_IO
@@ -319,85 +343,84 @@ void writeSnapshots(metadata & sim, cosmology & cosmo, const double fourpiG, gad
 #endif
 	}
 #endif
-	COUT<<"output k esssence energy should"<<endl;
-	if (sim.out_snapshot & MASK_T_KESS)
+
+//Kessence
+if (sim.out_snapshot & MASK_T_KESS)
+{
+	// COUT<<"output kesssence energy"<<endl;
+	#ifdef EXTERNAL_IO
+			T00_Kess->saveHDF5_server_write(NUMBER_OF_IO_FILES);
+			T0i_Kess->saveHDF5_server_write(NUMBER_OF_IO_FILES);
+			Tij_Kess->saveHDF5_server_write(NUMBER_OF_IO_FILES);
+	#else
+			if (sim.downgrade_factor > 1)
+			{
+				T00_Kess->saveHDF5_coarseGrain3D(h5filename + filename + "_T00_Kess.h5", sim.downgrade_factor);
+				T0i_Kess->saveHDF5_coarseGrain3D(h5filename + filename + "_T0i_Kess.h5", sim.downgrade_factor);
+				Tij_Kess->saveHDF5_coarseGrain3D(h5filename + filename + "_Tij_Kess.h5", sim.downgrade_factor);
+			}
+			else
+			{
+				T00_Kess->saveHDF5(h5filename + filename + "_T00_Kess.h5");
+				T0i_Kess->saveHDF5(h5filename + filename + "_T0i_Kess.h5");
+				Tij_Kess->saveHDF5(h5filename + filename + "_Tij_Kess.h5");
+			}
+	#endif
+}
+//Kessence end
+
+if (sim.out_snapshot & MASK_GADGET)
+{
+	hdr.time = a;
+	hdr.redshift = (1./a) - 1.;
+
+	hdr.npart[1] = (unsigned int) (sim.numpcl[0] / sim.tracer_factor[0]);
+	hdr.npartTotal[1] = hdr.npart[1];
+	if (sim.baryon_flag)
+		hdr.mass[1] = (double) sim.tracer_factor[0] * C_RHO_CRIT * cosmo.Omega_cdm * sim.boxsize * sim.boxsize * sim.boxsize / sim.numpcl[0] / GADGET_MASS_CONVERSION;
+	else
+		hdr.mass[1] = (double) sim.tracer_factor[0] * C_RHO_CRIT * (cosmo.Omega_cdm + cosmo.Omega_b) * sim.boxsize * sim.boxsize * sim.boxsize / sim.numpcl[0] / GADGET_MASS_CONVERSION;
+	pcls_cdm->saveGadget2(h5filename + filename + "_cdm", hdr, sim.tracer_factor[0]);
+
+	if (sim.baryon_flag)
 	{
-		COUT<<"output k esssence energy"<<endl;
-		#ifdef EXTERNAL_IO
-				T00_Kess->saveHDF5_server_write(NUMBER_OF_IO_FILES);
-				T0i_Kess->saveHDF5_server_write(NUMBER_OF_IO_FILES);
-				Tij_Kess->saveHDF5_server_write(NUMBER_OF_IO_FILES);
-		#else
-				if (sim.downgrade_factor > 1)
-				{
-					T00_Kess->saveHDF5_coarseGrain3D(h5filename + filename + "_T00_Kess.h5", sim.downgrade_factor);
-					T0i_Kess->saveHDF5_coarseGrain3D(h5filename + filename + "_T0i_Kess.h5", sim.downgrade_factor);
-					Tij_Kess->saveHDF5_coarseGrain3D(h5filename + filename + "_Tij_Kess.h5", sim.downgrade_factor);
-				}
-				else
-				{
-					T00_Kess->saveHDF5(h5filename + filename + "_T00_Kess.h5");
-					T0i_Kess->saveHDF5(h5filename + filename + "_T0i_Kess.h5");
-					Tij_Kess->saveHDF5(h5filename + filename + "_Tij_Kess.h5");
-				}
-		#endif
-	}
-
-
-
-
-	if (sim.out_snapshot & MASK_GADGET)
-	{
-		hdr.time = a;
-		hdr.redshift = (1./a) - 1.;
-
-		hdr.npart[1] = (unsigned int) (sim.numpcl[0] / sim.tracer_factor[0]);
+		hdr.npart[1] = (unsigned int) (sim.numpcl[1] / sim.tracer_factor[1]);
 		hdr.npartTotal[1] = hdr.npart[1];
-		if (sim.baryon_flag)
-			hdr.mass[1] = (double) sim.tracer_factor[0] * C_RHO_CRIT * cosmo.Omega_cdm * sim.boxsize * sim.boxsize * sim.boxsize / sim.numpcl[0] / GADGET_MASS_CONVERSION;
-		else
-			hdr.mass[1] = (double) sim.tracer_factor[0] * C_RHO_CRIT * (cosmo.Omega_cdm + cosmo.Omega_b) * sim.boxsize * sim.boxsize * sim.boxsize / sim.numpcl[0] / GADGET_MASS_CONVERSION;
-		pcls_cdm->saveGadget2(h5filename + filename + "_cdm", hdr, sim.tracer_factor[0]);
-
-		if (sim.baryon_flag)
-		{
-			hdr.npart[1] = (unsigned int) (sim.numpcl[1] / sim.tracer_factor[1]);
-			hdr.npartTotal[1] = hdr.npart[1];
-			hdr.mass[1] = (double) sim.tracer_factor[1] * C_RHO_CRIT * cosmo.Omega_b * sim.boxsize * sim.boxsize * sim.boxsize / sim.numpcl[1] / GADGET_MASS_CONVERSION;
-			pcls_b->saveGadget2(h5filename + filename + "_b", hdr, sim.tracer_factor[1]);
-		}
-		for (i = 0; i < cosmo.num_ncdm; i++)
-		{
-			sprintf(buffer, "_ncdm%d", i);
-			hdr.npart[1] = (unsigned int) (sim.numpcl[i+1+sim.baryon_flag] / sim.tracer_factor[i+1+sim.baryon_flag]);
-			hdr.npartTotal[1] = hdr.npart[1];
-			hdr.mass[1] = (double) sim.tracer_factor[i+1+sim.baryon_flag] * C_RHO_CRIT * cosmo.Omega_ncdm[i] * sim.boxsize * sim.boxsize * sim.boxsize / sim.numpcl[i+1+sim.baryon_flag] / GADGET_MASS_CONVERSION;
-			pcls_ncdm[i].saveGadget2(h5filename + filename + buffer, hdr, sim.tracer_factor[i+1+sim.baryon_flag]);
-		}
+		hdr.mass[1] = (double) sim.tracer_factor[1] * C_RHO_CRIT * cosmo.Omega_b * sim.boxsize * sim.boxsize * sim.boxsize / sim.numpcl[1] / GADGET_MASS_CONVERSION;
+		pcls_b->saveGadget2(h5filename + filename + "_b", hdr, sim.tracer_factor[1]);
 	}
-
-	if (sim.out_snapshot & MASK_PCLS)
+	for (i = 0; i < cosmo.num_ncdm; i++)
 	{
-#ifdef EXTERNAL_IO
-		pcls_cdm->saveHDF5_server_write();
-		if (sim.baryon_flag)
-			pcls_b->saveHDF5_server_write();
-		for (i = 0; i < cosmo.num_ncdm; i++)
-			pcls_ncdm[i].saveHDF5_server_write();
-#else
-		pcls_cdm->saveHDF5(h5filename + filename + "_cdm", 1);
-		if (sim.baryon_flag)
-			pcls_b->saveHDF5(h5filename + filename + "_b", 1);
-		for (i = 0; i < cosmo.num_ncdm; i++)
-		{
-			sprintf(buffer, "_ncdm%d", i);
-			pcls_ncdm[i].saveHDF5(h5filename + filename + buffer, 1);
-		}
-#endif
+		sprintf(buffer, "_ncdm%d", i);
+		hdr.npart[1] = (unsigned int) (sim.numpcl[i+1+sim.baryon_flag] / sim.tracer_factor[i+1+sim.baryon_flag]);
+		hdr.npartTotal[1] = hdr.npart[1];
+		hdr.mass[1] = (double) sim.tracer_factor[i+1+sim.baryon_flag] * C_RHO_CRIT * cosmo.Omega_ncdm[i] * sim.boxsize * sim.boxsize * sim.boxsize / sim.numpcl[i+1+sim.baryon_flag] / GADGET_MASS_CONVERSION;
+		pcls_ncdm[i].saveGadget2(h5filename + filename + buffer, hdr, sim.tracer_factor[i+1+sim.baryon_flag]);
 	}
+}
+
+if (sim.out_snapshot & MASK_PCLS)
+{
+#ifdef EXTERNAL_IO
+	pcls_cdm->saveHDF5_server_write();
+	if (sim.baryon_flag)
+		pcls_b->saveHDF5_server_write();
+	for (i = 0; i < cosmo.num_ncdm; i++)
+		pcls_ncdm[i].saveHDF5_server_write();
+#else
+	pcls_cdm->saveHDF5(h5filename + filename + "_cdm", 1);
+	if (sim.baryon_flag)
+		pcls_b->saveHDF5(h5filename + filename + "_b", 1);
+	for (i = 0; i < cosmo.num_ncdm; i++)
+	{
+		sprintf(buffer, "_ncdm%d", i);
+		pcls_ncdm[i].saveHDF5(h5filename + filename + buffer, 1);
+	}
+#endif
+}
 
 #ifdef EXTERNAL_IO
-	ioserver.closeOstream();
+ioserver.closeOstream();
 #endif
 }
 
@@ -439,7 +462,7 @@ void writeSnapshots(metadata & sim, cosmology & cosmo, const double fourpiG, gad
 //
 //////////////////////////
 
-void writeSpectra(metadata & sim, cosmology & cosmo, const double fourpiG, const double a, const int pkcount, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, Field<Real> * phi,Field<Real> * pi_k ,Field<Real> * pi_k_v,Field<Real> * chi, Field<Real> * Bi, Field<Real> * source, Field<Real> * Sij, Field<Cplx> * scalarFT,Field<Cplx> * scalarFT_pi,Field<Cplx> * scalarFT_pi_v, Field<Cplx> * BiFT, Field<Cplx> * SijFT,PlanFFT<Cplx> * plan_phi,PlanFFT<Cplx> * plan_pi_k , PlanFFT<Cplx> * plan_pi_v_k, PlanFFT<Cplx> * plan_chi, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_source, PlanFFT<Cplx> * plan_Sij, Field<Real> * Bi_check = NULL, Field<Cplx> * BiFT_check = NULL, PlanFFT<Cplx> * plan_Bi_check = NULL)
+void writeSpectra(metadata & sim, cosmology & cosmo, const double fourpiG, const double a, const int pkcount, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, Field<Real> * phi, Field<Real> * pi_k, Field<Real> * pi_v_k,  Field<Real> * chi, Field<Real> * Bi, Field<Real> * source, Field<Real> * Sij, Field<Cplx> * scalarFT, Field<Cplx> * scalarFT_pi, Field<Cplx> * scalarFT_pi_v, Field<Cplx> * BiFT, Field<Cplx> * SijFT, PlanFFT<Cplx> * plan_phi, PlanFFT<Cplx> * plan_pi_k, PlanFFT<Cplx> * plan_pi_v_k, PlanFFT<Cplx> * plan_chi, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_source, PlanFFT<Cplx> * plan_Sij, Field<Real> * Bi_check = NULL, Field<Cplx> * BiFT_check = NULL, PlanFFT<Cplx> * plan_Bi_check = NULL)
 {
 	char filename[2*PARAM_MAX_LENGTH+24];
 	char buffer[64];
@@ -596,24 +619,6 @@ void writeSpectra(metadata & sim, cosmology & cosmo, const double fourpiG, const
 		writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of phi", a);
 	}
 
-
-if (sim.out_pk & MASK_PI_K)
-	{
-		plan_pi_k->execute(FFT_FORWARD);
-		extractPowerSpectrum(*scalarFT_pi, kbin, power, kscatter, pscatter, occupation, sim.numbins, false, KTYPE_LINEAR);
-		sprintf(filename, "%s%s%03d_pi_k.dat", sim.output_path, sim.basename_pk, pkcount);
-		writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of pi_k", a);
-	}
-
-
-if (sim.out_pk & MASK_PI_K_V)
-	{
-		plan_pi_v_k->execute(FFT_FORWARD);
-		extractPowerSpectrum(*scalarFT_pi_v, kbin, power, kscatter, pscatter, occupation, sim.numbins, false, KTYPE_LINEAR);
-		sprintf(filename, "%s%s%03d_pi_k_v.dat", sim.output_path, sim.basename_pk, pkcount);
-		writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of pi_k_v", a);
-	}
-
 	if (sim.out_pk & MASK_CHI)
 	{
 		plan_chi->execute(FFT_FORWARD);
@@ -678,6 +683,14 @@ if (sim.out_pk & MASK_PI_K_V)
 				sprintf(filename, "%s%s%03d_T00cdm.dat", sim.output_path, sim.basename_pk, pkcount);
 				writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * pow(a, 6.0), filename, "power spectrum of T00 for cdm", a);
 			}
+
+			//Kessence I'm not sure how to do it! TODO:
+			// if (sim.out_pk & MASK_T_KESS && sim.gr_flag == 0)
+			// {
+			// 	sprintf(filename, "%s%s%03d_T00_kess.dat", sim.output_path, sim.basename_pk, pkcount);
+			// 	writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * pow(a, 6.0), filename, "power spectrum of T00_kess", a);
+			// }
+
 			if (sim.out_pk & MASK_DELTA)
 			{
 				sprintf(filename, "%s%s%03d_deltacdm.dat", sim.output_path, sim.basename_pk, pkcount);

@@ -76,6 +76,7 @@ void writeRestartSettings(metadata & sim, icsettings & ic, cosmology & cosmo, co
 		if (sim.gr_flag > 0)
 		{
 			fprintf(outfile, "metric file        = %s%s%s_phi.h5", sim.restart_path, sim.basename_restart, buffer);
+
 			//Kessence
 			fprintf(outfile, "k-essence field        = %s%s%s_pi_k.h5", sim.restart_path, sim.basename_restart, buffer);
 			fprintf(outfile, "k-essence field        = %s%s%s_pi_v_k.h5", sim.restart_path, sim.basename_restart, buffer);
@@ -106,7 +107,7 @@ void writeRestartSettings(metadata & sim, icsettings & ic, cosmology & cosmo, co
 		if (ic.flags & ICFLAG_KSPHERE)
 			fprintf(outfile, "k-domain           = sphere\n");
 		else
-		fprintf(outfile, "k-domain           = cube\n");
+			fprintf(outfile, "k-domain           = cube\n");
 		fprintf(outfile, "\n\n# primordial power spectrum\n\n");
 		fprintf(outfile, "k_pivot = %lg\n", ic.k_pivot);
 		fprintf(outfile, "A_s     = %lg\n", ic.A_s);
@@ -428,7 +429,7 @@ void writeRestartSettings(metadata & sim, icsettings & ic, cosmology & cosmo, co
 //
 //////////////////////////
 
-void hibernate(metadata & sim, icsettings & ic, cosmology & cosmo, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, Field<Real> & phi,Field<Real> & pi_k,Field<Real> & pi_v_k, Field<Real> & chi, Field<Real> & Bi, const double a, const double tau, const double dtau, const int cycle, const int restartcount = -1)
+void hibernate(metadata & sim, icsettings & ic, cosmology & cosmo, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, Field<Real> & phi, Field<Real> & pi_k,Field<Real> & pi_v_k, Field<Real> & chi, Field<Real> & Bi, const double a, const double tau, const double dtau, const int cycle, const int restartcount = -1)
 {
 	string h5filename;
 	char buffer[5];
@@ -473,7 +474,7 @@ void hibernate(metadata & sim, icsettings & ic, cosmology & cosmo, Particles<par
 		phi.saveHDF5_server_open(h5filename + "_phi");
 		//kessence
 		pi_k.saveHDF5_server_open(h5filename + "_pi_k");
-		pi_k.saveHDF5_server_open(h5filename + "_pi_v_k");
+		pi_v_k.saveHDF5_server_open(h5filename + "_pi_v_k");
 		chi.saveHDF5_server_open(h5filename + "_chi");
 	}
 
@@ -493,9 +494,6 @@ void hibernate(metadata & sim, icsettings & ic, cosmology & cosmo, Particles<par
 	if (sim.gr_flag > 0)
 	{
 		phi.saveHDF5_server_write(NUMBER_OF_IO_FILES);
-		//kessence
-		pi_k.saveHDF5_server_write(NUMBER_OF_IO_FILES);
-		pi_v_k.saveHDF5_server_write(NUMBER_OF_IO_FILES);
 		chi.saveHDF5_server_write(NUMBER_OF_IO_FILES);
 	}
 

@@ -6,14 +6,14 @@
 //
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris)
 //
-// Last modified: April 2017
+// Last modified: December 2016
 //
 //////////////////////////
 
 #ifndef METADATA_HEADER
 #define METADATA_HEADER
 
-#define GEVOLUTION_VERSION 1.2
+#define GEVOLUTION_VERSION 1.1
 
 #ifndef MAX_OUTPUTS
 #define MAX_OUTPUTS 32
@@ -26,20 +26,6 @@
 #ifndef PARAM_MAX_LINESIZE
 #define PARAM_MAX_LINESIZE 1024
 #endif
-
-#ifndef MAX_INTERSECTS
-#define MAX_INTERSECTS 12
-#endif
-
-#ifndef LIGHTCONE_THICKNESS
-#define LIGHTCONE_THICKNESS 1
-#endif
-
-#define LIGHTCONE_PHI_OFFSET 0
-#define LIGHTCONE_CHI_OFFSET 1
-#define LIGHTCONE_B_OFFSET   2
-#define LIGHTCONE_HIJ_OFFSET 5
-#define LIGHTCONE_MAX_FIELDS 10
 
 #ifndef MAX_PCL_SPECIES
 #define MAX_PCL_SPECIES 6
@@ -63,11 +49,11 @@
 #define MASK_XSPEC  2048
 #define MASK_DELTA  4096
 #define MASK_DBARE  8192
-#define MASK_MULTI  16384
 //Kessence part
-#define MASK_PI_K   32768
-#define MASK_PI_V_K 65536
-#define MASK_T_KESS 131072
+#define MASK_PI_K   16384
+#define MASK_PI_V_K 32768
+#define MASK_T_KESS 65536
+//Kessence end
 
 #define ICFLAG_CORRECT_DISPLACEMENT 1
 #define ICFLAG_KSPHERE              2
@@ -163,21 +149,9 @@ struct gadget2_header
 	double Omega0;
 	double OmegaLambda;
 	double HubbleParam;
-	int32_t flag_age;
-	int32_t flag_metals;
-	uint32_t npartTotalHW[6];
-	char fill[256 - 6 * 4 - 6 * 8 - 2 * 8 - 2 * 4 - 6 * 4 - 2 * 4 - 4 * 8 - 2 * 4 - 6 * 4]; /* fills to 256 Bytes */
+	char fill[256 - 6 * 4 - 6 * 8 - 2 * 8 - 2 * 4 - 6 * 4 - 2 * 4 - 4 * 8];   /* fills to 256 Bytes */
 };
 #endif
-
-struct lightcone_geometry
-{
-	double vertex[3];
-	double z;
-	double direction[3];
-	double opening;
-	double distance[2];
-};
 
 struct metadata
 {
@@ -191,11 +165,9 @@ struct metadata
 	int radiation_flag;
 	int out_pk;
 	int out_snapshot;
-	int out_lightcone[MAX_OUTPUTS];
 	int num_pk;
 	int numbins;
 	int num_snapshot;
-	int num_lightcone;
 	int num_restart;
 	double Cf;
 	double movelimit;
@@ -210,8 +182,6 @@ struct metadata
 	double z_switch_linearchi;
 	double z_switch_deltancdm[MAX_PCL_SPECIES-2];
 	double z_switch_Bncdm[MAX_PCL_SPECIES-2];
-	lightcone_geometry lightcone[MAX_OUTPUTS];
-	char basename_lightcone[PARAM_MAX_LENGTH];
 	char basename_snapshot[PARAM_MAX_LENGTH];
 	char basename_pk[PARAM_MAX_LENGTH];
 	char basename_generic[PARAM_MAX_LENGTH];
@@ -221,6 +191,7 @@ struct metadata
 	//Kessence part
 	int nKe_numsteps;
 	int Kess_source_gravity;
+	//kessence end
 };
 
 struct icsettings
@@ -233,7 +204,9 @@ struct icsettings
 	char pclfile[MAX_PCL_SPECIES][PARAM_MAX_LENGTH];
 	char pkfile[PARAM_MAX_LENGTH];
 	char tkfile[PARAM_MAX_LENGTH];
+	//Kessence
 	char tk_kessence[PARAM_MAX_LENGTH];
+	//kessence end
 	char metricfile[3][PARAM_MAX_LENGTH];
 	double restart_tau;
 	double restart_dtau;
@@ -256,6 +229,7 @@ struct cosmology
 	double Omega_kessence;
   double w_kessence;
 	double cs2_kessence;
+	//kessence end
 	double Omega_g;
 	double Omega_ur;
 	double Omega_rad;

@@ -138,9 +138,8 @@ double bg_ncdm(const double a, const cosmology cosmo)
 double Hconf(const double a, const double fourpiG, const cosmology cosmo)
 {
 	return sqrt((2. * fourpiG / 3.) * (((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) / a) + (cosmo.Omega_Lambda * a * a)
-	+ (cosmo.Omega_rad / a / a))+ (cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence)* a * a));
+	+ (cosmo.Omega_rad / a / a)+ (cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence)* a * a)));
 }
-
 
 // Here the normalization factor is not \rho_crit=1, it is what it should be in th enormal unit.
 // So Omega_m is the matter density at arbitrary redshift and is not normalized, since we did not use Hconf in the fomrula
@@ -150,8 +149,7 @@ double Omega_m(const double a, const cosmology cosmo) { return cosmo.Omega_m / (
 double Omega_rad(const double a, const cosmology cosmo) { return (cosmo.Omega_rad + (bg_ncdm(a, cosmo) + cosmo.Omega_cdm + cosmo.Omega_b - cosmo.Omega_m) * a) / ((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) * a + cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence)* a * a * a * a + cosmo.Omega_Lambda * a * a * a * a + cosmo.Omega_rad); }
 
 //Here Omega_Lambda is both kessence and Lambda
-double Omega_Lambda(const double a, const cosmology cosmo) { return (cosmo.Omega_Lambda+cosmo.Omega_kessence) / ((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) / a / a / a + cosmo.Omega_Lambda + cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence) + cosmo.Omega_rad / a / a / a / a); }
-
+double Omega_Lambda(const double a, const cosmology cosmo) { return (cosmo.Omega_Lambda+cosmo.Omega_kessence) / ((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) / a / a / a + cosmo.Omega_Lambda + cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence) + cosmo.Omega_rad / a / a / a / a);}
 
 //////////////////////////
 // rungekutta4bg

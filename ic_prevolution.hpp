@@ -69,8 +69,6 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 #ifdef HAVE_CLASS
 	int i, j, p;
 	float * pcldata = NULL;
-	string h5filename;
-	char filename[2*PARAM_MAX_LENGTH+24];
 	gsl_spline * phispline = NULL;
 	gsl_spline * phispline2 = NULL;
 	gsl_spline * chispline = NULL;
@@ -98,29 +96,12 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 	int cycle = 0;
     int relax_cycles = 0;
 
-	Real * kbin;
-	Real * power;
-	Real * kscatter;
-	Real * pscatter;
-	int * occupation;
-    long numpts3d = (long) sim.numpts * (long) sim.numpts * (long) sim.numpts;
-
   	background class_background;
   	perturbs class_perturbs;
   	spectra class_spectra;
 	
 	ic_fields[0] = phi;
 	ic_fields[1] = chi;
-
-	h5filename.reserve(2*PARAM_MAX_LENGTH);
-	h5filename.assign(sim.output_path);
-	h5filename += sim.basename_generic;
-
-	kbin = (Real *) malloc(sim.numbins * sizeof(Real));
-	power = (Real *) malloc(sim.numbins * sizeof(Real));
-	kscatter = (Real *) malloc(sim.numbins * sizeof(Real));
-	pscatter = (Real *) malloc(sim.numbins * sizeof(Real));
-	occupation = (int *) malloc(sim.numbins * sizeof(int));
 
 	a = 1. / (1. + ic.z_ic);
 	tau = particleHorizon(a, fourpiG, cosmo);
@@ -221,9 +202,6 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 		plan_chi->execute(FFT_BACKWARD);
 		chi->updateHalo();
 		gsl_spline_free(tk_d2);
-	
-		sprintf(filename, "_dT_ncdm%d.h5", p);
-		chi->saveHDF5(h5filename + filename);
 
 		mean_q = applyMomentumDistribution(pcls_ncdm+p, (unsigned int) (ic.seed + p), rescale, chi);
 		parallel.sum(mean_q);
@@ -565,35 +543,12 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 		generateRealization(*scalarFT, 0., phispline, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE, 0);
 		plan_phi->execute(FFT_BACKWARD);
 
-		if (relax_cycles == 1)
-	    {
-	    	plan_phi->execute(FFT_FORWARD);
-			extractPowerSpectrum(*scalarFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, false, KTYPE_LINEAR);
-			sprintf(filename, "%s%sICtarget_phi.dat", sim.output_path, sim.basename_pk);
-			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of phi", a);
-			plan_chi->execute(FFT_FORWARD);
-			extractPowerSpectrum(*scalarFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, false, KTYPE_LINEAR);
-			sprintf(filename, "%s%sICactual_phi.dat", sim.output_path, sim.basename_pk);
-			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of phi", a);
-		}
-
 	    if (relax_cycles > 0)
 	    {	
 	        for (x.first(); x.test(); x.next())     // interpolate between linear and nonlinear solution
 	            (*phi)(x) = (((1. / (sim.z_in + 1.)) - a) * (*phi)(x) + (a - (1. / (ic.z_relax + 1.))) * (*chi)(x)) / ((1. / (sim.z_in + 1.)) - (1. / (ic.z_relax + 1.)));
 		}
 		phi->updateHalo();
-
-		if (cycle == 0)
-		{
-			sprintf(filename, "_ICinit_phi.h5");
-			phi->saveHDF5(h5filename + filename);
-
-			plan_phi->execute(FFT_FORWARD);
-			extractPowerSpectrum(*scalarFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, false, KTYPE_LINEAR);
-			sprintf(filename, "%s%sICinit_phi.dat", sim.output_path, sim.basename_pk);
-			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of phi", a);
-		}
 
 		generateRealization(*scalarFT, 0., chispline, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE, 0);
 		plan_chi->execute(FFT_BACKWARD);
@@ -655,30 +610,6 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 	while (1. / a > sim.z_in + 1. || relax_cycles == 0);
 
 	COUT << " needed " << cycle << " steps and " << relax_cycles << " nonlinear relaxation operations." << endl;
-
-#ifdef MULTISTEP_PROJECTION
-	for (p = 0; p < cosmo.num_ncdm; p++)
-	{
-		sprintf(ncdm_name, "ncdm[%d]", p);
-		loadTransferFunctions(class_background, class_perturbs, class_spectra, tk_d1, tk_t1, ncdm_name, sim.boxsize, ic.z_ic, cosmo.h);
-
-		rescale = bg_ncdm(a, cosmo, p);
-
-		if (p == 0)
-		{
-			for (i = 0; i < tk_d1->size; i++)
-				temp2[i] = -tk_d1->y[i] * rescale * M_PI * sqrt(Pk_primordial(tk_d1->x[i] * cosmo.h / sim.boxsize, ic) / tk_d1->x[i])  / tk_d1->x[i];
-		}
-		else
-		{
-			for (i = 0; i < tk_d1->size; i++)
-				temp2[i] += -tk_d1->y[i] * rescale * M_PI * sqrt(Pk_primordial(tk_d1->x[i] * cosmo.h / sim.boxsize, ic)  / tk_d1->x[i])  / tk_d1->x[i];
-		}
-
-		gsl_spline_free(tk_d1);
-		gsl_spline_free(tk_t1);
-	}
-#endif
 	
 	if (sim.gr_flag == 0)
 	{
@@ -699,15 +630,6 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 
 		for (i = 0; i < tk_d1->size; i++)
 			temp1[i] = 3. * phispline->y[i] - rescale * tk_t1->y[i] * sqrt(Pk_primordial(tk_d1->x[i] * cosmo.h / sim.boxsize, ic) / tk_d1->x[i]) / tk_d1->x[i] / tk_d1->x[i] / tk_d1->x[i];
-
-#ifdef MULTISTEP_PROJECTION
-		if (cosmo.num_ncdm > 0)
-		{
-			rescale *= bg_ncdm(a, cosmo);
-			for (i = 0; i < tk_d1->size; i++)
-				temp2[i] -= rescale * tk_t1->y[i] * sqrt(Pk_primordial(tk_d1->x[i] * cosmo.h / sim.boxsize, ic) / tk_d1->x[i]) / tk_d1->x[i] / tk_d1->x[i] / tk_d1->x[i];
-		}
-#endif
 
 		gsl_spline_free(tk_d1);
 		gsl_spline_free(tk_t1);
@@ -834,95 +756,10 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 		parallel.abortForce();
 	}
 
-//  verification checks...
-#ifdef WRITE_INITIAL_SPECTRA
-	projection_init(source);
-	if (sim.gr_flag > 0)
-		projection_T00_project(pcls_cdm, source, a, phi);
-	else
-		scalarProjectionCIC_project(pcls_cdm, source);
-	projection_T00_comm(source);
-	plan_source->execute(FFT_FORWARD);
-	extractPowerSpectrum(*scalarFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
-	sprintf(filename, "%s%sIC_cdm.dat", sim.output_path, sim.basename_pk);
-	writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * (sim.baryon_flag ? (cosmo.Omega_cdm * cosmo.Omega_cdm) : ((cosmo.Omega_cdm + cosmo.Omega_b) * (cosmo.Omega_cdm + cosmo.Omega_b))), filename, "power spectrum of delta for cdm", a);
-
-	projection_init(Bi);
-	vectorProjectionCICNGP_project(pcls_cdm, Bi);
-	vectorProjectionCICNGP_comm(Bi);
-	Bi->updateHalo();
-
-	for (x.first(); x.test(); x.next())
-		(*source)(x) = (Real) sim.numpts * ((*Bi)(x, 0) + (*Bi)(x, 1) + (*Bi)(x, 2) - (*Bi)(x-0, 0) - (*Bi)(x-1, 1) - (*Bi)(x-2, 2)) / (*source)(x) / a;
-
-	plan_source->execute(FFT_FORWARD);
-	extractPowerSpectrum(*scalarFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
-	sprintf(filename, "%s%sIC_tcdm.dat", sim.output_path, sim.basename_pk);
-	writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * sim.boxsize * sim.boxsize / cosmo.h / cosmo.h, filename, "power spectrum of theta for cdm", a);
-
-	if (sim.baryon_flag > 0)
-	{
-		projection_init(source);
-		if (sim.gr_flag > 0)
-			projection_T00_project(pcls_b, source, a, phi);
-		else
-			scalarProjectionCIC_project(pcls_b, source);
-		projection_T00_comm(source);
-		plan_source->execute(FFT_FORWARD);
-		extractPowerSpectrum(*scalarFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
-		sprintf(filename, "%s%sIC_b.dat", sim.output_path, sim.basename_pk);
-		writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * cosmo.Omega_b * cosmo.Omega_b, filename, "power spectrum of delta for baryons", a);
-
-		projection_init(Bi);
-		vectorProjectionCICNGP_project(pcls_b, Bi);
-		vectorProjectionCICNGP_comm(Bi);
-		Bi->updateHalo();
-
-		for (x.first(); x.test(); x.next())
-			(*source)(x) = (Real) sim.numpts * ((*Bi)(x, 0) + (*Bi)(x, 1) + (*Bi)(x, 2) - (*Bi)(x-0, 0) - (*Bi)(x-1, 1) - (*Bi)(x-2, 2)) / (*source)(x) / a;
-
-		plan_source->execute(FFT_FORWARD);
-		extractPowerSpectrum(*scalarFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
-		sprintf(filename, "%s%sIC_tb.dat", sim.output_path, sim.basename_pk);
-		writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * sim.boxsize * sim.boxsize / cosmo.h / cosmo.h, filename, "power spectrum of theta for baryons", a);
-	}		
-#endif
-
-#ifdef MULTISTEP_PROJECTION
-	if (cosmo.num_ncdm > 0)
-	{
-		tk_d1 = gsl_spline_alloc(gsl_interp_cspline, phispline->size);
-		gsl_spline_init(tk_d1, phispline->x, temp2, phispline->size);
-
-		generateRealization(*scalarFT, 0., tk_d1, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE);
-		gsl_spline_free(tk_d1);
-
-		projection_init(source);
-		plan_source->execute(FFT_BACKWARD);
-
-		rescale = bg_ncdm(a, cosmo);
-		for (x.first(); x.test(); x.next())
-			(*source)(x) += rescale;
-
-		plan_source->execute(FFT_FORWARD);
-		extractPowerSpectrum(*scalarFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
-		sprintf(filename, "%s%sICinit_deltancdm.dat", sim.output_path, sim.basename_pk);
-		writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * bg_ncdm(a, cosmo) * bg_ncdm(a, cosmo), filename, "power spectrum of delta for total ncdm", a);
-	}
-	else
-		projection_init(source);
-#endif
-
 	gsl_spline_free(phispline);
 	gsl_spline_free(chispline);
 	free(temp1);
 	free(temp2);
-
-    free(kbin);
-	free(power);
-	free(kscatter);
-	free(pscatter);
-	free(occupation);
 	
 	projection_init(Bi);
 	projection_T0i_project(pcls_cdm, Bi, phi);

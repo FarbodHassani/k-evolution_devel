@@ -6,7 +6,7 @@
 //
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris)
 //
-// Last modified: May 2017
+// Last modified: November 2016
 //
 //////////////////////////
 
@@ -306,7 +306,7 @@ void prepareFTchiLinear(background & class_background, perturbs & class_perturbs
 	tk2 = gsl_spline_alloc(gsl_interp_cspline, tk1->size);
 	gsl_spline_init(tk2, tk1->x, chi, tk1->size);
 
-	generateRealization(scalarFT, 0., tk2, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE, 0);
+	generateRealization(scalarFT, 0., tk2, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE);
 
 	gsl_spline_free(tk1);
 	gsl_spline_free(tk2);

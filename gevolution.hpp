@@ -143,90 +143,6 @@ void prepareFTsource(Field<FieldType> & phi, Field<FieldType> & Tij, Field<Field
 	}
 }
 
-//////////////////////////
-// Update K-essence field (1)
-//////////////////////////
-// Description:
-//   Updating K-essence field based on equation obtained by energy momentum conservation
-//
-// Arguments:
-//   phi        reference to field configuration
-//   pi_k       reference to k-essence field
-//   piv_k      reference to first derivative of the field
-//
-// Returns:
-//
-//////////////////////////
-template <class FieldType>
-void update_pi_k(double dtau, Field<FieldType> & phi, Field<FieldType> & pi_k, Field<FieldType> & pi_v_k)
-{
-  Site x(phi.lattice());
-  for (x.first(); x.test(); x.next())
-    {
-    	pi_k(x)=pi_k(x)+pi_v_k(x)*dtau;
-    }
-
-}
-
-template <class FieldType>
-void update_pi_k_v(double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi,Field<FieldType> & chi_old, Field<FieldType> & pi_k, Field<FieldType> & pi_v_k ,double Omega_fld ,double w, double cs2, double Hcon, double Hcon_old)
-{
-  double Coeff1, Coeff2, Coeff3, Coeff4, Coeff5, Coeff6, H_prime, psi, psi_old,Psi_prime,Phi_prime;
-  double Laplacian_pi, Laplacian_pi_v, Laplacian_Psi, Laplacian_Phi, Gradpsi_Gradpi, Gradphi_Gradpi, Gradpi_Gradpi;
-  Site x(phi.lattice());
-  H_prime= (Hcon-Hcon_old)/dtau;
-  Coeff1= (1.+3.*w)*Hcon*dtau/2.;
-  Coeff2= (1.-cs2)*dtau;
-  Coeff3= 3.*a*cs2*Hcon*(1.-w/cs2);
-  Coeff4= 3.*cs2*(-Hcon*Hcon+H_prime);
-  Coeff5= Hcon*(2.+3.*w+cs2)/(2*a);
-
-  for (x.first(); x.test(); x.next())
-    {
-      Laplacian_pi=pi_k(x-0) + pi_k(x+0) - 2. * pi_k(x);
-      Laplacian_pi+=pi_k(x+1) + pi_k(x-1)- 2. * pi_k(x);
-      Laplacian_pi+=pi_k(x+2) + pi_k(x-2)- 2. * pi_k(x);
-
-      Laplacian_pi_v=pi_v_k(x-0) + pi_v_k(x+0) - 2. * pi_v_k(x);
-      Laplacian_pi_v+=pi_v_k(x+1) + pi_v_k(x-1)- 2. * pi_v_k(x);
-      Laplacian_pi_v+=pi_v_k(x+2) + pi_v_k(x-2)- 2. * pi_v_k(x);
-
-      Laplacian_Psi=(phi(x-0) - chi(x-0)) + (phi(x+0) - chi(x+0)) - 2. * (phi(x) - chi(x));
-      Laplacian_Psi+=(phi(x-1) - chi(x-1)) + (phi(x+1) - chi(x+1)) - 2. * (phi(x) - chi(x));
-      Laplacian_Psi+=(phi(x-2) - chi(x-2)) + (phi(x+2) - chi(x+2)) - 2. * (phi(x) - chi(x));
-
-      Laplacian_Phi=phi(x-0) + phi(x+0) - 2. * phi(x);
-      Laplacian_Phi+=phi(x+1) + phi(x-1)- 2. * phi(x);
-      Laplacian_Phi+=phi(x+2) + phi(x-2)- 2. * phi(x);
-      // Symetric Laplace.Laplace here the Grad vector is not on the edge.
-      Gradpsi_Gradpi=0.25*((phi(x+0) - chi(x+0)) - (phi(x-0) - chi(x-0)))*(pi_k(x+0) + pi_k(x-0));
-      Gradpsi_Gradpi+=0.25*((phi(x+1) - chi(x+1)) - (phi(x-1) - chi(x-1)))*(pi_k(x+1) + pi_k(x-1));
-      Gradpsi_Gradpi+=0.25*((phi(x+2) - chi(x+2)) - (phi(x-2) - chi(x-2)))*(pi_k(x+2) + pi_k(x-2));
-
-      Gradphi_Gradpi=0.25*(phi(x+0)  - phi(x-0))*(pi_k(x+0) + pi_k(x-0));
-      Gradphi_Gradpi+=0.25*(phi(x+1)  - phi(x-1))*(pi_k(x+1) + pi_k(x-1));
-      Gradphi_Gradpi+=0.25*(phi(x+2)  - phi(x-2))*(pi_k(x+2) + pi_k(x-2));
-
-      Gradpi_Gradpi=0.25*(pi_k(x+0) + pi_k(x-0))*(pi_k(x+0) + pi_k(x-0));
-      Gradpi_Gradpi+=0.25*(pi_k(x+1) + pi_k(x-1))*(pi_k(x+1) + pi_k(x-1));
-      Gradpi_Gradpi+=0.25*(pi_k(x+2) + pi_k(x-2))*(pi_k(x+2) + pi_k(x-2));
-
-      Psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau;
-      Phi_prime= (phi(x) - phi_old(x))/dtau;
-
-      pi_v_k(x)=
-      (1.+Coeff1)*pi_v_k(x)/(1.-Coeff1)
-        - (dtau/(1.-Coeff1))* ( -Coeff3*(phi(x) - chi(x)) - a*Psi_prime - 3.*a*cs2*Phi_prime
-        + Coeff4*pi_k(x) -cs2*Laplacian_pi
-      // Second order part
-        + Coeff2*Laplacian_pi_v*pi_k(x)/(1.-Coeff1)
-        + (1.-cs2)*pi_k(x)*Laplacian_Psi - 2.*cs2*pi_k(x)*Laplacian_Phi
-        + 3.*cs2*Hcon*(1.+w)*pi_k(x)*Laplacian_pi - (2.*cs2-1)*Gradpsi_Gradpi + cs2*Gradphi_Gradpi + Coeff5*Gradpi_Gradpi);
-      //   if(parallel.isRoot()){
-      //   // cout<<"pi_v_k"<<pi_v_k(x)<<endl;
-      // }
-    }
-}
 
 //////////////////////////
 //Kessence Stress tensor
@@ -252,7 +168,6 @@ void update_pi_k_v(double dtau, double dx,double a, Field<FieldType> & phi, Fiel
 // Returns:
 //
 //////////////////////////
-// Field<FieldType> & Tij
 template <class FieldType>
 void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, Field<FieldType> & Tij,
    double dx,double a, Field<FieldType> & phi,Field<FieldType> & phi_old, Field<FieldType> & chi, Field<FieldType> & pi_k,
@@ -272,11 +187,15 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
     		gradient_pi2 =0.25*(pi_k(xField+0) - pi_k(xField-0))* (pi_k(xField+0) - pi_k(xField-0));
         gradient_pi2+=0.25*(pi_k(xField+1) - pi_k(xField-1))* (pi_k(xField+1) - pi_k(xField-1));
         gradient_pi2+=0.25*(pi_k(xField+1) - pi_k(xField-2))* (pi_k(xField+1) - pi_k(xField-2));
-
+				if(xField.coord(0)==2 && xField.coord(1)==2 && xField.coord(2)==2 )
+				{
+				cout<<"gradient_pi2: "<<gradient_pi2<<endl;
+				}
         psi=phi(xField) - chi(xField);
 
         // 0-0-component:
-        T00(xField)       =  coeff1*(-3*Hcon*cs2*pi_k(xField) - psi + pi_v_k(xField) - (1.-2.*cs2) * gradient_pi2/2. );
+        // T00(xField)       =  coeff1*(-3*Hcon*cs2*pi_k(xField) - psi + pi_v_k(xField) - (1.-2.*cs2) * gradient_pi2/2. );
+				T00(xField)       =  0;
         // 1-1-component:
         Tij(xField, 0, 0) =  coeff2*(w + (1.+w)*(-3*Hcon*w*pi_k(xField) - psi + pi_v_k(xField) +  gradient_pi2/2. ));
         // 1-2-component:
@@ -300,6 +219,105 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 
 
       }
+
+
+
+			//////////////////////////
+			// Update K-essence field (1)
+			//////////////////////////
+			// Description:
+			//   Updating K-essence field based on equation obtained by energy momentum conservation
+			//
+			// Arguments:
+			//   phi        reference to field configuration
+			//   pi_k       reference to k-essence field
+			//   piv_k      reference to first derivative of the field
+			//
+			// Returns:
+			//
+			//////////////////////////
+			template <class FieldType>
+			void update_pi_k(double dtau, Field<FieldType> & phi, Field<FieldType> & pi_k, Field<FieldType> & pi_v_k)
+			{
+			  Site x(phi.lattice());
+			  for (x.first(); x.test(); x.next())
+			    {
+			    	pi_k(x)=pi_k(x)+pi_v_k(x)*dtau;
+			    }
+
+			}
+
+			//////////////////////////
+			// Update K-essence velocity field (1)
+			//////////////////////////
+			// Description:
+			//   Updating K-essence field based on equation obtained by energy momentum conservation
+			//
+			// Arguments:
+			//   phi        reference to field configuration
+			//   pi_k       reference to k-essence field
+			//   piv_k      reference to first derivative of the field
+			//
+			// Returns:
+			//
+			//////////////////////////
+			template <class FieldType>
+			void update_pi_k_v(double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi,Field<FieldType> & chi_old, Field<FieldType> & pi_k, Field<FieldType> & pi_v_k ,double Omega_fld ,double w, double cs2, double Hcon, double Hcon_old)
+			{
+			  double Coeff1, Coeff2, Coeff3, Coeff4, Coeff5, Coeff6, H_prime, psi, psi_old,Psi_prime,Phi_prime;
+			  double Laplacian_pi, Laplacian_pi_v, Laplacian_Psi, Laplacian_Phi, Gradpsi_Gradpi, Gradphi_Gradpi, Gradpi_Gradpi;
+			  Site x(phi.lattice());
+			  H_prime= (Hcon-Hcon_old)/dtau;
+			  Coeff1= (1.+3.*w)*Hcon*dtau/2.;
+			  Coeff2= (1.-cs2)*dtau;
+			  Coeff3= 3.*a*cs2*Hcon*(1.-w/cs2);
+			  Coeff4= 3.*cs2*(-Hcon*Hcon+H_prime);
+			  Coeff5= Hcon*(2.+3.*w+cs2)/(2*a);
+
+			  for (x.first(); x.test(); x.next())
+			    {
+			      Laplacian_pi=pi_k(x-0) + pi_k(x+0) - 2. * pi_k(x);
+			      Laplacian_pi+=pi_k(x+1) + pi_k(x-1)- 2. * pi_k(x);
+			      Laplacian_pi+=pi_k(x+2) + pi_k(x-2)- 2. * pi_k(x);
+
+			      Laplacian_pi_v=pi_v_k(x-0) + pi_v_k(x+0) - 2. * pi_v_k(x);
+			      Laplacian_pi_v+=pi_v_k(x+1) + pi_v_k(x-1)- 2. * pi_v_k(x);
+			      Laplacian_pi_v+=pi_v_k(x+2) + pi_v_k(x-2)- 2. * pi_v_k(x);
+
+			      Laplacian_Psi=(phi(x-0) - chi(x-0)) + (phi(x+0) - chi(x+0)) - 2. * (phi(x) - chi(x));
+			      Laplacian_Psi+=(phi(x-1) - chi(x-1)) + (phi(x+1) - chi(x+1)) - 2. * (phi(x) - chi(x));
+			      Laplacian_Psi+=(phi(x-2) - chi(x-2)) + (phi(x+2) - chi(x+2)) - 2. * (phi(x) - chi(x));
+
+			      Laplacian_Phi=phi(x-0) + phi(x+0) - 2. * phi(x);
+			      Laplacian_Phi+=phi(x+1) + phi(x-1)- 2. * phi(x);
+			      Laplacian_Phi+=phi(x+2) + phi(x-2)- 2. * phi(x);
+			      // Symetric Laplace.Laplace here the Grad vector is not on the edge.
+			      Gradpsi_Gradpi=0.25*((phi(x+0) - chi(x+0)) - (phi(x-0) - chi(x-0)))*(pi_k(x+0) + pi_k(x-0));
+			      Gradpsi_Gradpi+=0.25*((phi(x+1) - chi(x+1)) - (phi(x-1) - chi(x-1)))*(pi_k(x+1) + pi_k(x-1));
+			      Gradpsi_Gradpi+=0.25*((phi(x+2) - chi(x+2)) - (phi(x-2) - chi(x-2)))*(pi_k(x+2) + pi_k(x-2));
+
+			      Gradphi_Gradpi=0.25*(phi(x+0)  - phi(x-0))*(pi_k(x+0) + pi_k(x-0));
+			      Gradphi_Gradpi+=0.25*(phi(x+1)  - phi(x-1))*(pi_k(x+1) + pi_k(x-1));
+			      Gradphi_Gradpi+=0.25*(phi(x+2)  - phi(x-2))*(pi_k(x+2) + pi_k(x-2));
+
+			      Gradpi_Gradpi=0.25*(pi_k(x+0) + pi_k(x-0))*(pi_k(x+0) + pi_k(x-0));
+			      Gradpi_Gradpi+=0.25*(pi_k(x+1) + pi_k(x-1))*(pi_k(x+1) + pi_k(x-1));
+			      Gradpi_Gradpi+=0.25*(pi_k(x+2) + pi_k(x-2))*(pi_k(x+2) + pi_k(x-2));
+
+			      Psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau;
+			      Phi_prime= (phi(x) - phi_old(x))/dtau;
+
+			      pi_v_k(x)=
+			      (1.+Coeff1)*pi_v_k(x)/(1.-Coeff1)
+			        - (dtau/(1.-Coeff1))* ( -Coeff3*(phi(x) - chi(x)) - a*Psi_prime - 3.*a*cs2*Phi_prime
+			        + Coeff4*pi_k(x) -cs2*Laplacian_pi
+			      // Second order part
+			        + Coeff2*Laplacian_pi_v*pi_k(x)/(1.-Coeff1)
+			        + (1.-cs2)*pi_k(x)*Laplacian_Psi - 2.*cs2*pi_k(x)*Laplacian_Phi
+			        + 3.*cs2*Hcon*(1.+w)*pi_k(x)*Laplacian_pi - (2.*cs2-1)*Gradpsi_Gradpi + cs2*Gradphi_Gradpi + Coeff5*Gradpi_Gradpi);
+
+			    }
+			}
 
 //////////////////////////
 // prepareFTsource (2)
@@ -345,30 +363,6 @@ void prepareFTsource(Field<FieldType> & phi, Field<FieldType> & chi, Field<Field
 		result(x) += (coeff3 - coeff) * phi(x) - coeff3 * chi(x);
 	}
 }
-
-
-#ifdef VECTOREXTRA
-template <class FieldType>
-void prepareFTvector(Field<FieldType> & phi, Field<FieldType> & Bi, Field<FieldType> & temp, const double coeff)
-{
-	Site x(Bi.lattice());
-
-	for (x.first(); x.test(); x.next())
-	{
-		temp(x, 0) = coeff * 0.5 * Bi(x, 0) * (2. * phi(x-0) + 2. * phi(x+0+0) - 6. * phi(x) - 6. * phi(x+0) + phi(x+1) + phi(x-1) + phi(x+2) + phi(x-2) + phi(x+0+1) + phi(x+0-1) + phi(x+0+2) + phi(x+0-2));
-		temp(x, 0) += coeff * 0.125 * (Bi(x, 1) + Bi(x-1, 1) + Bi(x+0, 1) + Bi(x+0-1, 1)) * (phi(x+0+1) - phi(x+0-1) - phi(x+1) + phi(x-1));
-		temp(x, 0) += coeff * 0.125 * (Bi(x, 2) + Bi(x-2, 2) + Bi(x+0, 2) + Bi(x+0-2, 2)) * (phi(x+0+2) - phi(x+0-2) - phi(x+2) + phi(x-2));
-
-		temp(x, 1) = coeff * 0.5 * Bi(x, 1) * (2. * phi(x-1) + 2. * phi(x+1+1) - 6. * phi(x) - 6. * phi(x+1) + phi(x+0) + phi(x-0) + phi(x+2) + phi(x-2) + phi(x+0+1) + phi(x-0+1) + phi(x+1+2) + phi(x+1-2));
-		temp(x, 1) += coeff * 0.125 * (Bi(x, 0) + Bi(x-0, 0) + Bi(x+1, 0) + Bi(x-0+1, 0)) * (phi(x+0+1) - phi(x-0+1) - phi(x+0) + phi(x-0));
-		temp(x, 1) += coeff * 0.125 * (Bi(x, 2) + Bi(x-2, 2) + Bi(x+1, 2) + Bi(x+1-2, 2)) * (phi(x+1+2) - phi(x+1-2) - phi(x+2) + phi(x-2));
-
-		temp(x, 2) = coeff * 0.5 * Bi(x, 2) * (2. * phi(x-2) + 2. * phi(x+2+2) - 6. * phi(x) - 6. * phi(x+2) + phi(x+1) + phi(x-1) + phi(x+0) + phi(x-0) + phi(x+1+2) + phi(x-1+2) + phi(x+0+2) + phi(x-0+2));
-		temp(x, 2) += coeff * 0.125 * (Bi(x, 1) + Bi(x-1, 1) + Bi(x+2, 1) + Bi(x-1+2, 1)) * (phi(x+1+2) - phi(x-1+2) - phi(x+1) + phi(x-1));
-		temp(x, 2) += coeff * 0.125 * (Bi(x, 0) + Bi(x-0, 0) + Bi(x+2, 0) + Bi(x-0+2, 0)) * (phi(x+0+2) - phi(x-0+2) - phi(x+0) + phi(x-0));
-	}
-}
-#endif
 
 
 #ifdef FFT3D
@@ -778,7 +772,7 @@ Real update_q(double dtau, double dx, part_simple * part, double * ref_dist, par
 	gradphi[1] *= (v2 + e2) / e2;
 	gradphi[2] *= (v2 + e2) / e2;
 
-	if (nfield>=2 && fields[1] != NULL)
+	if (nfield >= 2 && fields[1] != NULL)
 	{
 		gradphi[0] -= (1.-ref_dist[1]) * (1.-ref_dist[2]) * (chi(xchi+0) - chi(xchi));
 		gradphi[1] -= (1.-ref_dist[0]) * (1.-ref_dist[2]) * (chi(xchi+1) - chi(xchi));
@@ -796,7 +790,7 @@ Real update_q(double dtau, double dx, part_simple * part, double * ref_dist, par
 
 	e2 = sqrt(e2);
 
-	if (nfield>=3 && fields[2] != NULL)
+	if (nfield >= 3 && fields[2] != NULL)
 	{
 		pgradB[0] = ((1.-ref_dist[2]) * (Bi(xB+0,1) - Bi(xB,1)) + ref_dist[2] * (Bi(xB+2+0,1) - Bi(xB+2,1))) * (*part).vel[1];
 		pgradB[0] += ((1.-ref_dist[1]) * (Bi(xB+0,2) - Bi(xB,2)) + ref_dist[1] * (Bi(xB+1+0,2) - Bi(xB+1,2))) * (*part).vel[2];
@@ -825,7 +819,7 @@ Real update_q(double dtau, double dx, part_simple * part, double * ref_dist, par
 	}
 
 	v2 = 0.;
-	for (int i=0;i<3;i++)
+	for (int i = 0; i < 3; i++)
 	{
 		(*part).vel[i] -= dtau * e2 * gradphi[i] / dx;
 		v2 += (*part).vel[i] * (*part).vel[i];
@@ -892,7 +886,7 @@ Real update_q_Newton(double dtau, double dx, part_simple * part, double * ref_di
 	gradpsi[1] += ref_dist[0] * ref_dist[2] * (psi(xpsi+2+1+0) - psi(xpsi+2+0));
 	gradpsi[2] += ref_dist[0] * ref_dist[1] * (psi(xpsi+2+1+0) - psi(xpsi+1+0));
 
-	if (nfield>=2 && fields[1] != NULL)
+	if (nfield >= 2 && fields[1] != NULL)
 	{
 		gradpsi[0] -= (1.-ref_dist[1]) * (1.-ref_dist[2]) * (chi(xchi+0) - chi(xchi));
 		gradpsi[1] -= (1.-ref_dist[0]) * (1.-ref_dist[2]) * (chi(xchi+1) - chi(xchi));
@@ -909,7 +903,7 @@ Real update_q_Newton(double dtau, double dx, part_simple * part, double * ref_di
 	}
 
 	Real v2 = 0.;
-	for (int i=0;i<3;i++)
+	for (int i = 0; i < 3; i++)
 	{
 		(*part).vel[i] -= dtau * params[0] * gradpsi[i] / dx;
 		v2 += (*part).vel[i] * (*part).vel[i];
@@ -1010,11 +1004,11 @@ void update_pos(double dtau, double dx, part_simple * part, double * ref_dist, p
 		b[0] += (*fields[2])(sites[2]+2+1, 0) * ref_dist[1] * ref_dist[2];
 		b[2] += (*fields[2])(sites[2]+1+0, 2) * ref_dist[0] * ref_dist[1];
 
-		for (int l=0;l<3;l++) (*part).pos[l] += dtau*(v[l] + b[l] / params[1]);
+		for (int i = 0; i < 3; i++) (*part).pos[i] += dtau * (v[i] + b[i] / params[1]);
 	}
 	else
 	{
-		for (int l=0;l<3;l++) (*part).pos[l] += dtau*v[l];
+		for (int i = 0; i < 3 ; i++) (*part).pos[i] += dtau * v[i];
 	}
 }
 
@@ -1047,7 +1041,7 @@ void update_pos(double dtau, double dx, part_simple * part, double * ref_dist, p
 
 void update_pos_Newton(double dtau, double dx, part_simple * part, double * ref_dist, part_simple_info partInfo, Field<Real> ** fields, Site * sites, int nfield, double * params, double * outputs, int noutputs)
 {
-	for (int l=0;l<3;l++) (*part).pos[l] += dtau * (*part).vel[l] / params[0];
+	for (int i = 0; i < 3; i++) (*part).pos[i] += dtau * (*part).vel[i] / params[0];
 }
 
 
@@ -1101,14 +1095,14 @@ void projection_T00_project(Particles<part, part_info, part_dataType> * pcls, Fi
 	Real localCube[8]; // XYZ = 000 | 001 | 010 | 011 | 100 | 101 | 110 | 111
 	Real localCubePhi[8];
 
-	for (int i=0; i<8; i++) localCubePhi[i] = 0.0;
+	for (int i = 0; i < 8; i++) localCubePhi[i] = 0.0;
 
-	for (xPart.first(),xField.first(); xPart.test(); xPart.next(),xField.next())
+	for (xPart.first(), xField.first(); xPart.test(); xPart.next(), xField.next())
 	{
 		if (pcls->field()(xPart).size != 0)
 		{
-			for(int i=0; i<3; i++) referPos[i] = xPart.coord(i)*dx;
-			for(int i=0; i<8; i++) localCube[i] = 0.0;
+			for(int i = 0; i < 3; i++) referPos[i] = xPart.coord(i)*dx;
+			for(int i = 0; i < 8; i++) localCube[i] = 0.0;
 
 			if (phi != NULL)
 			{
@@ -1122,9 +1116,9 @@ void projection_T00_project(Particles<part, part_info, part_dataType> * pcls, Fi
 				localCubePhi[7] = (*phi)(xField+0+1+2);
 			}
 
-			for (it=(pcls->field())(xPart).parts.begin(); it != (pcls->field())(xPart).parts.end(); ++it)
+			for (it = (pcls->field())(xPart).parts.begin(); it != (pcls->field())(xPart).parts.end(); ++it)
 			{
-				for (int i=0; i<3; i++)
+				for (int i = 0; i < 3; i++)
 				{
 					weightScalarGridUp[i] = ((*it).pos[i] - referPos[i]) / dx;
 					weightScalarGridDown[i] = 1.0l - weightScalarGridUp[i];
@@ -1157,11 +1151,11 @@ void projection_T00_project(Particles<part, part_info, part_dataType> * pcls, Fi
 				localCube[7] += weightScalarGridUp[0]*weightScalarGridUp[1]*weightScalarGridUp[2]*(e+f*localCubePhi[7]);
 			}
 
-			(*T00)(xField)	   += localCube[0] * mass;
-			(*T00)(xField+2)	 += localCube[1] * mass;
-			(*T00)(xField+1)	 += localCube[2] * mass;
+			(*T00)(xField)       += localCube[0] * mass;
+			(*T00)(xField+2)     += localCube[1] * mass;
+			(*T00)(xField+1)     += localCube[2] * mass;
 			(*T00)(xField+1+2)   += localCube[3] * mass;
-			(*T00)(xField+0)	 += localCube[4] * mass;
+			(*T00)(xField+0)     += localCube[4] * mass;
 			(*T00)(xField+0+2)   += localCube[5] * mass;
 			(*T00)(xField+0+1)   += localCube[6] * mass;
 			(*T00)(xField+0+1+2) += localCube[7] * mass;
@@ -1219,16 +1213,16 @@ void projection_T0i_project(Particles<part,part_info,part_dataType> * pcls, Fiel
 	Real  qi[12];
 	Real  localCubePhi[8];
 
-	for (int i=0; i<8; i++) localCubePhi[i] = 0;
+	for (int i = 0; i < 8; i++) localCubePhi[i] = 0;
 
-	for(xPart.first(),xT0i.first();xPart.test();xPart.next(),xT0i.next())
+	for(xPart.first(), xT0i.first(); xPart.test(); xPart.next(), xT0i.next())
 	{
 		if(pcls->field()(xPart).size!=0)
         {
         	for(int i=0; i<3; i++)
         		referPos[i] = xPart.coord(i)*dx;
 
-            for(int i=0; i<12; i++) qi[i]=0.0;
+            for(int i = 0; i < 12; i++) qi[i]=0.0;
 
 			if (phi != NULL)
 			{
@@ -1242,9 +1236,9 @@ void projection_T0i_project(Particles<part,part_info,part_dataType> * pcls, Fiel
 				localCubePhi[7] = (*phi)(xT0i+0+1+2);
 			}
 
-			for (it=(pcls->field())(xPart).parts.begin(); it != (pcls->field())(xPart).parts.end(); ++it)
+			for (it = (pcls->field())(xPart).parts.begin(); it != (pcls->field())(xPart).parts.end(); ++it)
 			{
-				for (int i =0; i<3; i++)
+				for (int i = 0; i < 3; i++)
 				{
 					weightScalarGridUp[i] = ((*it).pos[i] - referPos[i]) / dx;
 					weightScalarGridDown[i] = 1.0l - weightScalarGridUp[i];
@@ -1348,17 +1342,17 @@ void projection_Tij_project(Particles<part, part_info, part_dataType> * pcls, Fi
 	Real  tii[24];          // local cube
 	Real  localCubePhi[8];
 
-	for (int i=0; i<8; i++) localCubePhi[i] = 0;
+	for (int i = 0; i < 8; i++) localCubePhi[i] = 0;
 
-	for (xPart.first(),xTij.first(); xPart.test(); xPart.next(),xTij.next())
+	for (xPart.first(), xTij.first(); xPart.test(); xPart.next(), xTij.next())
 	{
 		if (pcls->field()(xPart).size != 0)
 		{
-			for (int i=0;i<3;i++)
+			for (int i = 0; i < 3; i++)
 				referPos[i] = (double)xPart.coord(i)*dx;
 
-			for (int i=0; i<6; i++)  tij[i]=0.0;
-			for (int i=0; i<24; i++) tii[i]=0.0;
+			for (int i = 0; i < 6; i++)  tij[i]=0.0;
+			for (int i = 0; i < 24; i++) tii[i]=0.0;
 
 			if (phi != NULL)
 			{
@@ -1372,9 +1366,9 @@ void projection_Tij_project(Particles<part, part_info, part_dataType> * pcls, Fi
 				localCubePhi[7] = (*phi)(xTij+0+1+2);
 			}
 
-			for (it=(pcls->field())(xPart).parts.begin(); it != (pcls->field())(xPart).parts.end(); ++it)
+			for (it = (pcls->field())(xPart).parts.begin(); it != (pcls->field())(xPart).parts.end(); ++it)
 			{
-				for (int i =0; i<3; i++)
+				for (int i = 0; i < 3; i++)
 				{
 					weightScalarGridUp[i] = ((*it).pos[i] - referPos[i]) / dx;
 					weightScalarGridDown[i] = 1.0l - weightScalarGridUp[i];
@@ -1386,7 +1380,7 @@ void projection_Tij_project(Particles<part, part_info, part_dataType> * pcls, Fi
 				f = 4. + a * a / (f + a * a);
 
 				// diagonal components
-				for (int i=0; i<3; i++)
+				for (int i = 0; i < 3; i++)
 				{
 					w = mass * q[i] * q[i] / e;
 					//000
@@ -1422,24 +1416,24 @@ void projection_Tij_project(Particles<part, part_info, part_dataType> * pcls, Fi
 			}
 
 
-			for (int i=0; i<3; i++) (*Tij)(xTij,i,i) += tii[8*i];
+			for (int i = 0; i < 3; i++) (*Tij)(xTij,i,i) += tii[8*i];
 			(*Tij)(xTij,0,1) += tij[0];
 			(*Tij)(xTij,0,2) += tij[2];
 			(*Tij)(xTij,1,2) += tij[4];
 
-			for (int i=0; i<3; i++) (*Tij)(xTij+0,i,i) += tii[4+8*i];
+			for (int i = 0; i < 3; i++) (*Tij)(xTij+0,i,i) += tii[4+8*i];
 			(*Tij)(xTij+0,1,2) += tij[5];
 
-			for (int i=0; i<3; i++) (*Tij)(xTij+1,i,i) += tii[2+8*i];
+			for (int i = 0; i < 3; i++) (*Tij)(xTij+1,i,i) += tii[2+8*i];
 			(*Tij)(xTij+1,0,2) += tij[3];
 
-			for (int i=0; i<3; i++) (*Tij)(xTij+2,i,i) += tii[1+8*i];
+			for (int i = 0; i < 3; i++) (*Tij)(xTij+2,i,i) += tii[1+8*i];
 			(*Tij)(xTij+2,0,1) += tij[1];
 
-			for (int i=0; i<3; i++) (*Tij)(xTij+0+1,i,i) += tii[6+8*i];
-			for (int i=0; i<3; i++) (*Tij)(xTij+0+2,i,i) += tii[5+8*i];
-			for (int i=0; i<3; i++) (*Tij)(xTij+1+2,i,i) += tii[3+8*i];
-			for (int i=0; i<3; i++) (*Tij)(xTij+0+1+2,i,i) += tii[7+8*i];
+			for (int i = 0; i < 3; i++) (*Tij)(xTij+0+1,i,i) += tii[6+8*i];
+			for (int i = 0; i < 3; i++) (*Tij)(xTij+0+2,i,i) += tii[5+8*i];
+			for (int i = 0; i < 3; i++) (*Tij)(xTij+1+2,i,i) += tii[3+8*i];
+			for (int i = 0; i < 3; i++) (*Tij)(xTij+0+1+2,i,i) += tii[7+8*i];
 		}
 	}
 }
