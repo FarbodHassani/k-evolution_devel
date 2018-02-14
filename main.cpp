@@ -206,6 +206,7 @@ int main(int argc, char **argv)
 	Field<Real> phi_old;
 	Field<Real> pi_k;
 	Field<Real> pi_v_k;
+	Field<Real>	pi_v_estimator
 	Field<Real> T00_Kess;
 	Field<Real> T0i_Kess;
 	Field<Real> Tij_Kess;
@@ -229,6 +230,7 @@ int main(int argc, char **argv)
 	phi_old.initialize(lat,1);
 	pi_k.initialize(lat,1);
 	pi_v_k.initialize(lat,1);
+	pi_v_estimator.initialize(lat,1);
 	T00_Kess.initialize(lat,1);
 	T00_Kess.alloc();
 	T0i_Kess.initialize(lat,3);
@@ -727,7 +729,7 @@ if(cycle==0)
 	for (i=0;i<sim.nKe_numsteps;i++)
 	{
 		dtau_old=0.1;
-		update_pi_k_v( 0.5 * dtau_old/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, pi_v_k,cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_old);
+		update_pi_k_v( 0.5 * dtau_old/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, pi_v_k, pi_v_estimator, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_old);
 				pi_v_k.updateHalo();
 	}
 }
@@ -738,9 +740,7 @@ if(dtau_old>0)
 		update_pi_k( dtau_old  / sim.nKe_numsteps,phi, pi_k, pi_v_k);
 		pi_k.updateHalo();
 		rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0);
-		update_pi_k_v(dtau_old/ sim.nKe_numsteps,
-									dx,a_kess,phi,phi_old,chi,chi_old,pi_k, pi_v_k,cosmo.Omega_kessence,cosmo.w_kessence,cosmo.cs2_kessence,
-									Hconf(a_kess, fourpiG, cosmo),Hconf_old);
+		update_pi_k_v(dtau_old/ sim.nKe_numsteps, dx,a_kess,phi,phi_old,chi,chi_old,pi_k, pi_v_k, pi_v_estimator, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_old);
 		pi_v_k.updateHalo();
 		rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0 );
 
