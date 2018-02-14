@@ -206,7 +206,7 @@ int main(int argc, char **argv)
 	Field<Real> phi_old;
 	Field<Real> pi_k;
 	Field<Real> pi_v_k;
-	Field<Real>	pi_v_estimator
+	Field<Real>	pi_v_estimator;
 	Field<Real> T00_Kess;
 	Field<Real> T0i_Kess;
 	Field<Real> Tij_Kess;
@@ -221,6 +221,7 @@ int main(int argc, char **argv)
 	Field<Cplx> scalarFT_chi_old;
 	Field<Cplx> scalarFT_pi;
 	Field<Cplx> scalarFT_pi_v;
+	Field<Cplx> scalarFT_pi_v_estimator;
 	//kessence end
 	Field<Cplx> SijFT;
 	Field<Cplx> BiFT;
@@ -246,6 +247,7 @@ int main(int argc, char **argv)
 	scalarFT_chi_old.initialize(latFT,1);
 	scalarFT_pi.initialize(latFT,1);
 	scalarFT_pi_v.initialize(latFT,1);
+	scalarFT_pi_v_estimator.initialize(latFT,1);
 	// kessence end
 	PlanFFT<Cplx> plan_source(&source, &scalarFT);
 	PlanFFT<Cplx> plan_phi(&phi, &scalarFT);
@@ -256,6 +258,8 @@ int main(int argc, char **argv)
 	PlanFFT<Cplx> plan_chi_old(&chi_old, &scalarFT_chi_old);
 	PlanFFT<Cplx> plan_pi_k(&pi_k, &scalarFT_pi);
 	PlanFFT<Cplx> plan_pi_v_k(&pi_v_k, &scalarFT_pi_v);
+	PlanFFT<Cplx> plan_pi_v_estimator(&pi_v_estimator, &scalarFT_pi_v_estimator);
+
 	//Kessence end
 	Sij.initialize(lat,3,3,symmetric);
 	SijFT.initialize(latFT,3,3,symmetric);
@@ -722,25 +726,25 @@ if (sim.Kess_source_gravity==1)
 			COUT << endl;
 		}
 
+//Kessence part
 double a_kess=a;
 double Hconf_old= Hconf(a_kess, fourpiG, cosmo);
 if(cycle==0)
 {
 	for (i=0;i<sim.nKe_numsteps;i++)
 	{
-		dtau_old=0.1;
-		update_pi_k_v( 0.5 * dtau_old/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, pi_v_k, pi_v_estimator, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_old);
-				pi_v_k.updateHalo();
+		update_pi_k_v( 0.5 * dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, pi_v_k, pi_v_estimator, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_old);
+		pi_v_k.updateHalo();
 	}
 }
 if(dtau_old>0)
 {
 	for (i=0;i<sim.nKe_numsteps;i++)
 	{
-		update_pi_k( dtau_old  / sim.nKe_numsteps,phi, pi_k, pi_v_k);
+		update_pi_k( dtau  / sim.nKe_numsteps,phi, pi_k, pi_v_k);
 		pi_k.updateHalo();
 		rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0);
-		update_pi_k_v(dtau_old/ sim.nKe_numsteps, dx,a_kess,phi,phi_old,chi,chi_old,pi_k, pi_v_k, pi_v_estimator, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_old);
+		update_pi_k_v(dtau/ sim.nKe_numsteps, dx,a_kess,phi,phi_old,chi,chi_old,pi_k, pi_v_k, pi_v_estimator, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_old);
 		pi_v_k.updateHalo();
 		rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0 );
 
