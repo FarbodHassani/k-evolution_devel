@@ -619,6 +619,27 @@ void writeSpectra(metadata & sim, cosmology & cosmo, const double fourpiG, const
 		writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of phi", a);
 	}
 
+	//KESSENCE PART
+
+	if (sim.out_pk & MASK_PI_K)
+		{
+			plan_pi_k->execute(FFT_FORWARD);
+			extractPowerSpectrum(*scalarFT_pi, kbin, power, kscatter, pscatter, occupation, sim.numbins, false, KTYPE_LINEAR);
+			sprintf(filename, "%s%s%03d_pi_k.dat", sim.output_path, sim.basename_pk, pkcount);
+			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of pi_k", a);
+		}
+
+
+	if (sim.out_pk & MASK_PI_V_K)
+		{
+			plan_pi_v_k->execute(FFT_FORWARD);
+			extractPowerSpectrum(*scalarFT_pi_v, kbin, power, kscatter, pscatter, occupation, sim.numbins, false, KTYPE_LINEAR);
+			sprintf(filename, "%s%s%03d_pi_v_k.dat", sim.output_path, sim.basename_pk, pkcount);
+			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of pi_v_k", a);
+		}
+
+	//KESSENCE END
+
 	if (sim.out_pk & MASK_CHI)
 	{
 		plan_chi->execute(FFT_FORWARD);
