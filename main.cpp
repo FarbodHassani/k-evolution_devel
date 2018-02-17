@@ -202,7 +202,18 @@ int main(int argc, char **argv)
 	double f_params[5];
 
 	Field<Real> phi;
-	//ssence
+	Field<Real> source;
+	Field<Real> chi;
+	Field<Real> chi_old;
+	Field<Real> Sij;
+	Field<Real> Bi;
+	Field<Cplx> scalarFT;
+	Field<Cplx> SijFT;
+	Field<Cplx> BiFT;
+	source.initialize(lat,1);
+	phi.initialize(lat,1);
+
+	//kessence
 	Field<Real> phi_old;
 	Field<Real> pi_k;
 	Field<Real> pi_v_k;
@@ -210,57 +221,19 @@ int main(int argc, char **argv)
 	Field<Real> T00_Kess;
 	Field<Real> T0i_Kess;
 	Field<Real> Tij_Kess;
-	Field<Real> source;
-	Field<Real> chi;
-	Field<Real> chi_old;
-	Field<Real> Sij;
-	Field<Real> Bi;
-	Field<Cplx> scalarFT;
-	//kessence
 	Field<Cplx> scalarFT_phi_old;
 	Field<Cplx> scalarFT_chi_old;
 	Field<Cplx> scalarFT_pi;
 	Field<Cplx> scalarFT_pi_v;
 	Field<Cplx> scalarFT_pi_v_estimator;
-	//kessence end
-	Field<Cplx> SijFT;
-	Field<Cplx> BiFT;
-	source.initialize(lat,1);
-	phi.initialize(lat,1);
-	//Kessence part
-	phi_old.initialize(lat,1);
-	pi_k.initialize(lat,1);
-	pi_v_k.initialize(lat,1);
-	pi_v_estimator.initialize(lat,1);
-	T00_Kess.initialize(lat,1);
-	T00_Kess.alloc();
-	T0i_Kess.initialize(lat,3);
-	T0i_Kess.alloc();
-	Tij_Kess.initialize(lat,3,3,symmetric);
-	Tij_Kess.alloc();
-	// kessence end
+	Field<Cplx> T00_KessFT;
+	Field<Cplx> T0i_KessFT;
+	Field<Cplx> Tij_KessFT;
 	chi.initialize(lat,1);
 	scalarFT.initialize(latFT,1);
-	//Kessence
-	chi_old.initialize(lat,1);
-	scalarFT_phi_old.initialize(latFT,1);
-	scalarFT_chi_old.initialize(latFT,1);
-	scalarFT_pi.initialize(latFT,1);
-	scalarFT_pi_v.initialize(latFT,1);
-	scalarFT_pi_v_estimator.initialize(latFT,1);
-	// kessence end
 	PlanFFT<Cplx> plan_source(&source, &scalarFT);
 	PlanFFT<Cplx> plan_phi(&phi, &scalarFT);
 	PlanFFT<Cplx> plan_chi(&chi, &scalarFT);
-
-	//Kessence part
-	PlanFFT<Cplx> plan_phi_old(&phi_old, &scalarFT_phi_old);
-	PlanFFT<Cplx> plan_chi_old(&chi_old, &scalarFT_chi_old);
-	PlanFFT<Cplx> plan_pi_k(&pi_k, &scalarFT_pi);
-	PlanFFT<Cplx> plan_pi_v_k(&pi_v_k, &scalarFT_pi_v);
-	PlanFFT<Cplx> plan_pi_v_estimator(&pi_v_estimator, &scalarFT_pi_v_estimator);
-
-	//Kessence end
 	Sij.initialize(lat,3,3,symmetric);
 	SijFT.initialize(latFT,3,3,symmetric);
 	PlanFFT<Cplx> plan_Sij(&Sij, &SijFT);
@@ -274,6 +247,44 @@ int main(int argc, char **argv)
 	BiFT_check.initialize(latFT,3);
 	PlanFFT<Cplx> plan_Bi_check(&Bi_check, &BiFT_check);
 #endif
+	//Kessence end
+
+	//Kessence part initializing
+	//Phi_old
+	phi_old.initialize(lat,1);
+	scalarFT_phi_old.initialize(latFT,1);
+	PlanFFT<Cplx> plan_phi_old(&phi_old, &scalarFT_phi_old);
+	//pi_k kessence
+	pi_k.initialize(lat,1);
+	scalarFT_pi.initialize(latFT,1);
+	PlanFFT<Cplx> plan_pi_k(&pi_k, &scalarFT_pi);
+	//pi_v_k kessence
+	pi_v_k.initialize(lat,1);
+	scalarFT_pi_v.initialize(latFT,1);
+	PlanFFT<Cplx> plan_pi_v_k(&pi_v_k, &scalarFT_pi_v);
+	//pi_v for estimator corrector method
+	pi_v_estimator.initialize(lat,1);
+	scalarFT_pi_v_estimator.initialize(latFT,1);
+	PlanFFT<Cplx> plan_pi_v_estimator(&pi_v_estimator, &scalarFT_pi_v_estimator);
+	//chi_old initialize
+	chi_old.initialize(lat,1);
+	scalarFT_chi_old.initialize(latFT,1);
+	PlanFFT<Cplx> plan_chi_old(&chi_old, &scalarFT_chi_old);
+	//Stress tensor initializing
+	T00_Kess.initialize(lat,1);
+	T00_KessFT.initialize(latFT,1);
+	PlanFFT<Cplx> plan_T00_Kess(&T00_Kess, &T00_KessFT);
+	// T00_Kess.alloc();  // It seems we don't need it!
+	T0i_Kess.initialize(lat,3);
+	T0i_KessFT.initialize(latFT,3);
+	PlanFFT<Cplx> plan_T0i_Kess(&T0i_Kess, &T0i_KessFT);
+	// T0i_Kess.alloc();
+	Tij_Kess.initialize(lat,3,3,symmetric);
+	Tij_KessFT.initialize(latFT,3,3,symmetric);
+	PlanFFT<Cplx> plan_Tij_Kess(&Tij_Kess, &Tij_KessFT);
+	// Tij_Kess.alloc();
+	// kessence end
+
 
 	update_cdm_fields[0] = &phi;
 	update_cdm_fields[1] = &chi;
@@ -667,10 +678,10 @@ if (sim.Kess_source_gravity==1)
 
 #ifdef CHECK_B
 			//kessence included
-			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &pi_v_k, &chi, &Bi, &source, &Sij, &scalarFT, &scalarFT_pi, &scalarFT_pi_v, &BiFT, &SijFT, &plan_phi, &plan_pi_k, &plan_pi_v_k, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
+			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &pi_v_k, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &scalarFT_pi, &scalarFT_pi_v, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_pi_v_k, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
 #else
 			//kessence included
-			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &pi_v_k, &chi, &Bi, &source, &Sij, &scalarFT, &scalarFT_pi, &scalarFT_pi_v, &BiFT, &SijFT, &plan_phi, &plan_pi_k, &plan_pi_v_k, &plan_chi, &plan_Bi, &plan_source, &plan_Sij);
+			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &pi_v_k, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &scalarFT_pi, &scalarFT_pi_v, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_pi_v_k, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
 #endif
 
 			pkcount++;
