@@ -643,7 +643,7 @@ void writeSpectra(metadata & sim, cosmology & cosmo, const double fourpiG, const
 					plan_T00_Kess->execute(FFT_FORWARD);
 					extractPowerSpectrum(*T00_KessFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, false, KTYPE_LINEAR);
 					sprintf(filename, "%s%s%03d_T00_kess.dat", sim.output_path, sim.basename_pk, pkcount);
-					writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of T00_kessence", a);
+					writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI* cosmo.Omega_kessence* cosmo.Omega_kessence, filename, "power spectrum of T00_kessence", a);
 		}
 	//KESSENCE END
 

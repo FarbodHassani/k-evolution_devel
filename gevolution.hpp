@@ -194,7 +194,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         psi=phi(xField) - chi(xField);
 
         // 0-0-component:
-        T00(xField)       =  coeff1*(-3*Hcon*cs2*pi_k(xField)); 
+        T00(xField)       =  coeff1*(-3*Hcon*cs2*pi_k(xField));
 				// - a* psi + pi_v_k(xField)) ;
 				// T00(xField)       =  coeff1*(-3*Hcon*cs2*pi_k(xField)) ;
 
@@ -316,7 +316,12 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 			       					 				+ (1.-cs2) * (phi(x) - chi(x)) * Laplacian_pi - 2.*cs2 * phi(x) * Laplacian_pi + CoIV * pi_k(x) * Laplacian_pi
 											 				- (1.-cs2) * pi_v_k(x) * Laplacian_pi/(2. * a) - (2.*cs2-1.) * Gradpsi_Gradpi + cs2 * Gradphi_Gradpi
 											 				+ CoV * Gradpi_Gradpi - 2. * (1. - cs2) * Gradpi_prime_Gradpi /a ));
+					// if(x.coord(1)==12 && x.coord(1)==8)
+					// 		{
+					// cout<<"estimate: "<<pi_v_estimator(x)<<endl;
+					// 		}
 					}
+				pi_v_estimator.updateHalo();
 				for (x.first(); x.test(); x.next())
 					{
 						 Laplacian_pi=pi_k(x-0) + pi_k(x+0) - 2. * pi_k(x);
@@ -342,25 +347,29 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 						 Psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau;
 						 Phi_prime= (phi(x) - phi_old(x))/dtau;
 
-						 CoVI = 1./(1. - dtau * CoI - dtau * (1.-cs2) * Laplacian_pi/(2. * a));
-					 //Using the result of estimator for corrector
-					 //Note that Gere we have Grad (pi_v + pi _estima)/2 so we divide by 1/8=0.125
-					 Gradpi_prime_Gradpi_corrected=	  0.125*(pi_k(x+0) - pi_k(x-0))
+					 	CoVI = 1./(1. - dtau * CoI - dtau * (1.-cs2) * Laplacian_pi/(2. * a));
+					 	//Using the result of estimator for corrector
+					 	//Note that Gere we have Grad (pi_v + pi _estima)/2 so we divide by 1/8=0.125
+					 	Gradpi_prime_Gradpi_corrected=	  0.125*(pi_k(x+0) - pi_k(x-0))
 					 																	*( (pi_v_k(x+0) + pi_v_estimator(x+0)) - (pi_v_k(x-0) + pi_v_estimator(x-0)) );
 
-					 Gradpi_prime_Gradpi_corrected+=	0.125*(pi_k(x+1) - pi_k(x-1))
+					 	Gradpi_prime_Gradpi_corrected+=	0.125*(pi_k(x+1) - pi_k(x-1))
 															  						*( (pi_v_k(x+1) + pi_v_estimator(x+1)) - (pi_v_k(x-1) + pi_v_estimator(x-1)) );
 
-					 Gradpi_prime_Gradpi_corrected+=	0.125*(pi_k(x+2) - pi_k(x-2))
+					 	Gradpi_prime_Gradpi_corrected+=	0.125*(pi_k(x+2) - pi_k(x-2))
 												 										*( (pi_v_k(x+2) + pi_v_estimator(x+2)) - (pi_v_k(x-2) + pi_v_estimator(x-2)) );
 
-					 // The correct uodating equation
-					 pi_v_k(x)= CoVI * (pi_v_k(x) - dtau* ( -CoI * pi_v_k(x) - CoII * (phi(x) - chi(x)) - a * Psi_prime - 3.*a*cs2*Phi_prime
+					 	// The correct uodating equation
+					 	pi_v_k(x)= CoVI * (pi_v_k(x) - dtau* ( -CoI * pi_v_k(x) - CoII * (phi(x) - chi(x)) - a * Psi_prime - 3.*a*cs2*Phi_prime
 					 					- CoIII * pi_k(x) -cs2 * Laplacian_pi
 					 					// Short wave corrections
 					 					+ (1.-cs2) * (phi(x) - chi(x)) * Laplacian_pi - 2.*cs2 * phi(x) * Laplacian_pi + CoIV * pi_k(x) * Laplacian_pi
 					 					- (1.-cs2) * pi_v_k(x) * Laplacian_pi/(2. * a) - (2.*cs2-1.) * Gradpsi_Gradpi + cs2 * Gradphi_Gradpi
 					 					+ CoV * Gradpi_Gradpi - 2. * (1. - cs2) * Gradpi_prime_Gradpi_corrected /a ));
+										if(x.coord(1)==12 && x.coord(2)==8)
+												{
+										cout<<"Error: "<<(pi_v_k(x)-pi_v_estimator(x))*100/pi_v_k(x)<<endl;
+												}
 			    }
 			}
 
