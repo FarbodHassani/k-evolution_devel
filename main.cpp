@@ -408,7 +408,10 @@ int main(int argc, char **argv)
 	}
 #endif
 
-	while (true)    // main loop
+//Write spectra check!
+writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &pi_v_k, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &scalarFT_pi, &scalarFT_pi_v, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_pi_v_k, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
+
+	while (false)    // main loop
 	{
 #ifdef BENCHMARK
 		cycle_start_time = MPI_Wtime();

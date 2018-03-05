@@ -4,7 +4,7 @@
 # d_kessence   stands for (\pi)(k,z) with above normalization, kessence field perturbation
 # t_kessence stands for (\pi’)(k,z) with above normalization, kessence field derivative perturbation
 #
-#	1:k (1/Mpc)              2:d_kess                    3:t_kess		4:a(t)
+#1:k (1/Mpc)              2:d_kess                    3:t_kess		4:a(t)
 7.290995000000e-06	3.020088887856e+02	2.090987182807e-01	1.041870000000e-02
 7.460824000000e-06	3.020223176969e+02	2.090973362020e-01	1.041870000000e-02
 7.634609000000e-06	3.020155033671e+02	2.090980102964e-01	9.315139000000e-03

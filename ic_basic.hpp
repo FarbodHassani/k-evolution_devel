@@ -659,9 +659,9 @@ void loadTransferFunctions(const char * filename, gsl_spline * & tk_delta, gsl_s
 					}
 				}
 
-				k[i] = dummy[kcol] * boxsize;
-				tk_d[i] = dummy[dcol];
-				tk_t[i] = dummy[tcol] * boxsize / h;
+				k[i] = dummy[kcol] * boxsize; // dummy[kcol][h/Mpc]
+				tk_d[i] = dummy[dcol];		// \delta is dimensionless
+				tk_t[i] = dummy[tcol] * boxsize / h; // dummy[tcol] [1/Mpc] or (theta is in units of 1/Mpc)
 				i++;
 			}
 		}
@@ -714,6 +714,257 @@ void loadTransferFunctions(const char * filename, gsl_spline * & tk_delta, gsl_s
 	free(tk_d);
 	free(tk_t);
 }
+
+
+
+//////////////////////////
+// loadTransferFunctions_kessence
+//////////////////////////
+// Description:
+//   loads a set of tabulated transfer functions from a file Kessence field
+//
+// Arguments:
+//   filename   string containing the path to the template file
+//   pi_k   		will point to the gsl_spline which holds the tabulated
+//              transfer function for kessence field (memory will be allocated)
+//   pi_v_k   	will point to the gsl_spline which holds the tabulated
+//              transfer function for pi_v_k (memory will be allocated)
+//   qname      string containing the name of the component (e.g. "cdm")
+//   boxsize    comoving box size (in the same units as used in the file)
+//   h          conversion factor between 1/Mpc and h/Mpc (theta is in units of 1/Mpc)
+//
+// Returns:
+//
+//////////////////////////
+
+void loadTransferFunctions_kessence(const char * filename, gsl_spline * & tk_pi_k, gsl_spline * & tk_pi_v_k, const char * qname, const double boxsize, const double h)
+{
+
+	int i = 0, numpoints = 0;
+	double * k;
+	double * tk_d;
+	double * tk_t;
+
+	if (parallel.grid_rank()[0] == 0) // read file
+	{
+		FILE * tkfile;
+		char line[MAX_LINESIZE];
+		char format[MAX_LINESIZE];
+		char * ptr;
+		double dummy[3];
+		int kcol = -1, dcol = -1, tcol = -1, colmax;
+
+		line[MAX_LINESIZE-1] = 0;
+
+		tkfile = fopen(filename, "r");
+
+		if (tkfile == NULL)
+		{
+			cerr << " proc#" << parallel.rank() << ": error in loadTransferFunctions! Unable to open file " << filename << "." << endl;
+			parallel.abortForce();
+		}
+
+		while (!feof(tkfile) && !ferror(tkfile))
+		{
+			fgets(line, MAX_LINESIZE, tkfile);
+			if (line[MAX_LINESIZE-1] != 0)
+			{
+				cerr << " proc#" << parallel.rank() << ": error in loadTransferFunctions! Character limit (" << (MAX_LINESIZE-1) << "/line) exceeded in file " << filename << "." << endl;
+				fclose(tkfile);
+				parallel.abortForce();
+			}
+
+			if (line[0] != '#' && !feof(tkfile) && !ferror(tkfile)) numpoints++;
+		}
+
+		if (numpoints < 2)
+		{
+			cerr << " proc#" << parallel.rank() << ": error in loadTransferFunctions! No valid data found in file " << filename << "." << endl;
+			fclose(tkfile);
+			parallel.abortForce();
+		}
+
+		k = (double *) malloc(sizeof(double) * numpoints);
+		tk_d = (double *) malloc(sizeof(double) * numpoints);
+		tk_t = (double *) malloc(sizeof(double) * numpoints);
+
+		if (k == NULL || tk_d == NULL || tk_t == NULL)
+		{
+			cerr << " proc#" << parallel.rank() << ": error in loadTransferFunctions! Memory error." << endl;
+			fclose(tkfile);
+			parallel.abortForce();
+		}
+
+		rewind(tkfile);
+
+		while (!feof(tkfile) && !ferror(tkfile))
+		{
+			fgets(line, MAX_LINESIZE, tkfile);
+			for (ptr = line, i = 0; (ptr = strchr(ptr, ':')) != NULL; i++)
+			{
+				ptr++;
+				if (*ptr == 'k') kcol = i;
+				else if (*ptr == 'd')
+				{
+					if (strncmp(ptr+2, qname, strlen(qname)) == 0) dcol = i;
+				}
+				else if (*ptr == 't')
+				{
+					if (strncmp(ptr+2, qname, strlen(qname)) == 0) tcol = i;
+				}
+			}
+
+			if (kcol >= 0 && dcol >= 0 && tcol >= 0) break;
+		}
+
+		if (kcol < 0 || dcol < 0 || tcol < 0)
+		{
+			cerr << " proc#" << parallel.rank() << ": error in loadTransferFunctions! Unable to identify requested columns!" << endl;
+			fclose(tkfile);
+			free(k);
+			free(tk_d);
+			free(tk_t);
+			parallel.abortForce();
+		}
+
+		colmax = i;
+		for (i = 0, ptr=format; i < colmax; i++)
+		{
+		    if (i == kcol || i == dcol || i == tcol)
+		    {
+		        strncpy(ptr, " %lf", 4);
+		        ptr += 4;
+		    }
+		    else
+		    {
+		        strncpy(ptr, " %*lf", 5);
+		        ptr += 5;
+		    }
+		}
+		*ptr = '\0';
+
+		if (kcol < dcol && dcol < tcol)
+		{
+			kcol = 0; dcol = 1; tcol = 2;
+		}
+		else if (kcol < tcol && tcol < dcol)
+		{
+			kcol = 0; dcol = 2; tcol = 1;
+		}
+		else if (dcol < kcol && kcol < tcol)
+		{
+			kcol = 1; dcol = 0; tcol = 2;
+		}
+		else if (dcol < tcol && tcol < kcol)
+		{
+			kcol = 2; dcol = 0; tcol = 1;
+		}
+		else if (tcol < kcol && kcol < dcol)
+		{
+			kcol = 1; dcol = 2; tcol = 0;
+		}
+		else if (tcol < dcol && dcol < kcol)
+		{
+			kcol = 2; dcol = 1; tcol = 0;
+		}
+		else
+		{
+			cerr << " proc#" << parallel.rank() << ": error in loadTransferFunctions_kessence! Inconsistent columns!" << endl;
+			fclose(tkfile);
+			free(k);
+			free(tk_d);
+			free(tk_t);
+			parallel.abortForce();
+		}
+
+		i = 0;
+		while (!feof(tkfile) && !ferror(tkfile))
+		{
+			fgets(line, MAX_LINESIZE, tkfile);
+
+			if (sscanf(line, format, dummy, dummy+1, dummy+2) == 3 && !feof(tkfile) && !ferror(tkfile))
+			{
+				if (dummy[kcol] < 0.)
+				{
+					cerr << " proc#" << parallel.rank() << ": error in loadTransferFunctions_kessence! Negative k-value encountered." << endl;
+					free(k);
+					free(tk_d);
+					free(tk_t);
+					fclose(tkfile);
+					parallel.abortForce();
+				}
+
+				if (i > 0)
+				{
+					if (k[i-1] >= dummy[kcol] * boxsize)
+					{
+						cerr << " proc#" << parallel.rank() << ": error in loadTransferFunctions_kessence! k-values are not strictly ordered." << endl;
+						free(k);
+						free(tk_d);
+						free(tk_t);
+						fclose(tkfile);
+						parallel.abortForce();
+					}
+				}
+
+				k[i] = dummy[kcol] * boxsize; // dummy[kcol] in unit [h/Mpc] from class, and k in Gev unit which is Boxsize/Mpc.
+				tk_d[i] = dummy[dcol] * h / boxsize; // dummy[dcol] is class pi,
+																				// pi_kessence transfer. Since pi has dimension of Mpc we multiply to h/Mpc
+				tk_t[i] = dummy[tcol] ; // dummy[tcol] is \pi' in class which is dimensionless.
+				i++;
+			}
+		}
+
+		fclose(tkfile);
+
+		if (i != numpoints)
+		{
+			cerr << " proc#" << parallel.rank() << ": error in loadTransferFunctions_kessence! File may have changed or file pointer corrupted." << endl;
+			free(k);
+			free(tk_d);
+			free(tk_t);
+			parallel.abortForce();
+		}
+
+		parallel.broadcast_dim0<int>(numpoints, 0);
+	}
+	else
+	{
+		parallel.broadcast_dim0<int>(numpoints, 0);
+
+		if (numpoints < 2)
+		{
+			cerr << " proc#" << parallel.rank() << ": error in loadTransferFunctions_kessence! Communication error." << endl;
+			parallel.abortForce();
+		}
+
+		k = (double *) malloc(sizeof(double) * numpoints);
+		tk_d = (double *) malloc(sizeof(double) * numpoints);
+		tk_t = (double *) malloc(sizeof(double) * numpoints);
+
+		if (k == NULL || tk_d == NULL || tk_t == NULL)
+		{
+			cerr << " proc#" << parallel.rank() << ": error in loadTransferFunctions_kessence! Memory error." << endl;
+			parallel.abortForce();
+		}
+	}
+
+	parallel.broadcast_dim0<double>(k, numpoints, 0);
+	parallel.broadcast_dim0<double>(tk_d, numpoints, 0);
+	parallel.broadcast_dim0<double>(tk_t, numpoints, 0);
+
+	tk_pi_k = gsl_spline_alloc(gsl_interp_cspline, numpoints);
+	tk_pi_v_k = gsl_spline_alloc(gsl_interp_cspline, numpoints);
+
+	gsl_spline_init(tk_pi_k, k, tk_d, numpoints);
+	gsl_spline_init(tk_pi_v_k, k, tk_t, numpoints);
+
+	free(k);
+	free(tk_d);
+	free(tk_t);
+}
+
+
 
 
 //////////////////////////
@@ -1758,19 +2009,25 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 		double * kess_field_prime = NULL;
 		double * k_ess = NULL;
 		int npts=0;
-		loadTransferFunctions(ic.tk_kessence, tk_d_kess, tk_t_kess, "kess", sim.boxsize, cosmo.h);	// get transfer functions for k_essence
+		loadTransferFunctions_kessence(ic.tk_kessence, tk_d_kess, tk_t_kess, "kess", sim.boxsize, cosmo.h);	// get transfer functions for k_essence
 		npts = tk_d_kess->size;
 		kess_field = (double *) malloc(npts * sizeof(double));
 		kess_field_prime = (double *) malloc(npts * sizeof(double));
 		k_ess = (double *) malloc(npts * sizeof(double));
-
+		// double H0conf_hiclass=0.000219998079; // In units of 1/Mpc
+		// cout<<"HconfGev: "<<Hconf(1, fourpiG, cosmo) <<endl;
 		for (i = 0; i < npts; i++)
 		{
+		//HGev=np.sqrt(Boxsize**2/c**2)
 		// Here we calculate \pi and \pi' power spectrum from \pi and  \pi' in hiclass, so the power is calculated in the
-		// in the same way and with the same coefficients, consider that time in Gev nad hi-class is the same and conformal time
+		// in the same way and with the same coefficients, consider that time in Gev is 1/H_gev nad hi-class is Mpc, 1./H_class
+		// K here is in h/Mpc accroding to Pk_primordial(tk_d_kess->x[i] * cosmo.h / sim.boxsize which is multiplied to h and also we respective Class output notations which is h/Mpc!
+		// Since pi in Length unit in hiclass to make it consistent we multiply to H_hiclass and devide by H_Gevolution! No!
+		// We dont need to do the top command, instead we can convert Mpc to comoving box in Gevolution by multiplying to 1/Boxsize.
 
-			kess_field[i] = -M_PI * tk_d_kess->y[i] * sqrt(Pk_primordial(tk_d_kess->x[i] * cosmo.h / sim.boxsize, ic)
-			/ tk_d_kess->x[i]) / tk_d_kess->x[i];
+			kess_field[i] = -  M_PI * tk_d_kess->y[i] * sqrt(Pk_primordial(tk_d_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_d_kess->x[i]) / tk_d_kess->x[i];
+			// \pi'
+			// For \pi' we multiplied to h/boxsize because when it is read out for "theta" it is multiplied to in line
 			kess_field_prime[i] = -M_PI * tk_t_kess->y[i] *cosmo.h* sqrt(Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic)
 			/ tk_t_kess->x[i]) / tk_t_kess->x[i]/	sim.boxsize ;
 			k_ess[i] = tk_d_kess->x[i];

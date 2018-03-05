@@ -1239,7 +1239,7 @@ if (!parseParameter(params, numparam, "T_kessence file", ic.tk_kessence) && ic.g
 	}
 	if (!parseParameter(params, numparam, "w_kessence",  cosmo.w_kessence))
 	{
-			cosmo.w_kessence=-1.1;
+			cosmo.w_kessence=-0.9;
 	}
 	parseParameter(params, numparam, "nKe_numsteps",  sim.nKe_numsteps);
 	parseParameter(params, numparam, "Kessence source gravity",  sim.Kess_source_gravity);

@@ -171,7 +171,7 @@ void prepareFTsource(Field<FieldType> & phi, Field<FieldType> & Tij, Field<Field
 template <class FieldType>
 void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, Field<FieldType> & Tij,
    double dx,double a, Field<FieldType> & phi,Field<FieldType> & phi_old, Field<FieldType> & chi, Field<FieldType> & pi_k,
-    Field<FieldType> & pi_v_k,double Omega_fld ,double w,double cs2, double Hcon, double fourpig, int method )
+    Field<FieldType> & pi_v_k, double Omega_fld , double w, double cs2, double Hcon, double fourpig, int method )
 {
     Site xField(phi.lattice());
     double coeff1, coeff2, coeff3, Hdot, psi;
@@ -189,27 +189,41 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         gradient_pi2+=0.25*(pi_k(xField+1) - pi_k(xField-2))* (pi_k(xField+1) - pi_k(xField-2));
 				// if(xField.coord(0)==2 && xField.coord(1)==2 && xField.coord(2)==2 )
 				// {
-				// cout<<"gradient_pi2: "<<gradient_pi2<<endl;
+				// cout<<"gradient_pi2: "<<- psi + (pi_v_k(xField)+ Hcon * pi_k(xField))<<endl;
 				// }
-        psi=phi(xField) - chi(xField);
+        psi= phi(xField) - chi(xField);
 
         // 0-0-component:
-        T00(xField)       =  coeff1*(-3*Hcon*cs2*pi_k(xField)- psi + pi_v_k(xField));
-															//Second order
-				 										 // - (1.-2.*cs2) * gradient_pi2/2. );
+        T00(xField)       =  coeff1*( (-1.+3.*cs2)*Hcon*pi_k(xField)+ psi - pi_v_k(xField));
+														 // Second order
+			 											// - (1.-2.*cs2) * gradient_pi2/2. );
 
         // 1-1-component:
-        Tij(xField, 0, 0) =  coeff2*( (1.+w) * (-3*Hcon*w*pi_k(xField) - psi + pi_v_k(xField) +  gradient_pi2/2. ));
+        Tij(xField, 0, 0) =  -coeff2 * (1.+w) * ( (-1.+3.*w) * Hcon* pi_k(xField) + psi - pi_v_k(xField) );
+				//second order
+				// +  gradient_pi2/2. ));
+
         // 1-2-component:
-        Tij(xField, 0, 1) =  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+1)-pi_k(xField-1))/4.;
+				//Second order
+        // Tij(xField, 0, 1) =  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+1)-pi_k(xField-1))/4.;
+
         // 1-3-component:
-        Tij(xField, 0, 2) =  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+2)-pi_k(xField-2))/4.;
+				//Second order
+        // Tij(xField, 0, 2) =  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+2)-pi_k(xField-2))/4.;
+
         // 2-2-component:
-        Tij(xField, 1, 1) =  coeff2*((1.+w)*(-3*Hcon*w*pi_k(xField) -  psi + pi_v_k(xField) +  gradient_pi2/2. ));
+        Tij(xField, 1, 1) =  -coeff2 * (1.+w) * ( (-1.+3.*w) * Hcon* pi_k(xField) + psi - pi_v_k(xField) );
+				//Second order
+				// +  gradient_pi2/2. ));
+
         // 2-3-component:
-        Tij(xField, 1, 2) =  coeff3*(pi_k(xField+1)-pi_k(xField-1))*(pi_k(xField+2)-pi_k(xField-2))/4.;
+				//Second order
+        // Tij(xField, 1, 2) =  coeff3*(pi_k(xField+1)-pi_k(xField-1))*(pi_k(xField+2)-pi_k(xField-2))/4.;
+
         // 3-3-component:
-        Tij(xField, 2, 2) =  coeff2*((1.+w)*(-3*Hcon*w*pi_k(xField) -  psi + pi_v_k(xField) +  gradient_pi2/2. ));
+        Tij(xField, 2, 2) =  -coeff2 * (1.+w) * ( (-1.+3.*w) * Hcon* pi_k(xField) + psi - pi_v_k(xField) );
+				// Second order
+				// +  gradient_pi2/2. ));
         // In the case of Vector parabolic
         }
         if(method==1) // method=1 Turn on vector elliptic
@@ -271,9 +285,9 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 			  double Laplacian_pi, Gradpsi_Gradpi, Gradphi_Gradpi, Gradpi_Gradpi, Gradpi_prime_Gradpi, Gradpi_prime_Gradpi_corrected;
 
 			  H_prime= (Hcon-Hcon_old)/dtau;
-			  CoI= (1.+3.*w)*Hcon/2.;
-			  CoII= 3.*cs2*Hcon*(1.-w/cs2);
-			  CoIII= 3.*cs2*(-Hcon*Hcon+H_prime);
+			  CoI= (1-3.*w)*Hcon/2.;
+			  CoII= 3.*cs2*Hcon*(1. - w/cs2);
+			  CoIII= 3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2);
 				CoIV= 3.*cs2*Hcon*(1.+w);
 			  CoV= Hcon*(2.+3.*w+cs2)/(2);
 
@@ -305,15 +319,15 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 						Psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau;
 						Phi_prime= (phi(x) - phi_old(x))/dtau;
 
-						CoVI = 1./(1. - dtau * CoI - dtau * (1.-cs2) * Laplacian_pi/(2.));
-						// 1st Predictor step
+						// CoVI = 1./(1. + dtau * (1-3.*w)*Hcon/2. - dtau * (1.-cs2) *ma Laplacian_pi/(2.));
+						// First orde only:
+						CoVI = 1./(1. + dtau * (1-3.*w)*Hcon/2. );
 						//First order terms
-						pi_v_k(x)= CoVI * ( pi_v_k(x) - dtau * ( -CoI * pi_v_k(x) - CoII * (phi(x) - chi(x)) - Psi_prime
-															-3.*cs2*Phi_prime - CoIII * pi_k(x) -cs2 * Laplacian_pi
+						pi_v_k(x)= CoVI * ( pi_v_k(x) - dtau * ( (1-3.*w)*Hcon/2. * pi_v_k(x) + 3.*Hcon*(w - cs2) * (phi(x) - chi(x)) - Psi_prime -3.*cs2*Phi_prime - CoIII * pi_k(x) - cs2 * Laplacian_pi));
 															// Short wave corrections
-															+ (1.-cs2) * (phi(x) - chi(x)) * Laplacian_pi - 2.*cs2 * phi(x) * Laplacian_pi + CoIV * pi_k(x) * Laplacian_pi
-															- (1.-cs2) * pi_v_k(x) * Laplacian_pi/(2. ) - (2.*cs2-1.) * Gradpsi_Gradpi + cs2 * Gradphi_Gradpi
-															+ CoV * Gradpi_Gradpi - 2. * (1. - cs2) * Gradpi_prime_Gradpi  ));
+															// + (1.-cs2) * (phi(x) - chi(x)) * Laplacian_pi - 2.*cs2 * phi(x) * Laplacian_pi + CoIV * pi_k(x) * Laplacian_pi
+															// - (1.-cs2) * (pi_v_k(x)/2. + Hcon * pi_k(x)) * Laplacian_pi - (2.*cs2-1.) * Gradpsi_Gradpi + cs2 * Gradphi_Gradpi
+															// + CoV * Gradpi_Gradpi - 2. * (1. - cs2) * (Gradpi_prime_Gradpi/2 + Hcon * Gradpi_Gradpi  ));
 					}
 
 				// Estimator corrector method:
