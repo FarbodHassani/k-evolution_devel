@@ -180,6 +180,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
     coeff1=Omega_fld*pow(a,-3.*w)*(1.+w)/(cs2);
     coeff2=Omega_fld*pow(a,-3.*w);
     coeff3=Omega_fld*pow(a,-3.*w)*(1.+w);
+		// cout<<"Hcon: "<<Hcon<<endl;
 
       for (xField.first(); xField.test(); xField.next())
       {
@@ -192,14 +193,16 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 				// cout<<"gradient_pi2: "<<- psi + (pi_v_k(xField)+ Hcon * pi_k(xField))<<endl;
 				// }
         psi= phi(xField) - chi(xField);
-
         // 0-0-component:
-        T00(xField)       =  coeff1*( (-1.+3.*cs2)*Hcon*pi_k(xField)+ psi - pi_v_k(xField));
+
+				// T00(xField)       =  -  coeff1* ( phi_old(xField));
+				T00(xField)       =  -  coeff1* ( (-3.*cs2 + 1.)* Hcon * pi_k(xField) - phi_old(xField) + pi_v_k(xField));
 														 // Second order
 			 											// - (1.-2.*cs2) * gradient_pi2/2. );
 
+
         // 1-1-component:
-        Tij(xField, 0, 0) =  -coeff2 * (1.+w) * ( (-1.+3.*w) * Hcon* pi_k(xField) + psi - pi_v_k(xField) );
+        // Tij(xField, 0, 0) =  -coeff2 * (1.+w) * ( (-1.+3.*w) * Hcon* pi_k(xField) + psi - pi_v_k(xField) );
 				//second order
 				// +  gradient_pi2/2. ));
 
@@ -212,7 +215,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         // Tij(xField, 0, 2) =  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+2)-pi_k(xField-2))/4.;
 
         // 2-2-component:
-        Tij(xField, 1, 1) =  -coeff2 * (1.+w) * ( (-1.+3.*w) * Hcon* pi_k(xField) + psi - pi_v_k(xField) );
+        // Tij(xField, 1, 1) =  -coeff2 * (1.+w) * ( (-1.+3.*w) * Hcon* pi_k(xField) + psi - pi_v_k(xField) );
 				//Second order
 				// +  gradient_pi2/2. ));
 
@@ -221,7 +224,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         // Tij(xField, 1, 2) =  coeff3*(pi_k(xField+1)-pi_k(xField-1))*(pi_k(xField+2)-pi_k(xField-2))/4.;
 
         // 3-3-component:
-        Tij(xField, 2, 2) =  -coeff2 * (1.+w) * ( (-1.+3.*w) * Hcon* pi_k(xField) + psi - pi_v_k(xField) );
+        // Tij(xField, 2, 2) =  -coeff2 * (1.+w) * ( (-1.+3.*w) * Hcon* pi_k(xField) + psi - pi_v_k(xField) );
 				// Second order
 				// +  gradient_pi2/2. ));
         // In the case of Vector parabolic

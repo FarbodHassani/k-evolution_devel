@@ -67,7 +67,8 @@ void projection_T00_project(background & class_background, perturbs & class_pert
 		for (i = 0; i < n; i++)
 		{
 			// Here the delta is multiplied to cosmo.Omega_g since it is \delta \rho or T_0^0.
-			// It seems negative sign comes from the convention that -T_0^0 a^3 is in the code!?
+			// It seems negative sign comes from the convention of  class to Gevolution?
+			// Why it is divided by a?
 			delta[i] = -tk1->y[i] * coeff * cosmo.Omega_g * M_PI * sqrt(Pk_primordial(tk1->x[i] * cosmo.h / sim.boxsize, ic) / tk1->x[i]) / tk1->x[i] / a;
 			k[i] = tk1->x[i];
 		}

@@ -665,8 +665,8 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 				else if (strcmp(item, "T_Kess") == 0 || strcmp(item, "T_Kessence") == 0)
 					pvalue |= MASK_T_KESS;
 
-				else if (strcmp(item, "T00_Kess") == 0 || strcmp(item, "T00_Kessence") == 0)
-					pvalue |= MASK_T00_KESS;
+				else if (strcmp(item, "Delta_Kess") == 0 || strcmp(item, "delta_Kessence") == 0)
+					pvalue |= MASK_Delta_KESS;
 					//Kessence end
 				start = comma+1;
 				while (*start == ' ' || *start == '\t') start++;

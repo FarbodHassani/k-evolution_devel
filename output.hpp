@@ -507,6 +507,8 @@ void writeSpectra(metadata & sim, cosmology & cosmo, const double fourpiG, const
 
 		if (sim.out_pk & MASK_DBARE)
 		{
+			// For deltaN we have k which is in unit of boxsize must divided by boxsize to give h/Mpc unit.
+			//
 			sprintf(filename, "%s%s%03d_deltaN.dat", sim.output_path, sim.basename_pk, pkcount);
 			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * cosmo.Omega_m * cosmo.Omega_m, filename, "power spectrum of delta_N", a);
 		}
@@ -621,12 +623,13 @@ void writeSpectra(metadata & sim, cosmology & cosmo, const double fourpiG, const
 
 	//KESSENCE PART
 
+// Note that according to definition and since pi is dimensionfull, so in the output we write \pi * H_conf which is dimensionless and can be compared to class and hiclass
 	if (sim.out_pk & MASK_PI_K)
 		{
 			plan_pi_k->execute(FFT_FORWARD);
-			extractPowerSpectrum(*scalarFT_pi, kbin, power, kscatter, pscatter, occupation, sim.numbins, false, KTYPE_LINEAR);
+			extractPowerSpectrum(*scalarFT_pi , kbin, power, kscatter, pscatter, occupation, sim.numbins, false, KTYPE_LINEAR);
 			sprintf(filename, "%s%s%03d_pi_k.dat", sim.output_path, sim.basename_pk, pkcount);
-			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of pi_k", a);
+			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI/(Hconf(a,fourpiG,cosmo) * Hconf(a,fourpiG,cosmo)), filename, "power spectrum of pi_k", a);
 		}
 
 
@@ -638,12 +641,16 @@ void writeSpectra(metadata & sim, cosmology & cosmo, const double fourpiG, const
 			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of pi_v_k", a);
 		}
 
-	if (sim.out_pk & MASK_T00_KESS)
+	if (sim.out_pk & MASK_Delta_KESS)
 		{
+					// P (\delta)= deltarho_kess^2/ Omega_kess *a^(-3(1+w)) ) Omega_kess *a^(-3(1+w)) ) since in the defnition we have a^3 T00
+					// We already included a^(-3) in the denominator, so we only need take the rest into account.
 					plan_T00_Kess->execute(FFT_FORWARD);
 					extractPowerSpectrum(*T00_KessFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, false, KTYPE_LINEAR);
-					sprintf(filename, "%s%s%03d_T00_kess.dat", sim.output_path, sim.basename_pk, pkcount);
-					writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI* cosmo.Omega_kessence* cosmo.Omega_kessence * pow(a, -3.* cosmo.w_kessence)*pow(a, -3.* cosmo.w_kessence), filename, "power spectrum of T00_kessence", a);
+					sprintf(filename, "%s%s%03d_delta_kess.dat", sim.output_path, sim.basename_pk, pkcount);
+					writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI* cosmo.Omega_kessence * cosmo.Omega_kessence * pow(a, -3.* cosmo.w_kessence) * pow(a, -3.* cosmo.w_kessence), filename, "power spectrum of delta_kessence", a);
+					// writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of delta_kessence", a);
+
 		}
 	//KESSENCE END
 
