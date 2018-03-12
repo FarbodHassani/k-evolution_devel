@@ -188,21 +188,23 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
     		gradient_pi2 =0.25*(pi_k(xField+0) - pi_k(xField-0))* (pi_k(xField+0) - pi_k(xField-0));
         gradient_pi2+=0.25*(pi_k(xField+1) - pi_k(xField-1))* (pi_k(xField+1) - pi_k(xField-1));
         gradient_pi2+=0.25*(pi_k(xField+1) - pi_k(xField-2))* (pi_k(xField+1) - pi_k(xField-2));
+				// Test:
 				// if(xField.coord(0)==2 && xField.coord(1)==2 && xField.coord(2)==2 )
 				// {
 				// cout<<"gradient_pi2: "<<- psi + (pi_v_k(xField)+ Hcon * pi_k(xField))<<endl;
 				// }
         psi= phi(xField) - chi(xField);
         // 0-0-component:
+				//Test:
+				T00(xField)       =  -  coeff1* ( (-3.*cs2 + 1.)* Hcon * pi_k(xField) - psi + pi_v_k(xField));
 
-				// T00(xField)       =  -  coeff1* ( phi_old(xField));
-				T00(xField)       =  -  coeff1* ( (-3.*cs2 + 1.)* Hcon * pi_k(xField) - phi_old(xField) + pi_v_k(xField));
+				// T00(xField)       =  -  coeff1* ( (-3.*cs2 + 1.)* Hcon * pi_k(xField) - phi(xField) + pi_v_k(xField));
 														 // Second order
 			 											// - (1.-2.*cs2) * gradient_pi2/2. );
 
 
         // 1-1-component:
-        // Tij(xField, 0, 0) =  -coeff2 * (1.+w) * ( (-1.+3.*w) * Hcon* pi_k(xField) + psi - pi_v_k(xField) );
+        Tij(xField, 0, 0) =  -coeff2 * (1.+w) * ( (-1.+3.*w) * Hcon* pi_k(xField) + psi - pi_v_k(xField) );
 				//second order
 				// +  gradient_pi2/2. ));
 
@@ -215,7 +217,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         // Tij(xField, 0, 2) =  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+2)-pi_k(xField-2))/4.;
 
         // 2-2-component:
-        // Tij(xField, 1, 1) =  -coeff2 * (1.+w) * ( (-1.+3.*w) * Hcon* pi_k(xField) + psi - pi_v_k(xField) );
+        Tij(xField, 1, 1) =  -coeff2 * (1.+w) * ( (-1.+3.*w) * Hcon* pi_k(xField) + psi - pi_v_k(xField) );
 				//Second order
 				// +  gradient_pi2/2. ));
 
@@ -224,7 +226,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         // Tij(xField, 1, 2) =  coeff3*(pi_k(xField+1)-pi_k(xField-1))*(pi_k(xField+2)-pi_k(xField-2))/4.;
 
         // 3-3-component:
-        // Tij(xField, 2, 2) =  -coeff2 * (1.+w) * ( (-1.+3.*w) * Hcon* pi_k(xField) + psi - pi_v_k(xField) );
+        Tij(xField, 2, 2) =  -coeff2 * (1.+w) * ( (-1.+3.*w) * Hcon* pi_k(xField) + psi - pi_v_k(xField) );
 				// Second order
 				// +  gradient_pi2/2. ));
         // In the case of Vector parabolic
@@ -288,7 +290,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 			  double Laplacian_pi, Gradpsi_Gradpi, Gradphi_Gradpi, Gradpi_Gradpi, Gradpi_prime_Gradpi, Gradpi_prime_Gradpi_corrected;
 
 			  H_prime= (Hcon-Hcon_old)/dtau;
-			  CoI= (1-3.*w)*Hcon/2.;
+			  CoI= (1.-3.*w)*Hcon/2.;
 			  CoII= 3.*cs2*Hcon*(1. - w/cs2);
 			  CoIII= 3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2);
 				CoIV= 3.*cs2*Hcon*(1.+w);

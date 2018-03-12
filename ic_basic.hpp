@@ -819,7 +819,7 @@ void loadTransferFunctions_kessence(const char * filename, gsl_spline * & tk_pi_
 
 		if (kcol < 0 || dcol < 0 || tcol < 0)
 		{
-			cerr << " proc#" << parallel.rank() << ": error in loadTransferFunctions_zz       ! Unable to identify requested columns!" << endl;
+			cerr << " proc#" << parallel.rank() << ": error in loadTransferFunctions_kess       ! Unable to identify requested columns!" << endl;
 			fclose(tkfile);
 			free(k);
 			free(tk_d);
@@ -2003,9 +2003,9 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 		gsl_spline_free(tk_d1);
 		gsl_spline_free(tk_t1);
 
-		///////////////////////////
+		//////////////////////////////////////////////////////
 		////K_essence IC part//////
-		///////////////////////////
+		//////////////////////////////////////////////////////
 		gsl_spline * tk_d_kess = NULL;
 		gsl_spline * tk_t_kess = NULL;
 		double * kess_field = NULL;
@@ -2055,14 +2055,14 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 		pi_v_k->updateHalo();	// pi_v_k now is realized in real space
 		gsl_spline_free(tk_t_kess);
 		free(k_ess);
-		///////////////////////////
-		//// End of K_essence IC part//////
-		///////////////////////////
+		//////////////////////////////////////////////////////
+		//// End of K_essence IC part/
+		//////////////////////////////////////////////////////
 
-//Tests
-///////////////////////////
-///////////////////////////
 
+		//////////////////////////////////////////////////////
+		//Tests Psi reading from class output.
+	  //////////////////////////////////////////////////////
 loadTransferFunctions_kessence(ic.tk_kessence, tk_d_kess, tk_t_kess, "psi", sim.boxsize, cosmo.h, Hconf(a, fourpiG, cosmo), Hconf_class( a, cosmo));	// get transfer functions for k_essence
 // cout<<"z: "<<-1+1./(a)<<"Hconf_class: "<<Hconf_class( a, cosmo)<<"Hgev: "<<Hconf(a, fourpiG, cosmo)<<endl;
 
@@ -2106,17 +2106,9 @@ free(kess_field);
 // pi_v_k->updateHalo();	// pi_v_k now is realized in real space
 // gsl_spline_free(tk_t_kess);
 free(k_ess);
-///////////////////////////
-//// End of K_essence IC part//////
-///////////////////////////
-///////////////////////////
-
-
-
-
-//
-
-
+	//////////////////////////////////////////////////////
+	//// End of K_essence IC part
+	//////////////////////////////////////////////////////
 
 
 
