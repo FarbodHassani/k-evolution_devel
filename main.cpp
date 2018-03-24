@@ -83,6 +83,9 @@ int main(int argc, char **argv)
 	int update_q_count = 0;
 	double moveParts_time = 0;
 	int  moveParts_count =0;
+	//kessence
+	double a_kess;
+
 
 #endif  //BENCHMARK
 
@@ -422,19 +425,34 @@ int main(int argc, char **argv)
 	// 		{
 	// 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 0 );
 	// 		}
-
+	//
 	// writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &pi_v_k, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &scalarFT_pi, &scalarFT_pi_v, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_pi_v_k, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
 	// cout<<"Hconf_class: "<<Hconf_class( a, cosmo)<<" a: "<<a<<" z: "<<1./(a)-1.<<endl;
 	// for (kFT.first(); kFT.test(); kFT.next())
 	// {
-	// 		cout<<"k: "<<kFT<<"pi_k: "<<pi_k(kFT)<<"  phi: "<<phi(kFT)<<" H: "<<Hconf(a, fourpiG, cosmo)<<" H pi: "<<Hconf(a, fourpiG, cosmo) *pi_k(kFT)<<" pi'-phi: " <<phi(kFT)-pi_v_k(kFT)<<endl;
+	// 		// cout<<"k: "<<kFT<<"pi_k: "<<pi_k(kFT)<<"  phi: "<<phi(kFT)<<" H: "<<Hconf(a, fourpiG, cosmo)<<" H pi: "<<Hconf(a, fourpiG, cosmo) *pi_k(kFT)<<" pi'-phi: " <<phi(kFT)-pi_v_k(kFT)<<endl;
 	// }
 	//******************************************************************
 	//End of testing
 	//******************************************************************
 
+	// for (x.first(); x.test(); x.next())
+	// 	{
+	// 		pi_k(x)=1./(Hconf(1./(1.+100.), fourpiG, cosmo));
+	// 		pi_v_k(x)=0.;
+	// 	}
 	while (true)    // main loop
 	{
+
+	//Kessence
+	for (x.first(); x.test(); x.next())
+		{
+			phi_old(x) =phi(x);
+			chi_old(x) =chi(x);
+		}
+		phi_old.updateHalo();
+		chi_old.updateHalo();
+
 #ifdef BENCHMARK
 		cycle_start_time = MPI_Wtime();
 #endif
@@ -678,6 +696,9 @@ if (sim.Kess_source_gravity==1)
 		ref_time = MPI_Wtime();
 #endif
 
+
+
+
 		// snapshot output
 		if (snapcount < sim.num_snapshot && 1. / a < sim.z_snapshot[snapcount] + 1.)
 		{
@@ -767,6 +788,28 @@ if (sim.Kess_source_gravity==1)
 		}
 
 //Kessence part
+//**************
+//LeapFrog
+//**************
+// a_kess=a;
+// double Hconf_old= Hconf(a_kess, fourpiG, cosmo);
+// 	for (i=0;i<sim.nKe_numsteps;i++)
+// 	{
+// 		update_pi_k (a_kess, Hconf(a_kess, fourpiG, cosmo), dtau/sim.nKe_numsteps, phi, pi_k, pi_v_k);
+// 		pi_k.updateHalo();
+// 		rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0);
+// 		// update_pi_k_v(dtau/ sim.nKe_numsteps, dx,a_kess,phi,phi_old,chi,chi_old,pi_k, pi_v_k, pi_v_estimator, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_old);
+// 		pi_v_k.updateHalo();
+// 		rungekutta4bg(a_kess, fourpiG, cosmo,  dtau   / sim.nKe_numsteps / 2.0 );
+//
+// 	}
+//**********************
+//LeapFrog:END
+//**********************
+
+//**********************
+//Euler:START
+//**********************
 double a_kess=a;
 double Hconf_old= Hconf(a_kess, fourpiG, cosmo);
 if(cycle==0)
@@ -777,19 +820,23 @@ if(cycle==0)
 		pi_v_k.updateHalo();
 	}
 }
-if(dtau_old>0)
+
+else
 {
 	for (i=0;i<sim.nKe_numsteps;i++)
 	{
 		update_pi_k( dtau  / sim.nKe_numsteps,phi, pi_k, pi_v_k);
 		pi_k.updateHalo();
 		rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0);
-		update_pi_k_v(dtau/ sim.nKe_numsteps, dx,a_kess,phi,phi_old,chi,chi_old,pi_k, pi_v_k, pi_v_estimator, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_old);
+		update_pi_k_v(dtau/ sim.nKe_numsteps, dx,a_kess,phi,phi_old,chi,chi_old,pi_k, pi_v_k, pi_v_estimator, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_old);
 		pi_v_k.updateHalo();
 		rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0 );
-
 	}
 }
+//**********************
+//Euler:END
+//**********************
+
 		//end of Kessence + background:x
 		//:::::::::::::::::
 

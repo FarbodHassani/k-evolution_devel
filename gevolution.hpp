@@ -257,12 +257,15 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 			//
 			//////////////////////////
 			template <class FieldType>
-			void update_pi_k(double dtau, Field<FieldType> & phi, Field<FieldType> & pi_k, Field<FieldType> & pi_v_k)
+			void update_pi_k( double dtau, Field<FieldType> & phi, Field<FieldType> & pi_k, Field<FieldType> & pi_v_k)
 			{
 			  Site x(phi.lattice());
 			  for (x.first(); x.test(); x.next())
 			    {
-			    	pi_k(x)=pi_k(x)+pi_v_k(x)*dtau;
+			    	// pi_k(x)=pi_k(x)+pi_v_k(x)*dtau;
+
+						//Test:
+						pi_k(x)=pi_k(x)+pi_v_k(x)*dtau;
 			    }
 
 			}
@@ -283,52 +286,96 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 			//////////////////////////
 			// We use predictor corrector method to calculate \pi_v better.
 			template <class FieldType>
-			void update_pi_k_v(double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi,Field<FieldType> & chi_old, Field<FieldType> & pi_k, Field<FieldType> & pi_v_k , Field<FieldType> & pi_v_estimator, double Omega_fld ,double w, double cs2, double Hcon, double Hcon_old)
+			void update_pi_k_v(double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi,Field<FieldType> & chi_old, Field<FieldType> & pi_k, Field<FieldType> & pi_v_k , Field<FieldType> & pi_v_estimator, double Omega_fld ,double w, double cs2, double Hcon, double & Hcon_old)
 			{
 
 			  double CoI, CoII, CoIII, CoIV, CoV, CoVI, H_prime, psi, psi_old,Psi_prime,Phi_prime;
 			  double Laplacian_pi, Gradpsi_Gradpi, Gradphi_Gradpi, Gradpi_Gradpi, Gradpi_prime_Gradpi, Gradpi_prime_Gradpi_corrected;
+				//
+			   H_prime= (Hcon-Hcon_old)/dtau;
 
-			  H_prime= (Hcon-Hcon_old)/dtau;
+				// // cout<<"Hcon: "<<Hcon<<" Hconf_old: "<<Hcon_old<<" H_prime: "<<H_prime<<endl;
 			  CoI= (1.-3.*w)*Hcon/2.;
 			  CoII= 3.*cs2*Hcon*(1. - w/cs2);
 			  CoIII= 3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2);
 				CoIV= 3.*cs2*Hcon*(1.+w);
 			  CoV= Hcon*(2.+3.*w+cs2)/(2);
-
+				//
 
 
 				Site x(phi.lattice());
 				for (x.first(); x.test(); x.next())
 					{
+
 						Laplacian_pi=pi_k(x-0) + pi_k(x+0) - 2. * pi_k(x);
 						Laplacian_pi+=pi_k(x+1) + pi_k(x-1)- 2. * pi_k(x);
 						Laplacian_pi+=pi_k(x+2) + pi_k(x-2)- 2. * pi_k(x);
-						// Symetric Laplace.Laplace here the Grad vector is not on the edge.
-						Gradpsi_Gradpi=0.25*((phi(x+0) - chi(x+0)) - (phi(x-0) - chi(x-0)))*(pi_k(x+0) - pi_k(x-0));
-						Gradpsi_Gradpi+=0.25*((phi(x+1) - chi(x+1)) - (phi(x-1) - chi(x-1)))*(pi_k(x+1) - pi_k(x-1));
-						Gradpsi_Gradpi+=0.25*((phi(x+2) - chi(x+2)) - (phi(x-2) - chi(x-2)))*(pi_k(x+2) - pi_k(x-2));
 
-						Gradphi_Gradpi=0.25*(phi(x+0)  - phi(x-0))*(pi_k(x+0) - pi_k(x-0));
-						Gradphi_Gradpi+=0.25*(phi(x+1)  - phi(x-1))*(pi_k(x+1) - pi_k(x-1));
-						Gradphi_Gradpi+=0.25*(phi(x+2)  - phi(x-2))*(pi_k(x+2) - pi_k(x-2));
+						 pi_v_k(x)= pi_v_k(x) -dtau *( cs2 * Laplacian_pi) ;
+						Hcon_old=Hcon;
+						// Laplacian_pi=pi_k(x-0) + pi_k(x+0) - 2. * pi_k(x);
+						// Laplacian_pi+=pi_k(x+1) + pi_k(x-1)- 2. * pi_k(x);
+						// Laplacian_pi+=pi_k(x+2) + pi_k(x-2)- 2. * pi_k(x);
+						// // Symetric Laplace.Laplace here the Grad vector is not on the edge.
+						// Gradpsi_Gradpi=0.25*((phi(x+0) - chi(x+0)) - (phi(x-0) - chi(x-0)))*(pi_k(x+0) - pi_k(x-0));
+						// Gradpsi_Gradpi+=0.25*((phi(x+1) - chi(x+1)) - (phi(x-1) - chi(x-1)))*(pi_k(x+1) - pi_k(x-1));
+						// Gradpsi_Gradpi+=0.25*((phi(x+2) - chi(x+2)) - (phi(x-2) - chi(x-2)))*(pi_k(x+2) - pi_k(x-2));
+						//
+						// Gradphi_Gradpi=0.25*(phi(x+0)  - phi(x-0))*(pi_k(x+0) - pi_k(x-0));
+						// Gradphi_Gradpi+=0.25*(phi(x+1)  - phi(x-1))*(pi_k(x+1) - pi_k(x-1));
+						// Gradphi_Gradpi+=0.25*(phi(x+2)  - phi(x-2))*(pi_k(x+2) - pi_k(x-2));
+						//
+						// Gradpi_Gradpi=0.25*(pi_k(x+0) - pi_k(x-0))*(pi_k(x+0) - pi_k(x-0));
+						// Gradpi_Gradpi+=0.25*(pi_k(x+1) - pi_k(x-1))*(pi_k(x+1) - pi_k(x-1));
+						// Gradpi_Gradpi+=0.25*(pi_k(x+2) - pi_k(x-2))*(pi_k(x+2) - pi_k(x-2));
+						//
+						// Gradpi_prime_Gradpi=0.25*(pi_v_k(x+0) - pi_v_k(x-0))*(pi_k(x+0) - pi_k(x-0));
+						// Gradpi_prime_Gradpi+=0.25*(pi_v_k(x+1) - pi_v_k(x-1))*(pi_k(x+1) - pi_k(x-1));
+						// Gradpi_prime_Gradpi+=0.25*(pi_v_k(x+2) - pi_v_k(x-2))*(pi_k(x+2) - pi_k(x-2));
+						//
+						// Psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau;
+						// Phi_prime= (phi(x) - phi_old(x))/dtau;
+						// cout<<"phi(x): "<<phi(x)<< " phi_old(x):" << phi_old(x)<<" Phi_prime: "<<Phi_prime<<" Psi': "<<Psi_prime<<endl;
+						// cout<<"Term1: "<<(1.-3.*w)*Hcon/2. * pi_v_k(x)<<" Term2: "<<- 3.*Hcon*(cs2 - w) * (phi(x) - chi(x))<<" Term3: "<<- Psi_prime<<" Term4: "<<+ (3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2))*pi_k(x) <<" Term5: "<<- cs2 * Laplacian_pi<<
+						//  " Whole: "<<- dtau * ( (1.-3.*w)*Hcon/2. * pi_v_k(x) - 3.*Hcon*(cs2 - w) * (phi(x) - chi(x)) - Psi_prime -3.*cs2*Phi_prime + (3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2)) * pi_k(x) - cs2 * Laplacian_pi)<<endl;
+						//  cout<<" First: "<<pi_v_k(x)<<endl;
 
-						Gradpi_Gradpi=0.25*(pi_k(x+0) - pi_k(x-0))*(pi_k(x+0) - pi_k(x-0));
-						Gradpi_Gradpi+=0.25*(pi_k(x+1) - pi_k(x-1))*(pi_k(x+1) - pi_k(x-1));
-						Gradpi_Gradpi+=0.25*(pi_k(x+2) - pi_k(x-2))*(pi_k(x+2) - pi_k(x-2));
+						//*************************
+						//********Test*************
+						//*************************
+						// CoVI = 1./(1. + dtau * (1.-3.*w)*Hcon/2. );
+						// First orde only:
+						// CoVI = 1./(1.  );
+						//psi= phi(xField) - chi(xField);
+						//First order terms
 
-						Gradpi_prime_Gradpi=0.25*(pi_v_k(x+0) - pi_v_k(x-0))*(pi_k(x+0) - pi_k(x-0));
-						Gradpi_prime_Gradpi+=0.25*(pi_v_k(x+1) - pi_v_k(x-1))*(pi_k(x+1) - pi_k(x-1));
-						Gradpi_prime_Gradpi+=0.25*(pi_v_k(x+2) - pi_v_k(x-2))*(pi_k(x+2) - pi_k(x-2));
+						//*****************
+						//Euler Solver:
+						//*****************
+						// pi_v_k(x)= pi_v_k(x) - dtau * ( (1-3.*w)*Hcon * pi_v_k(x) - 3.*Hcon*(cs2 - w) * (phi(x) - chi(x)) - Psi_prime -3.*cs2*Phi_prime + (3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2)) * pi_k(x) - cs2 * Laplacian_pi);
 
-						Psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau;
-						Phi_prime= (phi(x) - phi_old(x))/dtau;
+
+
+						//*****************
+						//Leap Frog
+						//*****************
+						// pi_v_k(x)= pi_v_k(x)- * (pi_v_k(x) - dtau * ( (1.-3.*w)*Hcon/2. * pi_v_k(x) - 3.*Hcon*(cs2 - w) * (phi(x) - chi(x)) - Psi_prime -3.*cs2*Phi_prime + (3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2)) * pi_k(x) - cs2 * Laplacian_pi) );
+						//*****************
+						//Leap Frog
+						//*****************
+
+
+						//*************************
+						//*************************
+						//*************************
 
 						// CoVI = 1./(1. + dtau * (1-3.*w)*Hcon/2. - dtau * (1.-cs2) *ma Laplacian_pi/(2.));
-						// First orde only:
-						CoVI = 1./(1. + dtau * (1-3.*w)*Hcon/2. );
-						//First order terms
-						pi_v_k(x)= CoVI * ( pi_v_k(x) - dtau * ( (1-3.*w)*Hcon/2. * pi_v_k(x) + 3.*Hcon*(w - cs2) * (phi(x) - chi(x)) - Psi_prime -3.*cs2*Phi_prime - CoIII * pi_k(x) - cs2 * Laplacian_pi));
+						// // First orde only:
+						// CoVI = 1./(1. + dtau * (1-3.*w)*Hcon/2. );
+						// // //First order terms
+						// pi_v_k(x)= pi_v_k(x) + dtau * ( (1-3.*w)*Hcon/2. * pi_v_k(x) - 3.*Hcon*(cs2 - w) * (phi(x) - chi(x)) - Psi_prime -3.*cs2*Phi_prime - (3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2)) * pi_k(x) - cs2 * Laplacian_pi);
+						// Hcon_old=Hcon;
+
 															// Short wave corrections
 															// + (1.-cs2) * (phi(x) - chi(x)) * Laplacian_pi - 2.*cs2 * phi(x) * Laplacian_pi + CoIV * pi_k(x) * Laplacian_pi
 															// - (1.-cs2) * (pi_v_k(x)/2. + Hcon * pi_k(x)) * Laplacian_pi - (2.*cs2-1.) * Gradpsi_Gradpi + cs2 * Gradphi_Gradpi

@@ -2063,49 +2063,49 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 		//////////////////////////////////////////////////////
 		//Tests Psi reading from class output.
 	  //////////////////////////////////////////////////////
-loadTransferFunctions_kessence(ic.tk_kessence, tk_d_kess, tk_t_kess, "psi", sim.boxsize, cosmo.h, Hconf(a, fourpiG, cosmo), Hconf_class( a, cosmo));	// get transfer functions for k_essence
-// cout<<"z: "<<-1+1./(a)<<"Hconf_class: "<<Hconf_class( a, cosmo)<<"Hgev: "<<Hconf(a, fourpiG, cosmo)<<endl;
-
-npts = tk_d_kess->size;
-kess_field = (double *) malloc(npts * sizeof(double));
-kess_field_prime = (double *) malloc(npts * sizeof(double));
-k_ess = (double *) malloc(npts * sizeof(double));
-// double H0conf_hiclass=0.000219998079; // In units of 1/Mpc
-// cout<<"HconfGev: "<<Hconf(1, fourpiG, cosmo) <<endl;
-for (i = 0; i < npts; i++)
-{
-//HGev=np.sqrt(Boxsize**2/c**2)
-// Here we calculate \pi and \pi' power spectrum from \pi and  \pi' in hiclass, so the power is calculated in the
-// in the same way and with the same coefficients, consider that time in Gev is 1/H_gev nad hi-class is Mpc, 1./H_class
-// K here is in h/Mpc accroding to Pk_primordial(tk_d_kess->x[i] * cosmo.h / sim.boxsize which is multiplied to h and also we respective Class output notations which is h/Mpc!
-// Since pi in Length unit in hiclass to make it consistent we multiply to H_hiclass and devide by H_Gevolution!
-// We dont need to do the top command, instead we can convert Mpc to comoving box in Gevolution by multiplying to 1/Boxsize.
-// Why "-" is here? and where is sqrt(2)?
-	kess_field[i] =  - M_PI * tk_d_kess->y[i] * sqrt(  Pk_primordial(tk_d_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_d_kess->x[i])*Hconf(a, fourpiG, cosmo)/Hconf_class( a, cosmo)
-	 / tk_d_kess->x[i];
-	// \pi'
-	kess_field_prime[i] = - M_PI * tk_t_kess->y[i] * sqrt( Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_t_kess->x[i])
-	 / tk_t_kess->x[i];
-	k_ess[i] = tk_d_kess->x[i];
-}
-// Field realization
-gsl_spline_free(tk_d_kess);
-tk_d_kess = gsl_spline_alloc(gsl_interp_cspline, npts);
-gsl_spline_init(tk_d_kess, k_ess, kess_field, npts);
-generateRealization(*scalarFT_phi_old, 0., tk_d_kess, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE,0);
-plan_phi_old->execute(FFT_BACKWARD);
-phi_old->updateHalo();	// pi_k now is realized in real space
-gsl_spline_free(tk_d_kess);
-free(kess_field);
-// Field derivative realization \pi'
-// gsl_spline_free(tk_t_kess);
-// tk_t_kess = gsl_spline_alloc(gsl_interp_cspline, npts);
-// gsl_spline_init(tk_t_kess, k_ess, kess_field_prime, npts);
-// generateRealization(*scalarFT_pi_v, 0., tk_t_kess, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE,0);
-// plan_pi_v_k->execute(FFT_BACKWARD);
-// pi_v_k->updateHalo();	// pi_v_k now is realized in real space
-// gsl_spline_free(tk_t_kess);
-free(k_ess);
+// loadTransferFunctions_kessence(ic.tk_kessence, tk_d_kess, tk_t_kess, "psi", sim.boxsize, cosmo.h, Hconf(a, fourpiG, cosmo), Hconf_class( a, cosmo));	// get transfer functions for k_essence
+// // cout<<"z: "<<-1+1./(a)<<"Hconf_class: "<<Hconf_class( a, cosmo)<<"Hgev: "<<Hconf(a, fourpiG, cosmo)<<endl;
+//
+// npts = tk_d_kess->size;
+// kess_field = (double *) malloc(npts * sizeof(double));
+// kess_field_prime = (double *) malloc(npts * sizeof(double));
+// k_ess = (double *) malloc(npts * sizeof(double));
+// // double H0conf_hiclass=0.000219998079; // In units of 1/Mpc
+// // cout<<"HconfGev: "<<Hconf(1, fourpiG, cosmo) <<endl;
+// for (i = 0; i < npts; i++)
+// {
+// //HGev=np.sqrt(Boxsize**2/c**2)
+// // Here we calculate \pi and \pi' power spectrum from \pi and  \pi' in hiclass, so the power is calculated in the
+// // in the same way and with the same coefficients, consider that time in Gev is 1/H_gev nad hi-class is Mpc, 1./H_class
+// // K here is in h/Mpc accroding to Pk_primordial(tk_d_kess->x[i] * cosmo.h / sim.boxsize which is multiplied to h and also we respective Class output notations which is h/Mpc!
+// // Since pi in Length unit in hiclass to make it consistent we multiply to H_hiclass and devide by H_Gevolution!
+// // We dont need to do the top command, instead we can convert Mpc to comoving box in Gevolution by multiplying to 1/Boxsize.
+// // Why "-" is here? and where is sqrt(2)?
+// 	kess_field[i] =  - M_PI * tk_d_kess->y[i] * sqrt(  Pk_primordial(tk_d_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_d_kess->x[i])*Hconf(a, fourpiG, cosmo)/Hconf_class( a, cosmo)
+// 	 / tk_d_kess->x[i];
+// 	// \pi'
+// 	kess_field_prime[i] = - M_PI * tk_t_kess->y[i] * sqrt( Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_t_kess->x[i])
+// 	 / tk_t_kess->x[i];
+// 	k_ess[i] = tk_d_kess->x[i];
+// }
+// // Field realization
+// gsl_spline_free(tk_d_kess);
+// tk_d_kess = gsl_spline_alloc(gsl_interp_cspline, npts);
+// gsl_spline_init(tk_d_kess, k_ess, kess_field, npts);
+// generateRealization(*scalarFT_phi_old, 0., tk_d_kess, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE,0);
+// plan_phi_old->execute(FFT_BACKWARD);
+// phi_old->updateHalo();	// pi_k now is realized in real space
+// gsl_spline_free(tk_d_kess);
+// free(kess_field);
+// // Field derivative realization \pi'
+// // gsl_spline_free(tk_t_kess);
+// // tk_t_kess = gsl_spline_alloc(gsl_interp_cspline, npts);
+// // gsl_spline_init(tk_t_kess, k_ess, kess_field_prime, npts);
+// // generateRealization(*scalarFT_pi_v, 0., tk_t_kess, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE,0);
+// // plan_pi_v_k->execute(FFT_BACKWARD);
+// // pi_v_k->updateHalo();	// pi_v_k now is realized in real space
+// // gsl_spline_free(tk_t_kess);
+// free(k_ess);
 	//////////////////////////////////////////////////////
 	//// End of K_essence IC part
 	//////////////////////////////////////////////////////

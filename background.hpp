@@ -160,6 +160,29 @@ double Hconf_class(const double a, const cosmology cosmo)
 	+ (cosmo.Omega_rad / a / a)+ (cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence)* a * a) );
 }
 
+
+//////////////////////////
+// Hconf
+//////////////////////////
+// Description:
+//   computes the conformal Hubble rate derivative at given scale factor
+//
+// Arguments:
+//   a          scale factor
+//   fourpiG    "4 pi G"
+//   cosmo      structure containing the cosmological parameters
+//
+// Returns: conformal Hubble rate
+//
+//////////////////////////
+// Hconf normalized to critial density so we have H0^2= 8piG/3
+// double Hconf_prime(const double a, const double fourpiG, const cosmology cosmo)
+// {
+// 	return sqrt((2. * fourpiG / 3.) * (((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) / a) + (cosmo.Omega_Lambda * a * a)
+// 	+ (cosmo.Omega_rad / a / a)+ (cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence)* a * a)));
+// 	// cout<<"Omega_rad: "<<cosmo.Omega_rad<<endl;
+// }
+
 //////////////////////////
 // rungekutta4bg
 //////////////////////////
