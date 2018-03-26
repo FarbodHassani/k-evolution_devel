@@ -218,6 +218,7 @@ int main(int argc, char **argv)
 
 	//kessence
 	Field<Real> phi_old;
+	Field<Real> phi_prime;
 	Field<Real> pi_k;
 	Field<Real> pi_v_k;
 	Field<Real>	pi_v_estimator;
@@ -225,6 +226,7 @@ int main(int argc, char **argv)
 	Field<Real> T0i_Kess;
 	Field<Real> Tij_Kess;
 	Field<Cplx> scalarFT_phi_old;
+	Field<Cplx> scalarFT_phi_prime;
 	Field<Cplx> scalarFT_chi_old;
 	Field<Cplx> scalarFT_pi;
 	Field<Cplx> scalarFT_pi_v;
@@ -257,6 +259,10 @@ int main(int argc, char **argv)
 	phi_old.initialize(lat,1);
 	scalarFT_phi_old.initialize(latFT,1);
 	PlanFFT<Cplx> plan_phi_old(&phi_old, &scalarFT_phi_old);
+	//Phi'
+	phi_prime.initialize(lat,1);
+	scalarFT_phi_prime.initialize(latFT,1);
+	PlanFFT<Cplx> plan_phi_prime(&phi_prime, &scalarFT_phi_prime);
 	//pi_k kessence
 	pi_k.initialize(lat,1);
 	scalarFT_pi.initialize(latFT,1);
@@ -450,8 +456,6 @@ int main(int argc, char **argv)
 			phi_old(x) =phi(x);
 			chi_old(x) =chi(x);
 		}
-		phi_old.updateHalo();
-		chi_old.updateHalo();
 
 #ifdef BENCHMARK
 		cycle_start_time = MPI_Wtime();
@@ -728,10 +732,10 @@ if (sim.Kess_source_gravity==1)
 
 #ifdef CHECK_B
 			//kessence included
-			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &pi_v_k, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &scalarFT_pi, &scalarFT_pi_v, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_pi_v_k, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
+			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi_prime, &phi, &pi_k, &pi_v_k, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &scalarFT_phi_prime ,&scalarFT_pi, &scalarFT_pi_v, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_phi_prime, &plan_pi_k, &plan_pi_v_k, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
 #else
 			//kessence included
-			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &pi_v_k, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &scalarFT_pi, &scalarFT_pi_v, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_pi_v_k, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
+			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi_prime, &phi, &pi_k, &pi_v_k, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &scalarFT_phi_prime ,&scalarFT_pi, &scalarFT_pi_v, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_phi_prime, &plan_pi_k, &plan_pi_v_k, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
 #endif
 
 			pkcount++;
@@ -786,6 +790,12 @@ if (sim.Kess_source_gravity==1)
 
 			COUT << endl;
 		}
+
+		//Kessence
+		for (x.first(); x.test(); x.next())
+			{
+				phi_prime(x) =(phi(x)-phi_old(x))/dtau;
+			}
 
 //**********************
 //Kessence - LeapFrog:START

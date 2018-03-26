@@ -631,9 +631,11 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 
 				if (strcmp(item, "Phi") == 0 || strcmp(item, "phi") == 0)
 					pvalue |= MASK_PHI;
-				else if (strcmp(item, "pi_k") == 0 || strcmp(item, "pi_k") == 0)
+				else if (strcmp(item, "phi_prime") == 0 || strcmp(item, "Phi_prime") == 0)
+						pvalue |= MASK_PHI_PRIME;
+				else if (strcmp(item, "pi_k") == 0 || strcmp(item, "Pi_k") == 0)
 					pvalue |= MASK_PI_K;
-				else if (strcmp(item, "pi_v_k") == 0 || strcmp(item, "pi_v_k") == 0)
+				else if (strcmp(item, "pi_v_k") == 0 || strcmp(item, "Pi_v_k") == 0)
 					pvalue |= MASK_PI_V_K;
 				else if (strcmp(item, "Chi") == 0 || strcmp(item, "chi") == 0)
 					pvalue |= MASK_CHI;
@@ -674,6 +676,8 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 
 			if (strcmp(start, "Phi") == 0 || strcmp(start, "phi") == 0)
 				pvalue |= MASK_PHI;
+			else if (strcmp(start, "Phi_prime") == 0 || strcmp(start, "phi_prime") == 0)
+				pvalue |= MASK_PHI_PRIME;
 			else if (strcmp(start, "Pi_k") == 0 || strcmp(start, "pi_k") == 0)
 				pvalue |= MASK_PI_K;
 			else if (strcmp(start, "Pi_v_k") == 0 || strcmp(start, "pi_v_k") == 0)

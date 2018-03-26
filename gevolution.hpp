@@ -314,10 +314,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 						psi=phi(x) - chi(x);
 						Psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau;
 					  Phi_prime= (phi(x) - phi_old(x))/dtau;
-						 if(x.coord(1)==4 && x.coord(2)==4 && x.coord(3)==4)
-						 {
-							 cout<<"phi(x): "<<phi(x)<< " phi_old(x):" << phi_old(x)<<" Phi_prime: "<<Phi_prime<<" Psi': "<<Psi_prime<<endl;
-						 }
+
 						CoVI = 1./(1. + dtau * (1.-3.*w)*Hcon/2. );
 						//Full Linear terms: Note that we have -dtau so we need to write pi''+ ...=0 with the same signs!
 						// pi_v_k(x)=CoVI * ( pi_v_k(x) - dtau * ( CoI * pi_v_k(x) + CoII * psi  - Psi_prime -3.*cs2*Phi_prime
@@ -329,6 +326,10 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 						// pi_v_estimator(x)= CoVI * ( pi_v_k(x) - dtau * ( CoI * pi_v_k(x) + CoII * (phi(x) - chi(x)) - Psi_prime
 						// 		 								  - - CoIII * pi_k(x) -cs2 * Laplacian_pi)
 
+						// if(x.coord(0)==4 && x.coord(1)==4 && x.coord(2)==4)
+						// {
+						 //  cout<<"phi(x): "<<phi(x)<< " phi_old(x):" << phi_old(x)<<" Phi_prime: "<<Phi_prime<<" Psi': "<<Psi_prime<<endl;
+						// }
 						//Term 5:
 						// pi_v_k(x)= pi_v_k(x) - dtau * ( 3.*Hcon * ( -cs2 + w) * psi ) ;
 						// pi_v_k(x)= pi_v_k(x) - dtau * ( 3.*Hcon * ( -cs2 + w) * psi - cs2 * Laplacian_pi ) ;

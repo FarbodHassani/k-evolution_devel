@@ -54,6 +54,7 @@
 #define MASK_PI_V_K 32768
 #define MASK_T_KESS 65536
 #define MASK_Delta_KESS 131072
+#define MASK_PHI_PRIME 262144
 //Kessence end
 
 #define ICFLAG_CORRECT_DISPLACEMENT 1
