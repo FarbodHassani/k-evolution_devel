@@ -296,7 +296,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 
 				// // cout<<"Hcon: "<<Hcon<<" Hconf_old: "<<Hcon_old<<" H_prime: "<<H_prime<<endl;
 			  CoI= (1.-3.*w)*Hcon/2.;
-			  CoII= 3.*cs2*Hcon*(1. - w/cs2);
+			  CoII= 3.*Hcon*(-cs2 + w);
 			  CoIII= 3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2);
 				CoIV= 3.*cs2*Hcon*(1.+w);
 			  CoV= Hcon*(2.+3.*w+cs2)/(2);
@@ -310,9 +310,29 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 						Laplacian_pi=pi_k(x-0) + pi_k(x+0) - 2. * pi_k(x);
 						Laplacian_pi+=pi_k(x+1) + pi_k(x-1)- 2. * pi_k(x);
 						Laplacian_pi+=pi_k(x+2) + pi_k(x-2)- 2. * pi_k(x);
-
-						 pi_v_k(x)= pi_v_k(x) -dtau *( cs2 * Laplacian_pi) ;
+						Laplacian_pi=Laplacian_pi/(dx*dx);
+						psi=phi(x) - chi(x);
+						Psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau;
+					  Phi_prime= (phi(x) - phi_old(x))/dtau;
+						 if(x.coord(1)==4 && x.coord(2)==4 && x.coord(3)==4)
+						 {
+							 cout<<"phi(x): "<<phi(x)<< " phi_old(x):" << phi_old(x)<<" Phi_prime: "<<Phi_prime<<" Psi': "<<Psi_prime<<endl;
+						 }
+						CoVI = 1./(1. + dtau * (1.-3.*w)*Hcon/2. );
+						//Full Linear terms: Note that we have -dtau so we need to write pi''+ ...=0 with the same signs!
+						// pi_v_k(x)=CoVI * ( pi_v_k(x) - dtau * ( CoI * pi_v_k(x) + CoII * psi  - Psi_prime -3.*cs2*Phi_prime
+						// 		 								  + CoIII * pi_k(x) - cs2 * Laplacian_pi));
+						pi_v_k(x)=CoVI * ( pi_v_k(x) - dtau * ( CoI * pi_v_k(x) + CoII * psi  - Psi_prime -3.*cs2*Phi_prime + CoIII * pi_k(x)
+						- cs2 * Laplacian_pi) );
 						Hcon_old=Hcon;
+
+						// pi_v_estimator(x)= CoVI * ( pi_v_k(x) - dtau * ( CoI * pi_v_k(x) + CoII * (phi(x) - chi(x)) - Psi_prime
+						// 		 								  - - CoIII * pi_k(x) -cs2 * Laplacian_pi)
+
+						//Term 5:
+						// pi_v_k(x)= pi_v_k(x) - dtau * ( 3.*Hcon * ( -cs2 + w) * psi ) ;
+						// pi_v_k(x)= pi_v_k(x) - dtau * ( 3.*Hcon * ( -cs2 + w) * psi - cs2 * Laplacian_pi ) ;
+						 // (1.-3.*w)*Hcon/2. * pi_v_k(x) - 3.*Hcon*(cs2 - w) * (phi(x) - chi(x)) - Psi_prime -3.*cs2*Phi_prime + (3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2)) * pi_k(x) - cs2 * Laplacian_pi) )
 						// Laplacian_pi=pi_k(x-0) + pi_k(x+0) - 2. * pi_k(x);
 						// Laplacian_pi+=pi_k(x+1) + pi_k(x-1)- 2. * pi_k(x);
 						// Laplacian_pi+=pi_k(x+2) + pi_k(x-2)- 2. * pi_k(x);
@@ -359,7 +379,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 						//*****************
 						//Leap Frog
 						//*****************
-						// pi_v_k(x)= pi_v_k(x)- * (pi_v_k(x) - dtau * ( (1.-3.*w)*Hcon/2. * pi_v_k(x) - 3.*Hcon*(cs2 - w) * (phi(x) - chi(x)) - Psi_prime -3.*cs2*Phi_prime + (3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2)) * pi_k(x) - cs2 * Laplacian_pi) );
+						// pi_v_k(x)=  * (pi_v_k(x) - dtau * ( (1.-3.*w)*Hcon/2. * pi_v_k(x) - 3.*Hcon*(cs2 - w) * (phi(x) - chi(x)) - Psi_prime -3.*cs2*Phi_prime + (3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2)) * pi_k(x) - cs2 * Laplacian_pi) );
 						//*****************
 						//Leap Frog
 						//*****************

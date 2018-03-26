@@ -314,7 +314,7 @@ int main(int argc, char **argv)
 	}
 	parallel.min(sim.movelimit);
 
-	fourpiG = 1.5 * sim.boxsize * sim.boxsize / C_SPEED_OF_LIGHT / C_SPEED_OF_LIGHT;
+	fourpiG = 1.5 * sim.boxsize * sim.boxsize / C_SPEED_OF_LIGHT / C_SPEED_OF_LIGHT; // Just a definition to make Friedmann equation simplofied! and working with normak numbers
 	a = 1. / (1. + sim.z_in);
 	tau = particleHorizon(a, fourpiG, cosmo);
 	tau_Lambda = -1.0;
@@ -787,28 +787,8 @@ if (sim.Kess_source_gravity==1)
 			COUT << endl;
 		}
 
-//Kessence part
-//**************
-//LeapFrog
-//**************
-// a_kess=a;
-// double Hconf_old= Hconf(a_kess, fourpiG, cosmo);
-// 	for (i=0;i<sim.nKe_numsteps;i++)
-// 	{
-// 		update_pi_k (a_kess, Hconf(a_kess, fourpiG, cosmo), dtau/sim.nKe_numsteps, phi, pi_k, pi_v_k);
-// 		pi_k.updateHalo();
-// 		rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0);
-// 		// update_pi_k_v(dtau/ sim.nKe_numsteps, dx,a_kess,phi,phi_old,chi,chi_old,pi_k, pi_v_k, pi_v_estimator, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_old);
-// 		pi_v_k.updateHalo();
-// 		rungekutta4bg(a_kess, fourpiG, cosmo,  dtau   / sim.nKe_numsteps / 2.0 );
-//
-// 	}
 //**********************
-//LeapFrog:END
-//**********************
-
-//**********************
-//Euler:START
+//Kessence - LeapFrog:START
 //**********************
 double a_kess=a;
 double Hconf_old= Hconf(a_kess, fourpiG, cosmo);
@@ -834,11 +814,8 @@ else
 	}
 }
 //**********************
-//Euler:END
+//Kessence - LeapFrog: End
 //**********************
-
-		//end of Kessence + background:x
-		//:::::::::::::::::
 
 		for (j = 0; j < numsteps; j++) // particle update
 		{

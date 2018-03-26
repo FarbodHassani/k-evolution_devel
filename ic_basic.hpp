@@ -907,8 +907,8 @@ void loadTransferFunctions_kessence(const char * filename, gsl_spline * & tk_pi_
 					}
 				}
 
-				k[i] = dummy[kcol] * boxsize; // dummy[kcol] in unit [h/Mpc] from class, and k in Gev unit which is Boxsize/Mpc.
-				tk_d[i] = dummy[dcol] * Hconf_class / Hconf_gev; // dummy[dcol] is class pi,
+				k[i] = dummy[kcol] * boxsize; // dummy[kcol] in unit [h/Mpc] from class, and k in Gev unit which is Boxsize/Mpc, note that boxsize is Mpc/h so we k in [Boxsize/Mpc] without h!
+				tk_d[i] = dummy[dcol] * Hconf_class / Hconf_gev; // dummy[dcol] is class pi, pi in class is [Mpc] and H pi is dimensionless.
 				// pi_kessence transfer. Since pi has dimension of 1/H we multiply to H_class/H_Gev
 				tk_t[i] = dummy[tcol] ; // dummy[tcol] is \pi' in class which is dimensionless.
 				i++;
