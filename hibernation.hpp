@@ -79,7 +79,7 @@ void writeRestartSettings(metadata & sim, icsettings & ic, cosmology & cosmo, co
 
 			//Kessence
 			fprintf(outfile, "k-essence field        = %s%s%s_pi_k.h5", sim.restart_path, sim.basename_restart, buffer);
-			fprintf(outfile, "k-essence field        = %s%s%s_pi_v_k.h5", sim.restart_path, sim.basename_restart, buffer);
+			fprintf(outfile, "k-essence field        = %s%s%s_zeta_k.h5", sim.restart_path, sim.basename_restart, buffer);
 
 			fprintf(outfile, ", %s%s%s_chi.h5", sim.restart_path, sim.basename_restart, buffer);
 			if (sim.vector_flag == VECTOR_PARABOLIC)
@@ -195,12 +195,12 @@ void writeRestartSettings(metadata & sim, icsettings & ic, cosmology & cosmo, co
 			if(sim.out_snapshot & MASK_PI_K)
 			{
 				fprintf(outfile, "pi_k");
-				if (sim.out_snapshot > MASK_PI_V_K)
+				if (sim.out_snapshot > MASK_zeta)
 					fprintf(outfile, ", ");
 			}
-			if(sim.out_snapshot & MASK_PI_V_K)
+			if(sim.out_snapshot & MASK_zeta)
 			{
-				fprintf(outfile, "pi_v_k");
+				fprintf(outfile, "zeta_k");
 				if (sim.out_snapshot > MASK_CHI)
 					fprintf(outfile, ", ");
 			}
@@ -298,6 +298,7 @@ void writeRestartSettings(metadata & sim, icsettings & ic, cosmology & cosmo, co
 			fprintf(outfile, "Pk outputs         = ");
 			if(sim.out_pk & MASK_PHI)
 			{
+      //Kessence
 				fprintf(outfile, "phi");
 				if (sim.out_pk > MASK_PI_K)
 					fprintf(outfile, ", ");
@@ -306,12 +307,12 @@ void writeRestartSettings(metadata & sim, icsettings & ic, cosmology & cosmo, co
 			if(sim.out_snapshot & MASK_PI_K)
 			{
 				fprintf(outfile, "pi_k");
-				if (sim.out_snapshot > MASK_PI_V_K)
+				if (sim.out_snapshot > MASK_zeta)
 					fprintf(outfile, ", ");
 			}
-			if(sim.out_snapshot & MASK_PI_V_K)
+			if(sim.out_snapshot & MASK_zeta)
 			{
-				fprintf(outfile, "pi_v_k");
+				fprintf(outfile, "zeta");
 				if (sim.out_snapshot > MASK_CHI)
 					fprintf(outfile, ", ");
 			}
@@ -429,7 +430,7 @@ void writeRestartSettings(metadata & sim, icsettings & ic, cosmology & cosmo, co
 //
 //////////////////////////
 
-void hibernate(metadata & sim, icsettings & ic, cosmology & cosmo, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, Field<Real> & phi, Field<Real> & pi_k,Field<Real> & pi_v_k, Field<Real> & chi, Field<Real> & Bi, const double a, const double tau, const double dtau, const int cycle, const int restartcount = -1)
+void hibernate(metadata & sim, icsettings & ic, cosmology & cosmo, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, Field<Real> & phi, Field<Real> & pi_k,Field<Real> & zeta, Field<Real> & chi, Field<Real> & Bi, const double a, const double tau, const double dtau, const int cycle, const int restartcount = -1)
 {
 	string h5filename;
 	char buffer[5];
@@ -474,7 +475,7 @@ void hibernate(metadata & sim, icsettings & ic, cosmology & cosmo, Particles<par
 		phi.saveHDF5_server_open(h5filename + "_phi");
 		//kessence
 		pi_k.saveHDF5_server_open(h5filename + "_pi_k");
-		pi_v_k.saveHDF5_server_open(h5filename + "_pi_v_k");
+		zeta.saveHDF5_server_open(h5filename + "_zeta");
 		chi.saveHDF5_server_open(h5filename + "_chi");
 	}
 
@@ -518,7 +519,7 @@ void hibernate(metadata & sim, icsettings & ic, cosmology & cosmo, Particles<par
 		phi.saveHDF5(h5filename + "_phi.h5");
 		//kessence
 		pi_k.saveHDF5(h5filename + "_pi_k.h5");
-		pi_v_k.saveHDF5(h5filename + "_pi_v_k.h5");
+		zeta.saveHDF5(h5filename + "_zeta.h5");
 		chi.saveHDF5(h5filename + "_chi.h5");
 	}
 

@@ -727,8 +727,8 @@ void loadTransferFunctions(const char * filename, gsl_spline * & tk_delta, gsl_s
 //   filename   string containing the path to the template file
 //   pi_k   		will point to the gsl_spline which holds the tabulated
 //              transfer function for kessence field (memory will be allocated)
-//   pi_v_k   	will point to the gsl_spline which holds the tabulated
-//              transfer function for pi_v_k (memory will be allocated)
+//   zeta   	will point to the gsl_spline which holds the tabulated
+//              transfer function for zeta (memory will be allocated)
 //   qname      string containing the name of the component (e.g. "cdm")
 //   boxsize    comoving box size (in the same units as used in the file)
 //   h          conversion factor between 1/Mpc and h/Mpc (theta is in units of 1/Mpc)
@@ -737,7 +737,7 @@ void loadTransferFunctions(const char * filename, gsl_spline * & tk_delta, gsl_s
 //
 //////////////////////////
 
-void loadTransferFunctions_kessence(const char * filename, gsl_spline * & tk_pi_k, gsl_spline * & tk_pi_v_k, const char * qname, const double boxsize, const double h, double Hconf_gev , double Hconf_class)
+void loadTransferFunctions_kessence(const char * filename, gsl_spline * & tk_pi_k, gsl_spline * & tk_zeta, const char * qname, const double boxsize, const double h, double Hconf_gev , double Hconf_class)
 {
 
 	int i = 0, numpoints = 0;
@@ -954,10 +954,10 @@ void loadTransferFunctions_kessence(const char * filename, gsl_spline * & tk_pi_
 	parallel.broadcast_dim0<double>(tk_t, numpoints, 0);
 
 	tk_pi_k = gsl_spline_alloc(gsl_interp_cspline, numpoints);
-	tk_pi_v_k = gsl_spline_alloc(gsl_interp_cspline, numpoints);
+	tk_zeta = gsl_spline_alloc(gsl_interp_cspline, numpoints);
 
 	gsl_spline_init(tk_pi_k, k, tk_d, numpoints);
-	gsl_spline_init(tk_pi_v_k, k, tk_t, numpoints);
+	gsl_spline_init(tk_zeta, k, tk_t, numpoints);
 
 	free(k);
 	free(tk_d);
@@ -1884,7 +1884,7 @@ double applyMomentumDistribution(Particles<part_simple,part_simple_info,part_sim
 //
 //////////////////////////
 
-void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const double fourpiG, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, double * maxvel, Field<Real> * phi, Field<Real> * phi_old, Field<Real> * pi_k, Field<Real> * pi_v_k, Field<Real> * chi, Field<Real> * Bi, Field<Real> * source, Field<Real> * Sij, Field<Cplx> * scalarFT, Field<Cplx> * scalarFT_phi_old, Field<Cplx> * scalarFT_pi, Field<Cplx> * scalarFT_pi_v, Field<Cplx> * BiFT, Field<Cplx> * SijFT, PlanFFT<Cplx> * plan_phi,PlanFFT<Cplx> * plan_phi_old, PlanFFT<Cplx> * plan_pi_k, PlanFFT<Cplx> * plan_pi_v_k, PlanFFT<Cplx> * plan_chi, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_source, PlanFFT<Cplx> * plan_Sij)
+void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const double fourpiG, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, double * maxvel, Field<Real> * phi, Field<Real> * phi_old, Field<Real> * pi_k, Field<Real> * zeta, Field<Real> * chi, Field<Real> * Bi, Field<Real> * source, Field<Real> * Sij, Field<Cplx> * scalarFT, Field<Cplx> * scalarFT_phi_old, Field<Cplx> * scalarFT_pi, Field<Cplx> * scalarFT_zeta, Field<Cplx> * BiFT, Field<Cplx> * SijFT, PlanFFT<Cplx> * plan_phi,PlanFFT<Cplx> * plan_phi_old, PlanFFT<Cplx> * plan_pi_k, PlanFFT<Cplx> * plan_zeta, PlanFFT<Cplx> * plan_chi, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_source, PlanFFT<Cplx> * plan_Sij)
 {
 
 	int i, j, p;
@@ -2024,7 +2024,7 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 		for (i = 0; i < npts; i++)
 		{
 		//HGev=np.sqrt(Boxsize**2/c**2)
-		// Here we calculate \pi and \pi' power spectrum from \pi and  \pi' in hiclass, so the power is calculated in the
+		// Here we calculate \pi and \zeta power spectrum from \pi and  zeta in hiclass, so the power is calculated in the
 		// in the same way and with the same coefficients, consider that time in Gev is 1/H_gev nad hi-class is Mpc, 1./H_class
 		// K here is in h/Mpc accroding to Pk_primordial(tk_d_kess->x[i] * cosmo.h / sim.boxsize which is multiplied to h and also we respective Class output notations which is h/Mpc!
 		// Since pi in Length unit in hiclass to make it consistent we multiply to H_hiclass and devide by H_Gevolution!
@@ -2032,7 +2032,7 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 		// Why "-" is here? and where is sqrt(2)?
 			kess_field[i] =  - M_PI * tk_d_kess->y[i] * sqrt(  Pk_primordial(tk_d_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_d_kess->x[i])
 			 / tk_d_kess->x[i];
-			// \pi'
+			// zeta
 			kess_field_prime[i] = - M_PI * tk_t_kess->y[i] * sqrt( Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_t_kess->x[i])
 			 / tk_t_kess->x[i];
 			k_ess[i] = tk_d_kess->x[i];
@@ -2046,13 +2046,13 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 		pi_k->updateHalo();	// pi_k now is realized in real space
 		gsl_spline_free(tk_d_kess);
 		free(kess_field);
-		// Field derivative realization \pi'
+		// Field derivative realization zeta
 		gsl_spline_free(tk_t_kess);
 		tk_t_kess = gsl_spline_alloc(gsl_interp_cspline, npts);
 		gsl_spline_init(tk_t_kess, k_ess, kess_field_prime, npts);
-		generateRealization(*scalarFT_pi_v, 0., tk_t_kess, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE,0);
-		plan_pi_v_k->execute(FFT_BACKWARD);
-		pi_v_k->updateHalo();	// pi_v_k now is realized in real space
+		generateRealization(*scalarFT_zeta, 0., tk_t_kess, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE,0);
+		plan_zeta->execute(FFT_BACKWARD);
+		zeta->updateHalo();	// zeta now is realized in real space
 		gsl_spline_free(tk_t_kess);
 		free(k_ess);
 		//////////////////////////////////////////////////////
@@ -2102,8 +2102,8 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 // // tk_t_kess = gsl_spline_alloc(gsl_interp_cspline, npts);
 // // gsl_spline_init(tk_t_kess, k_ess, kess_field_prime, npts);
 // // generateRealization(*scalarFT_pi_v, 0., tk_t_kess, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE,0);
-// // plan_pi_v_k->execute(FFT_BACKWARD);
-// // pi_v_k->updateHalo();	// pi_v_k now is realized in real space
+// // plan_zeta->execute(FFT_BACKWARD);
+// // zeta->updateHalo();	// zeta now is realized in real space
 // // gsl_spline_free(tk_t_kess);
 // free(k_ess);
 	//////////////////////////////////////////////////////

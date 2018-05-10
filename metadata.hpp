@@ -51,7 +51,7 @@
 #define MASK_DBARE  8192
 //Kessence part
 #define MASK_PI_K   16384
-#define MASK_PI_V_K 32768
+#define MASK_zeta 32768
 #define MASK_T_KESS 65536
 #define MASK_Delta_KESS 131072
 #define MASK_PHI_PRIME 262144

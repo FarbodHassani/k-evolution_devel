@@ -220,8 +220,8 @@ int main(int argc, char **argv)
 	Field<Real> phi_old;
 	Field<Real> phi_prime;
 	Field<Real> pi_k;
-	Field<Real> pi_v_k;
-	Field<Real>	pi_v_estimator;
+	Field<Real> zeta_integer;
+	Field<Real>	zeta_half;
 	Field<Real> T00_Kess;
 	Field<Real> T0i_Kess;
 	Field<Real> Tij_Kess;
@@ -229,8 +229,8 @@ int main(int argc, char **argv)
 	Field<Cplx> scalarFT_phi_prime;
 	Field<Cplx> scalarFT_chi_old;
 	Field<Cplx> scalarFT_pi;
-	Field<Cplx> scalarFT_pi_v;
-	Field<Cplx> scalarFT_pi_v_estimator;
+	Field<Cplx> scalarFT_zeta_integer;
+	Field<Cplx> scalarFT_zeta_half;
 	Field<Cplx> T00_KessFT;
 	Field<Cplx> T0i_KessFT;
 	Field<Cplx> Tij_KessFT;
@@ -267,14 +267,14 @@ int main(int argc, char **argv)
 	pi_k.initialize(lat,1);
 	scalarFT_pi.initialize(latFT,1);
 	PlanFFT<Cplx> plan_pi_k(&pi_k, &scalarFT_pi);
-	//pi_v_k kessence
-	pi_v_k.initialize(lat,1);
-	scalarFT_pi_v.initialize(latFT,1);
-	PlanFFT<Cplx> plan_pi_v_k(&pi_v_k, &scalarFT_pi_v);
-	//pi_v for estimator corrector method
-	pi_v_estimator.initialize(lat,1);
-	scalarFT_pi_v_estimator.initialize(latFT,1);
-	PlanFFT<Cplx> plan_pi_v_estimator(&pi_v_estimator, &scalarFT_pi_v_estimator);
+	//zeta_k kessence
+	zeta_integer.initialize(lat,1);
+	scalarFT_zeta_integer.initialize(latFT,1);
+	PlanFFT<Cplx> plan_zeta_integer(&zeta_integer, &scalarFT_zeta_integer);
+	//zeta for estimator corrector method
+	zeta_half.initialize(lat,1);
+	scalarFT_zeta_half.initialize(latFT,1);
+	PlanFFT<Cplx> plan_zeta_half(&zeta_half, &scalarFT_zeta_half);
 	//chi_old initialize
 	chi_old.initialize(lat,1);
 	scalarFT_chi_old.initialize(latFT,1);
@@ -332,7 +332,7 @@ int main(int argc, char **argv)
 	dtau_old = 0.;
 
 	if (ic.generator == ICGEN_BASIC)
-		generateIC_basic(sim, ic, cosmo, fourpiG, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &phi_old, &pi_k, &pi_v_k, &chi, &Bi, &source, &Sij, &scalarFT, &scalarFT_phi_old, &scalarFT_pi, &scalarFT_pi_v, &BiFT, &SijFT, &plan_phi,  &plan_phi_old, &plan_pi_k, &plan_pi_v_k, &plan_chi, &plan_Bi, &plan_source, &plan_Sij);
+		generateIC_basic(sim, ic, cosmo, fourpiG, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &phi_old, &pi_k, &zeta_integer, &chi, &Bi, &source, &Sij, &scalarFT, &scalarFT_phi_old, &scalarFT_pi, &scalarFT_zeta_integer, &BiFT, &SijFT, &plan_phi,  &plan_phi_old, &plan_pi_k, &plan_zeta_integer, &plan_chi, &plan_Bi, &plan_source, &plan_Sij);
 	// generates ICs on the fly
 	else if (ic.generator == ICGEN_READ_FROM_DISK)
 		readIC(sim, ic, cosmo, fourpiG, a, tau, dtau, dtau_old, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, cycle, snapcount, pkcount, restartcount);
@@ -425,18 +425,18 @@ int main(int argc, char **argv)
 	//******************************************************************
 	//  	if (sim.vector_flag == VECTOR_ELLIPTIC)
 	// 		{
-	// 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 1 );
+	// 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, chi, pi_k, zeta_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 1 );
 	// 		}
 	//  	else
 	// 		{
-	// 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 0 );
+	// 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, chi, pi_k, zeta_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 0 );
 	// 		}
 	//
-	// writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &pi_v_k, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &scalarFT_pi, &scalarFT_pi_v, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_pi_v_k, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
+// writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi_prime, &phi, &pi_k, &zeta_integer, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &scalarFT_phi_prime ,&scalarFT_pi, &scalarFT_zeta_integer, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_phi_prime, &plan_pi_k, &plan_zeta_integer, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
 	// cout<<"Hconf_class: "<<Hconf_class( a, cosmo)<<" a: "<<a<<" z: "<<1./(a)-1.<<endl;
 	// for (kFT.first(); kFT.test(); kFT.next())
 	// {
-	// 		// cout<<"k: "<<kFT<<"pi_k: "<<pi_k(kFT)<<"  phi: "<<phi(kFT)<<" H: "<<Hconf(a, fourpiG, cosmo)<<" H pi: "<<Hconf(a, fourpiG, cosmo) *pi_k(kFT)<<" pi'-phi: " <<phi(kFT)-pi_v_k(kFT)<<endl;
+	// 		// cout<<"k: "<<kFT<<"pi_k: "<<pi_k(kFT)<<"  phi: "<<phi(kFT)<<" H: "<<Hconf(a, fourpiG, cosmo)<<" H pi: "<<Hconf(a, fourpiG, cosmo) *pi_k(kFT)<<" pi'-phi: " <<phi(kFT)-zeta_k(kFT)<<endl;
 	// }
 	//******************************************************************
 	//End of testing
@@ -445,7 +445,7 @@ int main(int argc, char **argv)
 	// for (x.first(); x.test(); x.next())
 	// 	{
 	// 		pi_k(x)=1./(Hconf(1./(1.+100.), fourpiG, cosmo));
-	// 		pi_v_k(x)=0.;
+	// 		zeta_k(x)=0.;
 	// 	}
 	while (true)    // main loop
 	{
@@ -531,11 +531,11 @@ if (sim.Kess_source_gravity==1)
 // Kessence projection Tmunu
  	if (sim.vector_flag == VECTOR_ELLIPTIC)
 		{
-			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, 	cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 1 );
+			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, 	cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 1 );
 		}
  	else
 		{
-			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, pi_v_k, cosmo.Omega_kessence, cosmo.w_kessence, 	cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 0 );
+			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, 	cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 0 );
 		}
 
 		for (x.first(); x.test(); x.next())
@@ -710,11 +710,11 @@ if (sim.Kess_source_gravity==1)
 
 #ifdef CHECK_B
 			//kessence included
-			writeSnapshots(sim, cosmo, fourpiG, hdr, a, snapcount, h5filename, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &pi_v_k, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
+			writeSnapshots(sim, cosmo, fourpiG, hdr, a, snapcount, h5filename, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &zeta_integer, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
 
 #else
 			//kessence included
-			writeSnapshots(sim, cosmo, fourpiG, hdr, a, snapcount, h5filename, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &pi_v_k, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij);
+			writeSnapshots(sim, cosmo, fourpiG, hdr, a, snapcount, h5filename, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &zeta_integer, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij);
 			#endif
 
 			snapcount++;
@@ -732,10 +732,10 @@ if (sim.Kess_source_gravity==1)
 
 #ifdef CHECK_B
 			//kessence included
-			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi_prime, &phi, &pi_k, &pi_v_k, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &scalarFT_phi_prime ,&scalarFT_pi, &scalarFT_pi_v, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_phi_prime, &plan_pi_k, &plan_pi_v_k, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
+			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi_prime, &phi, &pi_k, &zeta_integer, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &scalarFT_phi_prime ,&scalarFT_pi, &scalarFT_zeta_integer, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_phi_prime, &plan_pi_k, &plan_zeta_integer, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
 #else
 			//kessence included
-			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi_prime, &phi, &pi_k, &pi_v_k, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &scalarFT_phi_prime ,&scalarFT_pi, &scalarFT_pi_v, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_phi_prime, &plan_pi_k, &plan_pi_v_k, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
+			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi_prime, &phi, &pi_k, &zeta_integer, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &scalarFT_phi_prime ,&scalarFT_pi, &scalarFT_zeta_integer, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_phi_prime, &plan_pi_k, &plan_zeta_integer, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
 #endif
 
 			pkcount++;
@@ -792,35 +792,43 @@ if (sim.Kess_source_gravity==1)
 		}
 
 		//Kessence
-		for (x.first(); x.test(); x.next())
-			{
-				phi_prime(x) =(phi(x)-phi_old(x))/dtau;
-			}
+		//Now phi_prime is calculated not based on phi difference in Gev but according to Class linear contribution is \phi_prime = - H_conf \Psi -3/2 \delta.
+        for (x.first(); x.test(); x.next())
+    		{
+    			phi_prime(x) =(phi(x)-phi_old(x))/(dtau);
+    		}
 
 //**********************
 //Kessence - LeapFrog:START
 //**********************
 double a_kess=a;
 double Hconf_old= Hconf(a_kess, fourpiG, cosmo);
+// In the first cycle we update zeta to get zeta at 1/2 to use it for leapfrog.
 if(cycle==0)
 {
 	for (i=0;i<sim.nKe_numsteps;i++)
 	{
-		update_pi_k_v( 0.5 * dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, pi_v_k, pi_v_estimator, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_old);
-		pi_v_k.updateHalo();
+
+     update_zeta(0.5 * dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_old);
+		 zeta_half.updateHalo();
+     zeta_integer.updateHalo();
 	}
 }
 
+// For other cycles we just update accoring to leapfrog, zeta at half steps and pi at integet steps
 else
 {
 	for (i=0;i<sim.nKe_numsteps;i++)
 	{
-		update_pi_k( dtau  / sim.nKe_numsteps,phi, pi_k, pi_v_k);
+    //First we update zeta to have it at n+1/2
+    update_zeta(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_old);
+    zeta_half.updateHalo();
+    zeta_integer.updateHalo();
+    rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0 );
+    //Now we update pi_k
+		update_pi_k(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_old);
 		pi_k.updateHalo();
 		rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0);
-		update_pi_k_v(dtau/ sim.nKe_numsteps, dx,a_kess,phi,phi_old,chi,chi_old,pi_k, pi_v_k, pi_v_estimator, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_old);
-		pi_v_k.updateHalo();
-		rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0 );
 	}
 }
 //**********************
@@ -970,11 +978,11 @@ else
 				if (sim.vector_flag == VECTOR_ELLIPTIC)
 				{
 					plan_Bi_check.execute(FFT_BACKWARD);
-					hibernate(sim, ic, cosmo, &pcls_cdm, &pcls_b, pcls_ncdm, phi, pi_k, pi_v_k, chi, Bi_check, a, tau, dtau, cycle);
+					hibernate(sim, ic, cosmo, &pcls_cdm, &pcls_b, pcls_ncdm, phi, pi_k, zeta_k, chi, Bi_check, a, tau, dtau, cycle);
 				}
 				else
 #endif
-				hibernate(sim, ic, cosmo, &pcls_cdm, &pcls_b, pcls_ncdm, phi, pi_k, pi_v_k, chi, Bi, a, tau, dtau, cycle);
+				hibernate(sim, ic, cosmo, &pcls_cdm, &pcls_b, pcls_ncdm, phi, pi_k, zeta_integer, chi, Bi, a, tau, dtau, cycle);
 				break;
 			}
 		}
@@ -988,11 +996,11 @@ else
 			if (sim.vector_flag == VECTOR_ELLIPTIC)
 			{
 				plan_Bi_check.execute(FFT_BACKWARD);
-				hibernate(sim, ic, cosmo, &pcls_cdm, &pcls_b, pcls_ncdm, phi, pi_k, pi_v_k, chi, Bi, a, tau, dtau, cycle, restartcount);
+				hibernate(sim, ic, cosmo, &pcls_cdm, &pcls_b, pcls_ncdm, phi, pi_k, zeta_integer, chi, Bi, a, tau, dtau, cycle, restartcount);
 			}
 			else
 #endif
-			hibernate(sim, ic, cosmo, &pcls_cdm, &pcls_b, pcls_ncdm, phi, pi_k, pi_v_k, chi, Bi, a, tau, dtau, cycle, restartcount);
+			hibernate(sim, ic, cosmo, &pcls_cdm, &pcls_b, pcls_ncdm, phi, pi_k, zeta_integer, chi, Bi, a, tau, dtau, cycle, restartcount);
 			restartcount++;
 		}
 

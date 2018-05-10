@@ -163,26 +163,31 @@ void prepareFTsource(Field<FieldType> & phi, Field<FieldType> & Tij, Field<Field
 //   phi        pointer to Bardeen potential which characterizes the
 //              geometric corrections (volume distortion); can be set to
 //              NULL which will result in no corrections applied
+//   pi_k       scala field in units 1/H
+//  zeta_integer combination of \pi', \Psi and H \pi = \pi'+\mathcal{H} \pi -\Psi at integer steps!
+//   Omega_fld  The scalar field density
+//   w          scalar field equation of state,
+//   cs2        scalar field sound speed squared
+//   Hcon       conformal Hubble factor in Gevolution's units
 //   fourpig
+//   method     refers to the method for solving the equations, method=1 Turn on vector elliptic, method=0
+//               the default
 //
 // Returns:
 //
 //////////////////////////
 template <class FieldType>
 void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, Field<FieldType> & Tij,
-   double dx,double a, Field<FieldType> & phi,Field<FieldType> & phi_old, Field<FieldType> & chi, Field<FieldType> & pi_k,
-    Field<FieldType> & pi_v_k, double Omega_fld , double w, double cs2, double Hcon, double fourpig, int method )
+   double dx,double a, Field<FieldType> & phi,Field<FieldType> & phi_old, Field<FieldType> & chi, Field<FieldType> & pi_k, Field<FieldType> & zeta_integer, double Omega_fld , double w, double cs2, double Hcon, double fourpig, int method )
 {
     Site xField(phi.lattice());
     double coeff1, coeff2, coeff3, Hdot, psi;
     Site x(phi.lattice());
     double gradient_pi2;
     coeff1=Omega_fld*pow(a,-3.*w)*(1.+w)/(cs2);
-    coeff2=Omega_fld*pow(a,-3.*w);
+    coeff2=Omega_fld*pow(a,-3.*w)*(1.+w);
     coeff3=Omega_fld*pow(a,-3.*w)*(1.+w);
-		// cout<<"Hcon: "<<Hcon<<endl;
-
-      for (xField.first(); xField.test(); xField.next())
+    for (xField.first(); xField.test(); xField.next())
       {
 
     		gradient_pi2 =0.25*(pi_k(xField+0) - pi_k(xField-0))* (pi_k(xField+0) - pi_k(xField-0));
@@ -191,20 +196,15 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 				// Test:
 				// if(xField.coord(0)==2 && xField.coord(1)==2 && xField.coord(2)==2 )
 				// {
-				// cout<<"gradient_pi2: "<<- psi + (pi_v_k(xField)+ Hcon * pi_k(xField))<<endl;
+				// cout<<"gradient_pi2: "<<- psi + (zeta(xField)+ Hcon * pi_k(xField))<<endl;
 				// }
         psi= phi(xField) - chi(xField);
         // 0-0-component:
-				//Test:
-				T00(xField)       =  -  coeff1* ( (-3.*cs2 + 1.)* Hcon * pi_k(xField) - psi + pi_v_k(xField));
-
-				// T00(xField)       =  -  coeff1* ( (-3.*cs2 + 1.)* Hcon * pi_k(xField) - phi(xField) + pi_v_k(xField));
-														 // Second order
-			 											// - (1.-2.*cs2) * gradient_pi2/2. );
-
-
+				T00(xField)       =  -  coeff1* ( -3.*cs2 * Hcon * pi_k(xField) + zeta_integer(xField));
+				// Second order
+			 	// - (1.-2.*cs2) * gradient_pi2/2. );
         // 1-1-component:
-        Tij(xField, 0, 0) =  -coeff2 * (1.+w) * ( (-1.+3.*w) * Hcon* pi_k(xField) + psi - pi_v_k(xField) );
+        Tij(xField, 0, 0) =  coeff2 * (-3.* w * Hcon* pi_k(xField) +   zeta_integer(xField) );
 				//second order
 				// +  gradient_pi2/2. ));
 
@@ -217,7 +217,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         // Tij(xField, 0, 2) =  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+2)-pi_k(xField-2))/4.;
 
         // 2-2-component:
-        Tij(xField, 1, 1) =  -coeff2 * (1.+w) * ( (-1.+3.*w) * Hcon* pi_k(xField) + psi - pi_v_k(xField) );
+        Tij(xField, 1, 1) =  coeff2 * (-3.* w * Hcon* pi_k(xField) +   zeta_integer(xField) );
 				//Second order
 				// +  gradient_pi2/2. ));
 
@@ -226,7 +226,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         // Tij(xField, 1, 2) =  coeff3*(pi_k(xField+1)-pi_k(xField-1))*(pi_k(xField+2)-pi_k(xField-2))/4.;
 
         // 3-3-component:
-        Tij(xField, 2, 2) =  -coeff2 * (1.+w) * ( (-1.+3.*w) * Hcon* pi_k(xField) + psi - pi_v_k(xField) );
+        Tij(xField, 2, 2) =  coeff2 * (-3.* w * Hcon* pi_k(xField) +   zeta_integer(xField) );
 				// Second order
 				// +  gradient_pi2/2. ));
         // In the case of Vector parabolic
@@ -234,11 +234,17 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         if(method==1) // method=1 Turn on vector elliptic
         {
 					// T01:
-          T0i(xField, 0)  =  -coeff3 * (1 - (-1 + 1./cs2)* gradient_pi2/2.) * (pi_k(xField+0)-pi_k(xField-0))/2.;
+          T0i(xField, 0)  =  -coeff3  * (pi_k(xField+0)-pi_k(xField-0))/2.;
+          // Second order
+          // *(1 - (-1 + 1./cs2)* gradient_pi2/2.)
 					// T02:
-          T0i(xField, 1)  =  -coeff3 * (1 - (-1 + 1./cs2)* gradient_pi2/2.) * (pi_k(xField+1)-pi_k(xField-1))/2.;
-					// T03 :
-          T0i(xField, 2)  =  -coeff3 * (1 - (-1 + 1./cs2)* gradient_pi2/2.) * (pi_k(xField+2)-pi_k(xField-2))/2.;
+          T0i(xField, 1)  =  -coeff3 * (pi_k(xField+1)-pi_k(xField-1))/2.;
+          // Second order
+          // *(1 - (-1 + 1./cs2)* gradient_pi2/2.)
+          // T03 :
+          T0i(xField, 2)  =  -coeff3  * (pi_k(xField+2)-pi_k(xField-2))/2.;
+          // Second order
+          // *(1 - (-1 + 1./cs2)* gradient_pi2/2.)
         }
       }
 
@@ -246,94 +252,126 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 			// Update K-essence field (1)
 			//////////////////////////
 			// Description:
-			//   Updating K-essence field based on equation obtained by energy momentum conservation
+			//   Updating K-essence pi_k field based on equation obtained by energy momentum conservation
 			//
 			// Arguments:
 			//   phi        reference to field configuration
 			//   pi_k       reference to k-essence field
 			//   piv_k      reference to first derivative of the field
-			//
+			//   zeta_half  reference to zeta at half steps which is useful for pi_k updating
 			// Returns:
 			//
 			//////////////////////////
 			template <class FieldType>
-			void update_pi_k( double dtau, Field<FieldType> & phi, Field<FieldType> & pi_k, Field<FieldType> & pi_v_k)
+			void update_pi_k( double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi,Field<FieldType> & chi_old, Field<FieldType> & pi_k, Field<FieldType> &,  Field<FieldType> & zeta_half , double Omega_fld ,double w, double cs2, double Hcon, double & Hcon_old)
 			{
+        double psi, psi_prime, psi_half;
+        double H_prime= (Hcon-Hcon_old)/dtau;
+        double H_half= Hcon + H_prime *  dtau/2. ;
+        double Coeff1 = 1./(1. + H_half * dtau/2.);
+
 			  Site x(phi.lattice());
 			  for (x.first(); x.test(); x.next())
 			    {
-			    	// pi_k(x)=pi_k(x)+pi_v_k(x)*dtau;
-
-						//Test:
-						pi_k(x)=pi_k(x)+pi_v_k(x)*dtau;
+            psi=phi(x) - chi(x);
+            psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau;
+            psi_half= psi + psi_prime * dtau/2.; //psi_half (n+1/2) = psi(n) + psi_prime'(n)
+            //pi_k(n+1) = Coeff1 * (pi_k(n) + \Delta T (zeta(n+1/2) + ... ))
+			      pi_k(x)=Coeff1 * (pi_k(x)  + dtau * zeta_half(x) - H_half * pi_k(x)/2. + psi_half ); //  pi_k(n+1)
+            //NOTE: zeta and psi must be at n+1/2 step according to the formula! So we need to update zeta first in the main loop.
 			    }
-
 			}
 
 			//////////////////////////
-			// Update K-essence velocity field (1)
+			// Update K-essence velocity field (2)
 			//////////////////////////
 			// Description:
-			//   Updating K-essence field based on equation obtained by energy momentum conservation
+			//   Updating K-essence zeta field based on equation obtained by energy momentum conservation
 			//
 			// Arguments:
 			//   phi        reference to field configuration
 			//   pi_k       reference to k-essence field
 			//   piv_k      reference to first derivative of the field
-			//	 pi_v_estimator reference to estimate of derivative of the field
+      //   zeta_half  reference to zeta at half steps which is useful for pi_k updating
+      //   zeta_integer  reference to zeta at integer steps which is synchronized with other fields
 			// Returns:
 			//
 			//////////////////////////
-			// We use predictor corrector method to calculate \pi_v better.
+			// We use predictor corrector method to calculate \zeta precisely specially for non-linear case.
 			template <class FieldType>
-			void update_pi_k_v(double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi,Field<FieldType> & chi_old, Field<FieldType> & pi_k, Field<FieldType> & pi_v_k , Field<FieldType> & pi_v_estimator, double Omega_fld ,double w, double cs2, double Hcon, double & Hcon_old)
+			void update_zeta(double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi,Field<FieldType> & chi_old, Field<FieldType> & pi_k, Field<FieldType> & zeta_half , Field<FieldType> & zeta_integer, double Omega_fld ,double w, double cs2, double Hcon, double & Hcon_old)
 			{
-
-			  double CoI, CoII, CoIII, CoIV, CoV, CoVI, H_prime, psi, psi_old,Psi_prime,Phi_prime;
-			  double Laplacian_pi, Gradpsi_Gradpi, Gradphi_Gradpi, Gradpi_Gradpi, Gradpi_prime_Gradpi, Gradpi_prime_Gradpi_corrected;
-				//
-			   H_prime= (Hcon-Hcon_old)/dtau;
-
-				// // cout<<"Hcon: "<<Hcon<<" Hconf_old: "<<Hcon_old<<" H_prime: "<<H_prime<<endl;
-			  CoI= (1.-3.*w)*Hcon/2.;
-			  CoII= 3.*Hcon*(-cs2 + w);
-			  CoIII= 3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2);
-				CoIV= 3.*cs2*Hcon*(1.+w);
-			  CoV= Hcon*(2.+3.*w+cs2)/(2);
-				//
-
+			  double CoeffI, CoeffII, H_prime, psi, psi_old, psi_prime, phi_prime, Laplacian_pi, zeta_old_half, zeta_prime_int_n0, zeta_check ;
+        //Predictor-corrector variables
+        double zeta_predictor_int_n0, zeta_predictor_half_n0, zeta_predictor_half_n1;
+        int numerator=1, n_correcor_steps=10;
+        H_prime= (Hcon-Hcon_old)/dtau; //H_prime(n) at step n
+        CoeffI = 1./(1. - dtau * 3. * w * Hcon/2. );
+        CoeffII = cs2 * (3. * Hcon * Hcon - 3. * H_prime );
 
 				Site x(phi.lattice());
 				for (x.first(); x.test(); x.next())
 					{
-
+            //Everything here is at step n except zeta which is at half steps! zeta is like pi_v
 						Laplacian_pi=pi_k(x-0) + pi_k(x+0) - 2. * pi_k(x);
 						Laplacian_pi+=pi_k(x+1) + pi_k(x-1)- 2. * pi_k(x);
 						Laplacian_pi+=pi_k(x+2) + pi_k(x-2)- 2. * pi_k(x);
-						Laplacian_pi=Laplacian_pi/(dx*dx);
+            Laplacian_pi=Laplacian_pi/(dx*dx);
 						psi=phi(x) - chi(x);
-						Psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau;
-					  Phi_prime= (phi(x) - phi_old(x))/dtau;
+						psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau; //psi_prime(n)
+					  phi_prime= (phi(x) - phi_old(x))/dtau; //phi_prime(n)
+						//Full Linear terms, zeta at step n+1/2
+            zeta_old_half=zeta_half(x); // zeta(n-1/2)
+            zeta_half(x)= CoeffI * ( zeta_half(x) + dtau * ( 3. * Hcon * ( w * zeta_half(x)/2. + cs2 * psi ) - CoeffII * pi_k(x) + 3. * cs2 * phi_prime + cs2 * Laplacian_pi) ); // zeta(n+1/2) from zeta(n-1/2) and zeta'(n)
+            // computing zeta (n) by taking average ove zeta(n+1/2) and zeta(n-1/2)
+            //Zeta Check!
+            zeta_integer(x)= (zeta_half(x) + zeta_old_half)/2.; //zeta(n)
 
-						CoVI = 1./(1. + dtau * (1.-3.*w)*Hcon/2. );
-						//Full Linear terms: Note that we have -dtau so we need to write pi''+ ...=0 with the same signs!
-						// pi_v_k(x)=CoVI * ( pi_v_k(x) - dtau * ( CoI * pi_v_k(x) + CoII * psi  - Psi_prime -3.*cs2*Phi_prime
-						// 		 								  + CoIII * pi_k(x) - cs2 * Laplacian_pi));
-						pi_v_k(x)=CoVI * ( pi_v_k(x) - dtau * ( CoI * pi_v_k(x) + CoII * psi  - Psi_prime -3.*cs2*Phi_prime + CoIII * pi_k(x)
-						- cs2 * Laplacian_pi) );
-						Hcon_old=Hcon;
+            //Predictor-Corrector method:
 
-						// pi_v_estimator(x)= CoVI * ( pi_v_k(x) - dtau * ( CoI * pi_v_k(x) + CoII * (phi(x) - chi(x)) - Psi_prime
+            for (int i=1; i<n_correcor_steps+1; i++)
+            {
+            // Initiation of the method from the last loop
+            zeta_predictor_int_n0 = zeta_integer(x);  //zeta (n+0) = (zeta(n-1/2)+zeta(n+1/2)) /2
+            // claculating zeta'(n) from the new values after correction
+            zeta_prime_int_n0=( 3. * Hcon * ( w * zeta_predictor_int_n0 + cs2 * psi ) - CoeffII * pi_k(x) + 3. * cs2 * phi_prime + cs2 * Laplacian_pi); // zeta'(n), Having zeta' at step (n), so all the variables are at step (n)
+            zeta_predictor_half_n0 =  zeta_predictor_int_n0 -  zeta_prime_int_n0 * dtau/2.;    //zeta(n-1/2) = zeta(n) - zeta'(n) * Delta tau/2
+            // Now from the new values at steps (n-1/2) and n we compute the new value at n+1/2
+            zeta_predictor_half_n1= CoeffI * ( zeta_predictor_half_n0 + dtau * ( 3. * Hcon * ( w * zeta_predictor_half_n0/2. + cs2 * psi ) - CoeffII * pi_k(x) + 3. * cs2 * phi_prime + cs2 * Laplacian_pi) ); // zeta_corrected(n+1/2) from zeta(n-1/2) and zeta'(n)
+            zeta_predictor_int_n0= (zeta_predictor_half_n1 + zeta_predictor_half_n0)/2.; //zeta(n) =[zeta(n+1/2)+zeta(n-1/2)]/2
+            // Now we must check the relative error between the new zeta_half(x)=zeta_predictor_half_n1, zeta_integer(x)=zeta_predictor_int_n0 and the previous step: zeta_half(x), zeta_integer(x)
+            if (2.* abs(zeta_integer(x)-zeta_predictor_int_n0)/(zeta_integer(x)+zeta_predictor_int_n0)<1.e-6 &&  2.* abs(zeta_half(x)-zeta_predictor_half_n1)/(zeta_half(x)+zeta_predictor_half_n1) < 1.e-6)break;
+             // If the relative error between the values between two successive steps are less than 1% the method is stopped
+             // Since the new variables are more precise we use them as a new value of the fields on the lattice
+             zeta_old_half=zeta_predictor_half_n0; // zeta(n-1/2) after correction
+             zeta_half(x)=zeta_predictor_half_n1; // zeta(n+1/2) after correction
+             zeta_integer(x)= (zeta_half(x) + zeta_old_half)/2.; //zeta(n) after correction
+             numerator++;
+            }
+            if (numerator==n_correcor_steps) cout << "\033[1;31mbold WARNING: PRECISION ERROR ON KESSENCE FIELD ZETA, More than 1% Error\033[0m\n" << '\n';
+            // computing zeta (n) by zeta(n)=zeta(n-1/2)+ zeta'(n) dtau/2.
+            // cout<< abs((zeta_integer(x)-zeta_check)/(zeta_integer(x))) << '\n';
+            // if (numerator>1) cout<<"The number of steps to converge: "<<numerator<<endl;
+
+          }
+          //Since we have n_kess updates we must put Hcon_old=Hcon;
+          Hcon_old=Hcon;
+        }
+
+            //Useful for second order terms
+    			  // double Laplacian_pi, Gradpsi_Gradpi, Gradphi_Gradpi, Gradpi_Gradpi, Gradpi_prime_Gradpi, Gradpi_prime_Gradpi_corrected;
+            // CoI= (1.-3.*w)*Hcon/2.;
+            // CoII= 3.*Hcon*(-cs2 + w);
+            // CoIII= 3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2);
+            // CoIV= 3.*cs2*Hcon*(1.+w);
+            // CoV= Hcon*(2.+3.*w+cs2)/(2);
+
+						// zeta_estimator(x)= CoVI * ( zeta(x) - dtau * ( CoI * zeta(x) + CoII * (phi(x) - chi(x)) - Psi_prime
 						// 		 								  - - CoIII * pi_k(x) -cs2 * Laplacian_pi)
-
-						// if(x.coord(0)==4 && x.coord(1)==4 && x.coord(2)==4)
-						// {
-						 //  cout<<"phi(x): "<<phi(x)<< " phi_old(x):" << phi_old(x)<<" Phi_prime: "<<Phi_prime<<" Psi': "<<Psi_prime<<endl;
-						// }
 						//Term 5:
-						// pi_v_k(x)= pi_v_k(x) - dtau * ( 3.*Hcon * ( -cs2 + w) * psi ) ;
-						// pi_v_k(x)= pi_v_k(x) - dtau * ( 3.*Hcon * ( -cs2 + w) * psi - cs2 * Laplacian_pi ) ;
-						 // (1.-3.*w)*Hcon/2. * pi_v_k(x) - 3.*Hcon*(cs2 - w) * (phi(x) - chi(x)) - Psi_prime -3.*cs2*Phi_prime + (3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2)) * pi_k(x) - cs2 * Laplacian_pi) )
+						// zeta(x)= zeta(x) - dtau * ( 3.*Hcon * ( -cs2 + w) * psi ) ;
+						// zeta(x)= zeta(x) - dtau * ( 3.*Hcon * ( -cs2 + w) * psi - cs2 * Laplacian_pi ) ;
+						 // (1.-3.*w)*Hcon/2. * zeta(x) - 3.*Hcon*(cs2 - w) * (phi(x) - chi(x)) - Psi_prime -3.*cs2*Phi_prime + (3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2)) * pi_k(x) - cs2 * Laplacian_pi) )
 						// Laplacian_pi=pi_k(x-0) + pi_k(x+0) - 2. * pi_k(x);
 						// Laplacian_pi+=pi_k(x+1) + pi_k(x-1)- 2. * pi_k(x);
 						// Laplacian_pi+=pi_k(x+2) + pi_k(x-2)- 2. * pi_k(x);
@@ -350,58 +388,20 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 						// Gradpi_Gradpi+=0.25*(pi_k(x+1) - pi_k(x-1))*(pi_k(x+1) - pi_k(x-1));
 						// Gradpi_Gradpi+=0.25*(pi_k(x+2) - pi_k(x-2))*(pi_k(x+2) - pi_k(x-2));
 						//
-						// Gradpi_prime_Gradpi=0.25*(pi_v_k(x+0) - pi_v_k(x-0))*(pi_k(x+0) - pi_k(x-0));
-						// Gradpi_prime_Gradpi+=0.25*(pi_v_k(x+1) - pi_v_k(x-1))*(pi_k(x+1) - pi_k(x-1));
-						// Gradpi_prime_Gradpi+=0.25*(pi_v_k(x+2) - pi_v_k(x-2))*(pi_k(x+2) - pi_k(x-2));
+						// Gradpi_prime_Gradpi=0.25*(zeta(x+0) - zeta(x-0))*(pi_k(x+0) - pi_k(x-0));
+						// Gradpi_prime_Gradpi+=0.25*(zeta(x+1) - zeta(x-1))*(pi_k(x+1) - pi_k(x-1));
+						// Gradpi_prime_Gradpi+=0.25*(zeta(x+2) - zeta(x-2))*(pi_k(x+2) - pi_k(x-2));
 						//
 						// Psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau;
 						// Phi_prime= (phi(x) - phi_old(x))/dtau;
-						// cout<<"phi(x): "<<phi(x)<< " phi_old(x):" << phi_old(x)<<" Phi_prime: "<<Phi_prime<<" Psi': "<<Psi_prime<<endl;
-						// cout<<"Term1: "<<(1.-3.*w)*Hcon/2. * pi_v_k(x)<<" Term2: "<<- 3.*Hcon*(cs2 - w) * (phi(x) - chi(x))<<" Term3: "<<- Psi_prime<<" Term4: "<<+ (3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2))*pi_k(x) <<" Term5: "<<- cs2 * Laplacian_pi<<
-						//  " Whole: "<<- dtau * ( (1.-3.*w)*Hcon/2. * pi_v_k(x) - 3.*Hcon*(cs2 - w) * (phi(x) - chi(x)) - Psi_prime -3.*cs2*Phi_prime + (3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2)) * pi_k(x) - cs2 * Laplacian_pi)<<endl;
-						//  cout<<" First: "<<pi_v_k(x)<<endl;
-
-						//*************************
-						//********Test*************
-						//*************************
-						// CoVI = 1./(1. + dtau * (1.-3.*w)*Hcon/2. );
-						// First orde only:
-						// CoVI = 1./(1.  );
-						//psi= phi(xField) - chi(xField);
-						//First order terms
-
-						//*****************
-						//Euler Solver:
-						//*****************
-						// pi_v_k(x)= pi_v_k(x) - dtau * ( (1-3.*w)*Hcon * pi_v_k(x) - 3.*Hcon*(cs2 - w) * (phi(x) - chi(x)) - Psi_prime -3.*cs2*Phi_prime + (3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2)) * pi_k(x) - cs2 * Laplacian_pi);
-
-
-
-						//*****************
-						//Leap Frog
-						//*****************
-						// pi_v_k(x)=  * (pi_v_k(x) - dtau * ( (1.-3.*w)*Hcon/2. * pi_v_k(x) - 3.*Hcon*(cs2 - w) * (phi(x) - chi(x)) - Psi_prime -3.*cs2*Phi_prime + (3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2)) * pi_k(x) - cs2 * Laplacian_pi) );
-						//*****************
-						//Leap Frog
-						//*****************
-
-
-						//*************************
-						//*************************
-						//*************************
-
-						// CoVI = 1./(1. + dtau * (1-3.*w)*Hcon/2. - dtau * (1.-cs2) *ma Laplacian_pi/(2.));
-						// // First orde only:
-						// CoVI = 1./(1. + dtau * (1-3.*w)*Hcon/2. );
 						// // //First order terms
-						// pi_v_k(x)= pi_v_k(x) + dtau * ( (1-3.*w)*Hcon/2. * pi_v_k(x) - 3.*Hcon*(cs2 - w) * (phi(x) - chi(x)) - Psi_prime -3.*cs2*Phi_prime - (3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2)) * pi_k(x) - cs2 * Laplacian_pi);
+						// zeta(x)= zeta(x) + dtau * ( (1-3.*w)*Hcon/2. * zeta(x) - 3.*Hcon*(cs2 - w) * (phi(x) - chi(x)) - Psi_prime -3.*cs2*Phi_prime - (3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2)) * pi_k(x) - cs2 * Laplacian_pi);
 						// Hcon_old=Hcon;
 
 															// Short wave corrections
 															// + (1.-cs2) * (phi(x) - chi(x)) * Laplacian_pi - 2.*cs2 * phi(x) * Laplacian_pi + CoIV * pi_k(x) * Laplacian_pi
-															// - (1.-cs2) * (pi_v_k(x)/2. + Hcon * pi_k(x)) * Laplacian_pi - (2.*cs2-1.) * Gradpsi_Gradpi + cs2 * Gradphi_Gradpi
+															// - (1.-cs2) * (zeta(x)/2. + Hcon * pi_k(x)) * Laplacian_pi - (2.*cs2-1.) * Gradpsi_Gradpi + cs2 * Gradphi_Gradpi
 															// + CoV * Gradpi_Gradpi - 2. * (1. - cs2) * (Gradpi_prime_Gradpi/2 + Hcon * Gradpi_Gradpi  ));
-					}
 
 				// Estimator corrector method:
 			  // for (x.first(); x.test(); x.next())
@@ -422,9 +422,9 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 			  //     Gradpi_Gradpi+=0.25*(pi_k(x+1) - pi_k(x-1))*(pi_k(x+1) - pi_k(x-1));
 			  //     Gradpi_Gradpi+=0.25*(pi_k(x+2) - pi_k(x-2))*(pi_k(x+2) - pi_k(x-2));
 				//
-				// 		Gradpi_prime_Gradpi=0.25*(pi_v_k(x+0) - pi_v_k(x-0))*(pi_k(x+0) - pi_k(x-0));
-				// 		Gradpi_prime_Gradpi+=0.25*(pi_v_k(x+1) - pi_v_k(x-1))*(pi_k(x+1) - pi_k(x-1));
-				// 		Gradpi_prime_Gradpi+=0.25*(pi_v_k(x+2) - pi_v_k(x-2))*(pi_k(x+2) - pi_k(x-2));
+				// 		Gradpi_prime_Gradpi=0.25*(zeta(x+0) - zeta(x-0))*(pi_k(x+0) - pi_k(x-0));
+				// 		Gradpi_prime_Gradpi+=0.25*(zeta(x+1) - zeta(x-1))*(pi_k(x+1) - pi_k(x-1));
+				// 		Gradpi_prime_Gradpi+=0.25*(zeta(x+2) - zeta(x-2))*(pi_k(x+2) - pi_k(x-2));
 				//
 			  //     Psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau;
 			  //     Phi_prime= (phi(x) - phi_old(x))/dtau;
@@ -432,15 +432,15 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 				// 		CoVI = 1./(1. - dtau * CoI - dtau * (1.-cs2) * Laplacian_pi/(2.));
 				// 		// 1st Predictor step
 				// 		//First order terms
-			  //     pi_v_estimator(x)= CoVI * ( pi_v_k(x) - dtau * ( -CoI * pi_v_k(x) - CoII * (phi(x) - chi(x)) - Psi_prime
+			  //     zeta_estimator(x)= CoVI * ( zeta(x) - dtau * ( -CoI * zeta(x) - CoII * (phi(x) - chi(x)) - Psi_prime
 				// 		 								  -3.*cs2*Phi_prime - CoIII * pi_k(x) -cs2 * Laplacian_pi
 				// 		 				 					// Short wave corrections
 			  //      					 				+ (1.-cs2) * (phi(x) - chi(x)) * Laplacian_pi - 2.*cs2 * phi(x) * Laplacian_pi + CoIV * pi_k(x) * Laplacian_pi
-				// 							 				- (1.-cs2) * pi_v_k(x) * Laplacian_pi/(2. ) - (2.*cs2-1.) * Gradpsi_Gradpi + cs2 * Gradphi_Gradpi
+				// 							 				- (1.-cs2) * zeta(x) * Laplacian_pi/(2. ) - (2.*cs2-1.) * Gradpsi_Gradpi + cs2 * Gradphi_Gradpi
 				// 							 				+ CoV * Gradpi_Gradpi - 2. * (1. - cs2) * Gradpi_prime_Gradpi  ));
 				//
 				// 	}
-				// pi_v_estimator.updateHalo();
+				// zeta_estimator.updateHalo();
 				// for (x.first(); x.test(); x.next())
 				// 	{
 				// 		 Laplacian_pi=pi_k(x-0) + pi_k(x+0) - 2. * pi_k(x);
@@ -459,48 +459,48 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 				// 		 Gradpi_Gradpi+=0.25*(pi_k(x+1) - pi_k(x-1))*(pi_k(x+1) - pi_k(x-1));
 				// 		 Gradpi_Gradpi+=0.25*(pi_k(x+2) - pi_k(x-2))*(pi_k(x+2) - pi_k(x-2));
 				//
-				// 		 Gradpi_prime_Gradpi=0.25*(pi_v_k(x+0) - pi_v_k(x-0))*(pi_k(x+0) - pi_k(x-0));
-				// 		 Gradpi_prime_Gradpi+=0.25*(pi_v_k(x+1) - pi_v_k(x-1))*(pi_k(x+1) - pi_k(x-1));
-				// 		 Gradpi_prime_Gradpi+=0.25*(pi_v_k(x+2) - pi_v_k(x-2))*(pi_k(x+2) - pi_k(x-2));
+				// 		 Gradpi_prime_Gradpi=0.25*(zeta(x+0) - zeta(x-0))*(pi_k(x+0) - pi_k(x-0));
+				// 		 Gradpi_prime_Gradpi+=0.25*(zeta(x+1) - zeta(x-1))*(pi_k(x+1) - pi_k(x-1));
+				// 		 Gradpi_prime_Gradpi+=0.25*(zeta(x+2) - zeta(x-2))*(pi_k(x+2) - pi_k(x-2));
 				//
 				// 		 Psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau;
 				// 		 Phi_prime= (phi(x) - phi_old(x))/dtau;
 				//
 				// 	 	CoVI = 1./(1. - dtau * CoI - dtau * (1.-cs2) * Laplacian_pi/(2.));
 				// 	 	//Using the result of estimator for corrector
-				// 	 	//Note that Gere we have Grad (pi_v + pi _estima)/2 so we divide by 1/8=0.125
+				// 	 	//Note that Gere we have Grad (zeta + pi _estima)/2 so we divide by 1/8=0.125
 				// 	 	Gradpi_prime_Gradpi_corrected=	  0.125*(pi_k(x+0) - pi_k(x-0))
-				// 	 																	*( (pi_v_k(x+0) + pi_v_estimator(x+0)) - (pi_v_k(x-0) + pi_v_estimator(x-0)) );
+				// 	 																	*( (zeta(x+0) + zeta_estimator(x+0)) - (zeta(x-0) + zeta_estimator(x-0)) );
 				//
 				// 	 	Gradpi_prime_Gradpi_corrected+=	0.125*(pi_k(x+1) - pi_k(x-1))
-				// 											  						*( (pi_v_k(x+1) + pi_v_estimator(x+1)) - (pi_v_k(x-1) + pi_v_estimator(x-1)) );
+				// 											  						*( (zeta(x+1) + zeta_estimator(x+1)) - (zeta(x-1) + zeta_estimator(x-1)) );
 				//
 				// 	 	Gradpi_prime_Gradpi_corrected+=	0.125*(pi_k(x+2) - pi_k(x-2))
-				// 								 										*( (pi_v_k(x+2) + pi_v_estimator(x+2)) - (pi_v_k(x-2) + pi_v_estimator(x-2)) );
+				// 								 										*( (zeta(x+2) + zeta_estimator(x+2)) - (zeta(x-2) + zeta_estimator(x-2)) );
 				//
 				// 	 	// The correct uodating equation
 				//
-				// 		CoVI * ( pi_v_k(x) - dtau * ( -CoI * pi_v_k(x) - CoII * (phi(x) - chi(x)) - Psi_prime
+				// 		CoVI * ( zeta(x) - dtau * ( -CoI * zeta(x) - CoII * (phi(x) - chi(x)) - Psi_prime
 				// 											-3.*cs2*Phi_prime - CoIII * pi_k(x) -cs2 * Laplacian_pi
 				// 											// Short wave corrections
 				// 											+ (1.-cs2) * (phi(x) - chi(x)) * Laplacian_pi - 2.*cs2 * phi(x) * Laplacian_pi + CoIV * pi_k(x) * Laplacian_pi
-				// 											- (1.-cs2) * pi_v_k(x) * Laplacian_pi/(2. ) - (2.*cs2-1.) * Gradpsi_Gradpi + cs2 * Gradphi_Gradpi
+				// 											- (1.-cs2) * zeta(x) * Laplacian_pi/(2. ) - (2.*cs2-1.) * Gradpsi_Gradpi + cs2 * Gradphi_Gradpi
 				// 											+ CoV * Gradpi_Gradpi - 2. * (1. - cs2) * Gradpi_prime_Gradpi  ));
 				//
 				//
-				// 	 	pi_v_k(x)= CoVI * (pi_v_k(x) - dtau* ( -CoI * pi_v_k(x) - CoII * (phi(x) - chi(x)) -  Psi_prime - 3.*cs2*Phi_prime
+				// 	 	zeta(x)= CoVI * (zeta(x) - dtau* ( -CoI * zeta(x) - CoII * (phi(x) - chi(x)) -  Psi_prime - 3.*cs2*Phi_prime
 				// 	 					- CoIII * pi_k(x) -cs2 * Laplacian_pi
 				// 	 					// Short wave corrections
 				// 	 					+ (1.-cs2) * (phi(x) - chi(x)) * Laplacian_pi - 2.*cs2 * phi(x) * Laplacian_pi + CoIV * pi_k(x) * Laplacian_pi
-				// 	 					- (1.-cs2) * pi_v_k(x) * Laplacian_pi/(2. ) - (2.*cs2-1.) * Gradpsi_Gradpi + cs2 * Gradphi_Gradpi
+				// 	 					- (1.-cs2) * zeta(x) * Laplacian_pi/(2. ) - (2.*cs2-1.) * Gradpsi_Gradpi + cs2 * Gradphi_Gradpi
 				// 	 					+ CoV * Gradpi_Gradpi - 2. * (1. - cs2) * Gradpi_prime_Gradpi_corrected  ));
 
 										// The error if we do not consider estimator corrector method for the term,.
 										// if(x.coord(1)==12 && x.coord(2)==8)
 										// 		{
-										// cout<<"Error: "<<(pi_v_k(x)-pi_v_estimator(x))*100/pi_v_k(x)<<endl;
+										// cout<<"Error: "<<(zeta(x)-zeta_estimator(x))*100/zeta(x)<<endl;
 										// 		}
-			    }
+
 
 //////////////////////////
 // prepareFTsource (2)
