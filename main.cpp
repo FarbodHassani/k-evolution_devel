@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 
 	double initialization_time;
 	double run_time;
-  double kessence_update_time; // How much time is put on updating the kessence field
+  double kessence_update_time=0; // How much time is put on updating the kessence field
 	double cycle_time=0;
 	double projection_time = 0;
 	double snapshot_output_time = 0;
@@ -798,6 +798,9 @@ if (sim.Kess_source_gravity==1)
 
 		//Kessence
 		//Now phi_prime is calculated not based on phi difference in Gev but according to Class linear contribution is \phi_prime = - H_conf \Psi -3/2 \delta.
+#ifdef BENCHMARK
+		ref_time = MPI_Wtime();
+#endif
         for (x.first(); x.test(); x.next())
     		{
     			phi_prime(x) =(phi(x)-phi_old(x))/(dtau);
@@ -835,6 +838,10 @@ else
 		rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0);
 	}
 }
+#ifdef BENCHMARK
+    kessence_update_time += MPI_Wtime() - ref_time;
+    ref_time = MPI_Wtime();
+#endif
 //**********************
 //Kessence - LeapFrog: End
 //**********************
@@ -1051,9 +1058,10 @@ else
 	COUT << "main loop        : "  << hourMinSec(cycle_time) << " ; " << 100. * cycle_time/run_time <<"%."<<endl;
 
 	COUT << "----------- main loop: components -----------"<<endl;
+
+	COUT << "projections                : "<< hourMinSec(projection_time) << " ; " << 100. * projection_time/cycle_time <<"%."<<endl;
   //Kessence update
   COUT << "Kessence_update                : "<< hourMinSec(kessence_update_time) << " ; " << 100. * kessence_update_time/cycle_time <<"%."<<endl;
-	COUT << "projections                : "<< hourMinSec(projection_time) << " ; " << 100. * projection_time/cycle_time <<"%."<<endl;
 	COUT << "snapshot outputs           : "<< hourMinSec(snapshot_output_time) << " ; " << 100. * snapshot_output_time/cycle_time <<"%."<<endl;
 	COUT << "power spectra outputs      : "<< hourMinSec(spectra_output_time) << " ; " << 100. * spectra_output_time/cycle_time <<"%."<<endl;
 	COUT << "update momenta (count: "<<update_q_count <<"): "<< hourMinSec(update_q_time) << " ; " << 100. * update_q_time/cycle_time <<"%."<<endl;
