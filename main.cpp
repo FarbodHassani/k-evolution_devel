@@ -72,6 +72,7 @@ int main(int argc, char **argv)
 
 	double initialization_time;
 	double run_time;
+  double kessence_update_time; // How much time is put on updating the kessence field
 	double cycle_time=0;
 	double projection_time = 0;
 	double snapshot_output_time = 0;
@@ -549,6 +550,10 @@ if (sim.Kess_source_gravity==1)
 			for(int c=0;c<6;c++)Sij(x,c)+=(2. * fourpiG * dx * dx / a) * Tij_Kess(x,c);
 		}
 }
+#ifdef BENCHMARK
+		kessence_update_time += MPI_Wtime() - ref_time;
+		ref_time = MPI_Wtime();
+#endif
 // Kessence projection Tmunu end
 
 		if (sim.gr_flag > 0)
@@ -802,14 +807,13 @@ if (sim.Kess_source_gravity==1)
 //Kessence - LeapFrog:START
 //**********************
 double a_kess=a;
-double Hconf_old= Hconf(a_kess, fourpiG, cosmo);
 // In the first cycle we update zeta to get zeta at 1/2 to use it for leapfrog.
 if(cycle==0)
 {
 	for (i=0;i<sim.nKe_numsteps;i++)
 	{
 
-     update_zeta(0.5 * dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_old);
+     update_zeta(0.5 * dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_prime(a_kess, fourpiG, cosmo));
 		 zeta_half.updateHalo();
      zeta_integer.updateHalo();
 	}
@@ -821,12 +825,12 @@ else
 	for (i=0;i<sim.nKe_numsteps;i++)
 	{
     //First we update zeta to have it at n+1/2
-    update_zeta(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_old);
+    update_zeta(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_prime(a_kess, fourpiG, cosmo));
     zeta_half.updateHalo();
     zeta_integer.updateHalo();
     rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0 );
     //Now we update pi_k
-		update_pi_k(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_old);
+		update_pi_k(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_prime(a_kess, fourpiG, cosmo)); // H_old is updated here in the function
 		pi_k.updateHalo();
 		rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0);
 	}
@@ -1034,6 +1038,7 @@ else
 	parallel.sum(snapshot_output_time);
 	parallel.sum(spectra_output_time);
 	parallel.sum(gravity_solver_time);
+  parallel.sum(kessence_update_time);
 	parallel.sum(fft_time);
 	parallel.sum(update_q_time);
 	parallel.sum(moveParts_time);
@@ -1046,6 +1051,8 @@ else
 	COUT << "main loop        : "  << hourMinSec(cycle_time) << " ; " << 100. * cycle_time/run_time <<"%."<<endl;
 
 	COUT << "----------- main loop: components -----------"<<endl;
+  //Kessence update
+  COUT << "Kessence_update                : "<< hourMinSec(kessence_update_time) << " ; " << 100. * kessence_update_time/cycle_time <<"%."<<endl;
 	COUT << "projections                : "<< hourMinSec(projection_time) << " ; " << 100. * projection_time/cycle_time <<"%."<<endl;
 	COUT << "snapshot outputs           : "<< hourMinSec(snapshot_output_time) << " ; " << 100. * snapshot_output_time/cycle_time <<"%."<<endl;
 	COUT << "power spectra outputs      : "<< hourMinSec(spectra_output_time) << " ; " << 100. * spectra_output_time/cycle_time <<"%."<<endl;
