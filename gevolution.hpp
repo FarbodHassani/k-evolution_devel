@@ -288,7 +288,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
             //*****
 
             //pi_k(n+1) = Coeff1 * (pi_k(n) + \Delta T (zeta(n+1/2) + ... ))
-			      pi_k(x)=Coeff1 * (pi_k(x)  + dtau * zeta_half(x) - H_half * pi_k(x)/2. + psi_half ); //  pi_k(n+1)
+			      pi_k(x)=Coeff1 * (pi_k(x)  + dtau * ( zeta_half(x) - H_half * pi_k(x)/2. + psi_half ) ); //  pi_k(n+1)
             //NOTE: zeta and psi must be at n+1/2 step according to the formula! So we need to update zeta first in the main loop.
 			    }
 			}
