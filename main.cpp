@@ -810,25 +810,14 @@ if (sim.Kess_source_gravity==1)
 //Kessence - LeapFrog:START
 //**********************
 double a_kess=a;
-// In the first cycle we update zeta to get zeta at 1/2 to use it for leapfrog.
-if(cycle==0)
-{
-	for (i=0;i<sim.nKe_numsteps;i++)
-	{
-
-     update_zeta(0.5 * dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_prime(a_kess, fourpiG, cosmo));
-		 zeta_half.updateHalo();
-     zeta_integer.updateHalo();
-	}
-}
-
-// For other cycles we just update accoring to leapfrog, zeta at half steps and pi at integet steps
-else
-{
 	for (i=0;i<sim.nKe_numsteps;i++)
 	{
     //First we update zeta to have it at n+1/2
     update_zeta(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_prime(a_kess, fourpiG, cosmo));
+    // By assuming that we have zeta^{-1/2} which is equal to \zeta^0 we get zeta^{1/2} by updating it by dtau and using zeta' (0)
+    // In sum: zeta(1/2) = zeta(-1/2)=zeta(0) + zeta'(0) dtau for the first loop
+    //Then we use Corrector method to correct the zeta(0) by using new values ... to make sure that we dont make alot of mistakes.
+    //After this update we have zeta(1/2) and zeta(1)
     zeta_half.updateHalo();
     zeta_integer.updateHalo();
     rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0 );
