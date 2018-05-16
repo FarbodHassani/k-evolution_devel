@@ -805,13 +805,22 @@ if (sim.Kess_source_gravity==1)
     		{
     			phi_prime(x) =(phi(x)-phi_old(x))/(dtau);
     		}
-
+        // We just need to update halo when we want to calculate derivative or use some neibours at the same time!
 //**********************
 //Kessence - LeapFrog:START
 //**********************
 double a_kess=a;
 	for (i=0;i<sim.nKe_numsteps;i++)
 	{
+    //First we update zeta to have it at n+1/2
+    if(cycle==0)
+    {
+      for (x.first(); x.test(); x.next())
+      {
+        zeta_half(x) =zeta_integer(x);  // Since int he first loop zeta_half is taken zero to not make a lot of mistake we take it equal to the half next step of it i.e zeta^0 but just for the first loop!
+      }
+    }
+
     //First we update zeta to have it at n+1/2
     update_zeta(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_prime(a_kess, fourpiG, cosmo));
     // By assuming that we have zeta^{-1/2} which is equal to \zeta^0 we get zeta^{1/2} by updating it by dtau and using zeta' (0)

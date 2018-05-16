@@ -263,12 +263,13 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 			//
 			//////////////////////////
 			template <class FieldType>
-			void update_pi_k( double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi,Field<FieldType> & chi_old, Field<FieldType> & pi_k, Field<FieldType> &,  Field<FieldType> & zeta_half , double Omega_fld ,double w, double cs2, double Hcon, double & Hcon_old)
+			void update_pi_k( double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi,Field<FieldType> & chi_old, Field<FieldType> & pi_k, Field<FieldType> &,  Field<FieldType> & zeta_half , double Omega_fld ,double w, double cs2, double Hcon, double  H_prime)
 			{
         double psi, psi_prime, psi_half;
-        double H_prime= (Hcon-Hcon_old)/dtau;
-        double H_half= Hcon + H_prime *  dtau/2. ;
+        double H_half= Hcon + H_prime *  dtau/2. ; // H(n+1/2) = H(n) + H'(n) dtau/2
         double Coeff1 = 1./(1. + H_half * dtau/2.);
+
+
 
 			  Site x(phi.lattice());
 			  for (x.first(); x.test(); x.next())
@@ -276,6 +277,16 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
             psi=phi(x) - chi(x);
             psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau;
             psi_half= psi + psi_prime * dtau/2.; //psi_half (n+1/2) = psi(n) + psi_prime'(n)
+
+            //*****
+            //TEST:
+            //*****
+            psi=0.;
+            psi_half=0.;
+            //*****
+            //TEST:
+            //*****
+
             //pi_k(n+1) = Coeff1 * (pi_k(n) + \Delta T (zeta(n+1/2) + ... ))
 			      pi_k(x)=Coeff1 * (pi_k(x)  + dtau * zeta_half(x) - H_half * pi_k(x)/2. + psi_half ); //  pi_k(n+1)
             //NOTE: zeta and psi must be at n+1/2 step according to the formula! So we need to update zeta first in the main loop.
@@ -299,27 +310,37 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 			//////////////////////////
 			// We use predictor corrector method to calculate \zeta precisely specially for non-linear case.
 			template <class FieldType>
-			void update_zeta(double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi,Field<FieldType> & chi_old, Field<FieldType> & pi_k, Field<FieldType> & zeta_half , Field<FieldType> & zeta_integer, double Omega_fld ,double w, double cs2, double Hcon, double & Hcon_old)
+			void update_zeta(double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi,Field<FieldType> & chi_old, Field<FieldType> & pi_k, Field<FieldType> & zeta_half , Field<FieldType> & zeta_integer, double Omega_fld ,double w, double cs2, double Hcon, double H_prime )
 			{
-			  double CoeffI, CoeffII, H_prime, psi, psi_old, psi_prime, phi_prime, Laplacian_pi, zeta_old_half, zeta_prime_int_n0, zeta_check ;
+			  double CoeffI, CoeffII, psi, psi_old, psi_prime, phi_prime, Laplacian_pi, zeta_old_half, zeta_prime_int_n0, zeta_check ;
         //Predictor-corrector variables
         double zeta_predictor_int_n0, zeta_predictor_half_n0, zeta_predictor_half_n1;
         int numerator=1, n_correcor_steps=10;
-        H_prime= (Hcon-Hcon_old)/dtau; //H_prime(n) at step n
-        CoeffI = 1./(1. - dtau * 3. * w * Hcon/2. );
+        CoeffI = 1./(1. -  3. * Hcon * w  * dtau/2. );
         CoeffII = cs2 * (3. * Hcon * Hcon - 3. * H_prime );
 
 				Site x(phi.lattice());
 				for (x.first(); x.test(); x.next())
 					{
             //Everything here is at step n except zeta which is at half steps! zeta is like pi_v
-						Laplacian_pi=pi_k(x-0) + pi_k(x+0) - 2. * pi_k(x);
-						Laplacian_pi+=pi_k(x+1) + pi_k(x-1)- 2. * pi_k(x);
-						Laplacian_pi+=pi_k(x+2) + pi_k(x-2)- 2. * pi_k(x);
-            Laplacian_pi=Laplacian_pi/(dx*dx);
+						Laplacian_pi= pi_k(x-0) + pi_k(x+0) - 2. * pi_k(x);
+						Laplacian_pi+=pi_k(x+1) + pi_k(x-1) - 2. * pi_k(x);
+						Laplacian_pi+=pi_k(x+2) + pi_k(x-2) - 2. * pi_k(x);
+            Laplacian_pi= Laplacian_pi/(dx*dx);
 						psi=phi(x) - chi(x);
 						psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau; //psi_prime(n)
 					  phi_prime= (phi(x) - phi_old(x))/dtau; //phi_prime(n)
+
+            //*****
+            //TEST:
+            //*****
+            psi=0.;
+            phi_prime=0.;
+            psi_prime=0.;
+            //*****
+            //TEST:
+            //*****
+
 						//Full Linear terms, zeta at step n+1/2
             zeta_old_half=zeta_half(x); // zeta(n-1/2)
             zeta_half(x)= CoeffI * ( zeta_half(x) + dtau * ( 3. * Hcon * ( w * zeta_half(x)/2. + cs2 * psi ) - CoeffII * pi_k(x) + 3. * cs2 * phi_prime + cs2 * Laplacian_pi) ); // zeta(n+1/2) from zeta(n-1/2) and zeta'(n)
@@ -329,33 +350,31 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 
             //Predictor-Corrector method:
 
-            for (int i=1; i<n_correcor_steps+1; i++)
-            {
-            // Initiation of the method from the last loop
-            zeta_predictor_int_n0 = zeta_integer(x);  //zeta (n+0) = (zeta(n-1/2)+zeta(n+1/2)) /2
-            // claculating zeta'(n) from the new values after correction
-            zeta_prime_int_n0=( 3. * Hcon * ( w * zeta_predictor_int_n0 + cs2 * psi ) - CoeffII * pi_k(x) + 3. * cs2 * phi_prime + cs2 * Laplacian_pi); // zeta'(n), Having zeta' at step (n), so all the variables are at step (n)
-            zeta_predictor_half_n0 =  zeta_predictor_int_n0 -  zeta_prime_int_n0 * dtau/2.;    //zeta(n-1/2) = zeta(n) - zeta'(n) * Delta tau/2
-            // Now from the new values at steps (n-1/2) and n we compute the new value at n+1/2
-            zeta_predictor_half_n1= CoeffI * ( zeta_predictor_half_n0 + dtau * ( 3. * Hcon * ( w * zeta_predictor_half_n0/2. + cs2 * psi ) - CoeffII * pi_k(x) + 3. * cs2 * phi_prime + cs2 * Laplacian_pi) ); // zeta_corrected(n+1/2) from zeta(n-1/2) and zeta'(n)
-            zeta_predictor_int_n0= (zeta_predictor_half_n1 + zeta_predictor_half_n0)/2.; //zeta(n) =[zeta(n+1/2)+zeta(n-1/2)]/2
-            // Now we must check the relative error between the new zeta_half(x)=zeta_predictor_half_n1, zeta_integer(x)=zeta_predictor_int_n0 and the previous step: zeta_half(x), zeta_integer(x)
-            if (2.* abs(zeta_integer(x)-zeta_predictor_int_n0)/(zeta_integer(x)+zeta_predictor_int_n0)<1.e-6 &&  2.* abs(zeta_half(x)-zeta_predictor_half_n1)/(zeta_half(x)+zeta_predictor_half_n1) < 1.e-6)break;
-             // If the relative error between the values between two successive steps are less than 1% the method is stopped
-             // Since the new variables are more precise we use them as a new value of the fields on the lattice
-             zeta_old_half=zeta_predictor_half_n0; // zeta(n-1/2) after correction
-             zeta_half(x)=zeta_predictor_half_n1; // zeta(n+1/2) after correction
-             zeta_integer(x)= (zeta_half(x) + zeta_old_half)/2.; //zeta(n) after correction
-             numerator++;
-            }
-            if (numerator==n_correcor_steps) cout << "\033[1;31mbold WARNING: PRECISION ERROR ON KESSENCE FIELD ZETA, More than 1% Error\033[0m\n" << '\n';
+            // for (int i=1; i<n_correcor_steps+1; i++)
+            // {
+            // // Initiation of the method from the last loop
+            // zeta_predictor_int_n0 = zeta_integer(x);  //zeta (n+0) = (zeta(n-1/2)+zeta(n+1/2)) /2
+            // // claculating zeta'(n) from the new values after correction
+            // zeta_prime_int_n0=( 3. * Hcon * ( w * zeta_predictor_int_n0 + cs2 * psi ) - CoeffII * pi_k(x) + 3. * cs2 * phi_prime + cs2 * Laplacian_pi); // zeta'(n), Having zeta' at step (n), so all the variables are at step (n)
+            // zeta_predictor_half_n0 =  zeta_predictor_int_n0 -  zeta_prime_int_n0 * dtau/2.;    //zeta(n-1/2) = zeta(n) - zeta'(n) * Delta tau/2
+            // // Now from the new values at steps (n-1/2) and n we compute the new value at n+1/2
+            // zeta_predictor_half_n1= CoeffI * ( zeta_predictor_half_n0 + dtau * ( 3. * Hcon * ( w * zeta_predictor_half_n0/2. + cs2 * psi ) - CoeffII * pi_k(x) + 3. * cs2 * phi_prime + cs2 * Laplacian_pi) ); // zeta_corrected(n+1/2) from zeta(n-1/2) and zeta'(n)
+            // zeta_predictor_int_n0= (zeta_predictor_half_n1 + zeta_predictor_half_n0)/2.; //zeta(n) =[zeta(n+1/2)+zeta(n-1/2)]/2
+            // // Now we must check the relative error between the new zeta_half(x)=zeta_predictor_half_n1, zeta_integer(x)=zeta_predictor_int_n0 and the previous step: zeta_half(x), zeta_integer(x)
+            // if (2.* abs(zeta_integer(x)-zeta_predictor_int_n0)/(zeta_integer(x)+zeta_predictor_int_n0)<1.e-6 &&  2.* abs(zeta_half(x)-zeta_predictor_half_n1)/(zeta_half(x)+zeta_predictor_half_n1) < 1.e-6)break;
+            //  // If the relative error between the values between two successive steps are less than 1% the method is stopped
+            //  // Since the new variables are more precise we use them as a new value of the fields on the lattice
+            //  zeta_old_half=zeta_predictor_half_n0; // zeta(n-1/2) after correction
+            //  zeta_half(x)=zeta_predictor_half_n1; // zeta(n+1/2) after correction
+            //  zeta_integer(x)= (zeta_half(x) + zeta_old_half)/2.; //zeta(n) after correction
+            //  numerator++;
+            // }
+            // if (numerator==n_correcor_steps) cout << "\033[1;31mbold WARNING: PRECISION ERROR ON KESSENCE FIELD ZETA, More than 1% Error\033[0m\n" << '\n';
             // computing zeta (n) by zeta(n)=zeta(n-1/2)+ zeta'(n) dtau/2.
             // cout<< abs((zeta_integer(x)-zeta_check)/(zeta_integer(x))) << '\n';
             // if (numerator>1) cout<<"The number of steps to converge: "<<numerator<<endl;
 
           }
-          //Since we have n_kess updates we must put Hcon_old=Hcon;
-          Hcon_old=Hcon;
         }
 
             //Useful for second order terms
@@ -396,7 +415,6 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 						// Phi_prime= (phi(x) - phi_old(x))/dtau;
 						// // //First order terms
 						// zeta(x)= zeta(x) + dtau * ( (1-3.*w)*Hcon/2. * zeta(x) - 3.*Hcon*(cs2 - w) * (phi(x) - chi(x)) - Psi_prime -3.*cs2*Phi_prime - (3.*Hcon*Hcon*(cs2-w) + H_prime * (1.-3.*cs2)) * pi_k(x) - cs2 * Laplacian_pi);
-						// Hcon_old=Hcon;
 
 															// Short wave corrections
 															// + (1.-cs2) * (phi(x) - chi(x)) * Laplacian_pi - 2.*cs2 * phi(x) * Laplacian_pi + CoIV * pi_k(x) * Laplacian_pi
