@@ -835,7 +835,6 @@ double a_kess=a;
 		pi_k.updateHalo();
 		rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0);
 	}
-}
 #ifdef BENCHMARK
     kessence_update_time += MPI_Wtime() - ref_time;
     ref_time = MPI_Wtime();
