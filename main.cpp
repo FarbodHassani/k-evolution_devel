@@ -797,7 +797,6 @@ if (sim.Kess_source_gravity==1)
 		}
 
 		//Kessence
-		//Now phi_prime is calculated not based on phi difference in Gev but according to Class linear contribution is \phi_prime = - H_conf \Psi -3/2 \delta.
 #ifdef BENCHMARK
 		ref_time = MPI_Wtime();
 #endif
@@ -805,23 +804,29 @@ if (sim.Kess_source_gravity==1)
     		{
     			phi_prime(x) =(phi(x)-phi_old(x))/(dtau);
     		}
-        // We just need to update halo when we want to calculate derivative or use some neibours at the same time!
+        // We just need to update halo when we want to calculate spatial derivative or use some neibours at the same time! So here wo do not nee to update halo for phi_prime!
 //**********************
 //Kessence - LeapFrog:START
 //**********************
-double a_kess=a;
+  double a_kess=a;
 	for (i=0;i<sim.nKe_numsteps;i++)
 	{
-    //First we update zeta to have it at n+1/2
+    //First we update zeta to have it at 0-1/2 just in the first loop
     if(cycle==0)
     {
       for (x.first(); x.test(); x.next())
       {
-        zeta_half(x) =zeta_integer(x);  // Since int he first loop zeta_half is taken zero to not make a lot of mistake we take it equal to the half next step of it i.e zeta^0 but just for the first loop!
+        zeta_half(x) =zeta_integer(x) - 0.5 * dtau * ( 3. * Hconf(a_kess, fourpiG, cosmo) * ( cosmo.w_kessence * zeta_integer(x) + cosmo.cs2_kessence * phi(x) - chi(x) ) - cosmo.cs2_kessence * (3. * Hconf(a_kess, fourpiG, cosmo) * Hconf(a_kess, fourpiG, cosmo) - 3. * Hconf_prime(a_kess, fourpiG, cosmo) ) * pi_k(x));
+        //Approximations: 1-The linear definition of derivative
+        //                2-phi_prime = 0
+        //                3- cs^2 Laplace pi =0
+        //Phi_prime is omitted since in the first loop is zero
+        // We also have neglected Laplace term since Laplace itself is small and is multiplied to cs^2 which is very suppressed!
+        //We could naively take \zeta_old_half = zeta_integer but we guess we may make a mistake!
+        // Since int he first loop zeta_half is taken zero to not make a lot of mistake we take it equal to the half next step of it i.e zeta^0 but just for the first loop!
       }
     }
-
-    //First we update zeta to have it at n+1/2
+    //First we update zeta to have it at n+1/2 (at first loop from the valu at -1/2 we compute the value at 1/2)
     update_zeta(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_prime(a_kess, fourpiG, cosmo));
     // By assuming that we have zeta^{-1/2} which is equal to \zeta^0 we get zeta^{1/2} by updating it by dtau and using zeta' (0)
     // In sum: zeta(1/2) = zeta(-1/2)=zeta(0) + zeta'(0) dtau for the first loop
