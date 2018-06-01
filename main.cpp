@@ -539,16 +539,16 @@ if (sim.Kess_source_gravity==1)
 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, 	cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 0 );
 		}
 
-		for (x.first(); x.test(); x.next())
-		{
-			// The coefficient is because it wanted to to be source according to eq C.2 of Gevolution paper
-			// Note that it is multiplied to dx^2 and is divived by -a^3 because of definition of T00 which is scaled by a^3
-			// We have T00 and Tij according to code's units, but source is important to calculate potentials and moving particles.
-			// There is coefficient between Tij and Sij as source.
-			source(x) += (fourpiG * dx * dx / a) * T00_Kess(x);
-			if (sim.vector_flag == VECTOR_ELLIPTIC)for(int 	c=0;c<3;c++)Bi(x,c)+= (2. * fourpiG * dx * dx / a) * T0i_Kess(x,c);
-			for(int c=0;c<6;c++)Sij(x,c)+=(2. * fourpiG * dx * dx / a) * Tij_Kess(x,c);
-		}
+		// for (x.first(); x.test(); x.next())
+		// {
+		// 	// The coefficient is because it wanted to to be source according to eq C.2 of Gevolution paper
+		// 	// Note that it is multiplied to dx^2 and is divived by -a^3 because of definition of T00 which is scaled by a^3
+		// 	// We have T00 and Tij according to code's units, but source is important to calculate potentials and moving particles.
+		// 	// There is coefficient between Tij and Sij as source.
+		// 	source(x) += (fourpiG * dx * dx / a) * T00_Kess(x);
+		// 	if (sim.vector_flag == VECTOR_ELLIPTIC)for(int 	c=0;c<3;c++)Bi(x,c)+= (2. * fourpiG * dx * dx / a) * T0i_Kess(x,c);
+		// 	for(int c=0;c<6;c++)Sij(x,c)+=(2. * fourpiG * dx * dx / a) * Tij_Kess(x,c);
+		// }
 }
 #ifdef BENCHMARK
 		kessence_update_time += MPI_Wtime() - ref_time;
@@ -816,6 +816,7 @@ if (sim.Kess_source_gravity==1)
     {
       for (x.first(); x.test(); x.next())
       {
+        //computing zeta(-1/2)
         zeta_half(x) =zeta_integer(x) - 0.5 * dtau * ( 3. * Hconf(a_kess, fourpiG, cosmo) * ( cosmo.w_kessence * zeta_integer(x) + cosmo.cs2_kessence * phi(x) - chi(x) ) - cosmo.cs2_kessence * (3. * Hconf(a_kess, fourpiG, cosmo) * Hconf(a_kess, fourpiG, cosmo) - 3. * Hconf_prime(a_kess, fourpiG, cosmo) ) * pi_k(x));
         //Approximations: 1-The linear definition of derivative
         //                2-phi_prime = 0
@@ -825,20 +826,25 @@ if (sim.Kess_source_gravity==1)
         //We could naively take \zeta_old_half = zeta_integer but we guess we may make a mistake!
         // Since int he first loop zeta_half is taken zero to not make a lot of mistake we take it equal to the half next step of it i.e zeta^0 but just for the first loop!
       }
+      //Updating zeta to get zeta(1/2) and zeta(0) just in the first loop
+      // In sum: zeta(1/2) = zeta(-1/2)=zeta(0) + zeta'(0) dtau for the first loop
+      update_zeta(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_prime(a_kess, fourpiG, cosmo));
+      zeta_half.updateHalo();
+      zeta_integer.updateHalo();
     }
-    //First we update zeta to have it at n+1/2 (at first loop from the valu at -1/2 we compute the value at 1/2)
+
+    //Since we have pi(n+1)=pi(n) + pi'(n+1/2), and in pi'(n+1/2) we have H(n+1/2) we update the background before updating the pi to have H(n+1/2)
+    rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0);
+    //First we update pi to have it at n+1 (at first loop from the value at (0) and the value of zeta at 1/2 and H(n+1/2) we update pi at (1))
+    update_pi_k(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_prime(a_kess, fourpiG, cosmo)); // H_old is updated here in the function
+		pi_k.updateHalo();
+    // Now we have pi(n+1) and a_kess(n+1/2) so we update background by halfstep to have a_kess(n+1) to calculate zeta'(n+1) to have zeta(n+1/2)=zeta(n-1/2) + zeta'(n+1) dtau
+    rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0 );
+    //Now from the values of zeta at step (1/2) we calculate zeta(3/2) and then we calculate zeta(1) which is synched with pi(1)
     update_zeta(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_prime(a_kess, fourpiG, cosmo));
-    // By assuming that we have zeta^{-1/2} which is equal to \zeta^0 we get zeta^{1/2} by updating it by dtau and using zeta' (0)
-    // In sum: zeta(1/2) = zeta(-1/2)=zeta(0) + zeta'(0) dtau for the first loop
-    //Then we use Corrector method to correct the zeta(0) by using new values ... to make sure that we dont make alot of mistakes.
-    //After this update we have zeta(1/2) and zeta(1)
     zeta_half.updateHalo();
     zeta_integer.updateHalo();
-    rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0 );
-    //Now we update pi_k
-		update_pi_k(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_prime(a_kess, fourpiG, cosmo)); // H_old is updated here in the function
-		pi_k.updateHalo();
-		rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0);
+
 	}
 #ifdef BENCHMARK
     kessence_update_time += MPI_Wtime() - ref_time;
