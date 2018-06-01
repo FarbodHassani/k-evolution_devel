@@ -424,44 +424,6 @@ ioserver.closeOstream();
 #endif
 }
 
-
-//////////////////////////
-// writeSpectra
-//////////////////////////
-// Description:
-//   output of spectra
-//
-// Arguments:
-//   sim            simulation metadata structure
-//   cosmo          cosmological parameter structure
-//   fourpiG        4 pi G (in code units)
-//   a              scale factor
-//   pkcount        spectrum output index
-//   pcls_cdm       pointer to (uninitialized) particle handler for CDM
-//   pcls_b         pointer to (uninitialized) particle handler for baryons
-//   pcls_ncdm      array of (uninitialized) particle handlers for
-//                  non-cold DM (may be set to NULL)
-//   phi            pointer to allocated field
-//   chi            pointer to allocated field
-//   Bi             pointer to allocated field
-//   source         pointer to allocated field
-//   Sij            pointer to allocated field
-//   scalarFT       pointer to allocated field
-//   BiFT           pointer to allocated field
-//   SijFT          pointer to allocated field
-//   plan_phi       pointer to FFT planner
-//   plan_chi       pointer to FFT planner
-//   plan_Bi        pointer to FFT planner
-//   plan_source    pointer to FFT planner
-//   plan_Sij       pointer to FFT planner
-//   Bi_check       pointer to allocated field (or NULL)
-//   BiFT_check     pointer to allocated field (or NULL)
-//   plan_Bi_check  pointer to FFT planner (or NULL)
-//
-// Returns:
-//
-//////////////////////////
-
 void writeSpectra(metadata & sim, cosmology & cosmo, const double fourpiG, const double a, const int pkcount, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, Field<Real> * phi, Field<Real> * phi_prime , Field<Real> * pi_k, Field<Real> * zeta,  Field<Real> * chi, Field<Real> * Bi, Field<Real> * T00_Kess, Field<Real> * T0i_Kess, Field<Real> * Tij_Kess, Field<Real> * source, Field<Real> * Sij, Field<Cplx> * scalarFT, Field<Cplx> * scalarFT_phi_prime ,Field<Cplx> * scalarFT_pi, Field<Cplx> * scalarFT_zeta, Field<Cplx> * BiFT, Field<Cplx> * T00_KessFT, Field<Cplx> * T0i_KessFT, Field<Cplx> * Tij_KessFT, Field<Cplx> * SijFT, PlanFFT<Cplx> * plan_phi, PlanFFT<Cplx> * plan_phi_prime, PlanFFT<Cplx> * plan_pi_k, PlanFFT<Cplx> * plan_zeta, PlanFFT<Cplx> * plan_chi, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_T00_Kess, PlanFFT<Cplx> * plan_T0i_Kess, PlanFFT<Cplx> * plan_Tij_Kess, PlanFFT<Cplx> * plan_source, PlanFFT<Cplx> * plan_Sij, Field<Real> * Bi_check = NULL, Field<Cplx> * BiFT_check = NULL, PlanFFT<Cplx> * plan_Bi_check = NULL)
 {
 	char filename[2*PARAM_MAX_LENGTH+24];
@@ -629,7 +591,7 @@ void writeSpectra(metadata & sim, cosmology & cosmo, const double fourpiG, const
 			plan_pi_k->execute(FFT_FORWARD);
 			extractPowerSpectrum(*scalarFT_pi , kbin, power, kscatter, pscatter, occupation, sim.numbins, false, KTYPE_LINEAR);
 			sprintf(filename, "%s%s%03d_pi_k.dat", sim.output_path, sim.basename_pk, pkcount);
-			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI/(Hconf(a,fourpiG,cosmo) * Hconf(a,fourpiG,cosmo)), filename, "power spectrum of pi_k", a);
+			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI/(Hconf(a,fourpiG,cosmo) * Hconf(a,fourpiG,cosmo)), filename, "power spectrum of pi_k * H (dimensionless)", a);
 		}
 
 		// Phi_prime is dimensionful so we divide  to Hconf to make dimensionless!
@@ -638,7 +600,7 @@ void writeSpectra(metadata & sim, cosmology & cosmo, const double fourpiG, const
 				plan_phi_prime->execute(FFT_FORWARD);
 				extractPowerSpectrum(*scalarFT_phi_prime , kbin, power, kscatter, pscatter, occupation, sim.numbins, false, KTYPE_LINEAR);
 				sprintf(filename, "%s%s%03d_phi_prime.dat", sim.output_path, sim.basename_pk, pkcount);
-				writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * (Hconf(a,fourpiG,cosmo) * Hconf(a,fourpiG,cosmo)), filename, "power spectrum of phi_prime", a);
+				writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * (Hconf(a,fourpiG,cosmo) * Hconf(a,fourpiG,cosmo)), filename, "power spectrum of phi_prime/H (dimensionless)", a);
 			}
 
 
@@ -647,7 +609,7 @@ void writeSpectra(metadata & sim, cosmology & cosmo, const double fourpiG, const
 			plan_zeta->execute(FFT_FORWARD);
 			extractPowerSpectrum(*scalarFT_zeta, kbin, power, kscatter, pscatter, occupation, sim.numbins, false, KTYPE_LINEAR);
 			sprintf(filename, "%s%s%03d_zeta.dat", sim.output_path, sim.basename_pk, pkcount);
-			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of zeta", a);
+			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of zeta (dimensionless)", a);
 		}
 
 	   if (sim.out_pk & MASK_Delta_KESS)

@@ -190,61 +190,83 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
     for (xField.first(); xField.test(); xField.next())
       {
 
-    		gradient_pi2 =0.25*(pi_k(xField+0) - pi_k(xField-0))* (pi_k(xField+0) - pi_k(xField-0));
-        gradient_pi2+=0.25*(pi_k(xField+1) - pi_k(xField-1))* (pi_k(xField+1) - pi_k(xField-1));
-        gradient_pi2+=0.25*(pi_k(xField+1) - pi_k(xField-2))* (pi_k(xField+1) - pi_k(xField-2));
-				// Test:
-				// if(xField.coord(0)==2 && xField.coord(1)==2 && xField.coord(2)==2 )
-				// {
-				// cout<<"gradient_pi2: "<<- psi + (zeta(xField)+ Hcon * pi_k(xField))<<endl;
-				// }
+        //***************
+        //TEST *********
+        //***************
+        // gradient_pi2 =0.25*(pi_k(xField+0) - pi_k(xField-0))* (pi_k(xField+0) - pi_k(xField-0));
+        // gradient_pi2+=0.25*(pi_k(xField+1) - pi_k(xField-1))* (pi_k(xField+1) - pi_k(xField-1));
+        // gradient_pi2+=0.25*(pi_k(xField+1) - pi_k(xField-2))* (pi_k(xField+1) - pi_k(xField-2));
+        // Test:
         psi= phi(xField) - chi(xField);
         // 0-0-component:
-				T00(xField)       =  -  coeff1* ( -3.*cs2 * Hcon * pi_k(xField) + zeta_integer(xField));
-				// Second order
-			 	// - (1.-2.*cs2) * gradient_pi2/2. );
+        T00(xField)       =  -  coeff1* ( -3.*cs2 * Hcon * pi_k(xField) + zeta_integer(xField));
         // 1-1-component:
         Tij(xField, 0, 0) =  coeff2 * (-3.* w * Hcon* pi_k(xField) +   zeta_integer(xField) );
-				//second order
-				// +  gradient_pi2/2. ));
-
-        // 1-2-component:
-				//Second order
-        // Tij(xField, 0, 1) =  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+1)-pi_k(xField-1))/4.;
-
-        // 1-3-component:
-				//Second order
-        // Tij(xField, 0, 2) =  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+2)-pi_k(xField-2))/4.;
-
         // 2-2-component:
         Tij(xField, 1, 1) =  coeff2 * (-3.* w * Hcon* pi_k(xField) +   zeta_integer(xField) );
-				//Second order
-				// +  gradient_pi2/2. ));
-
-        // 2-3-component:
-				//Second order
-        // Tij(xField, 1, 2) =  coeff3*(pi_k(xField+1)-pi_k(xField-1))*(pi_k(xField+2)-pi_k(xField-2))/4.;
-
         // 3-3-component:
         Tij(xField, 2, 2) =  coeff2 * (-3.* w * Hcon* pi_k(xField) +   zeta_integer(xField) );
-				// Second order
-				// +  gradient_pi2/2. ));
+        // Second order
+        // +  gradient_pi2/2. ));
         // In the case of Vector parabolic
-        }
-        if(method==1) // method=1 Turn on vector elliptic
-        {
-					// T01:
-          T0i(xField, 0)  =  -coeff3  * (pi_k(xField+0)-pi_k(xField-0))/2.;
-          // Second order
-          // *(1 - (-1 + 1./cs2)* gradient_pi2/2.)
-					// T02:
-          T0i(xField, 1)  =  -coeff3 * (pi_k(xField+1)-pi_k(xField-1))/2.;
-          // Second order
-          // *(1 - (-1 + 1./cs2)* gradient_pi2/2.)
-          // T03 :
-          T0i(xField, 2)  =  -coeff3  * (pi_k(xField+2)-pi_k(xField-2))/2.;
-          // Second order
-          // *(1 - (-1 + 1./cs2)* gradient_pi2/2.)
+        //***************
+        //TEST *********
+        //***************
+    		// gradient_pi2 =0.25*(pi_k(xField+0) - pi_k(xField-0))* (pi_k(xField+0) - pi_k(xField-0));
+        // gradient_pi2+=0.25*(pi_k(xField+1) - pi_k(xField-1))* (pi_k(xField+1) - pi_k(xField-1));
+        // gradient_pi2+=0.25*(pi_k(xField+1) - pi_k(xField-2))* (pi_k(xField+1) - pi_k(xField-2));
+				// // Test:
+				// // if(xField.coord(0)==2 && xField.coord(1)==2 && xField.coord(2)==2 )
+				// // {
+				// // cout<<"gradient_pi2: "<<- psi + (zeta(xField)+ Hcon * pi_k(xField))<<endl;
+				// // }
+        // psi= phi(xField) - chi(xField);
+        // // 0-0-component:
+				// T00(xField)       =  -  coeff1* ( -3.*cs2 * Hcon * pi_k(xField) + zeta_integer(xField));
+				// // Second order
+			 	// // - (1.-2.*cs2) * gradient_pi2/2. );
+        // // 1-1-component:
+        // Tij(xField, 0, 0) =  coeff2 * (-3.* w * Hcon* pi_k(xField) +   zeta_integer(xField) );
+				// //second order
+				// // +  gradient_pi2/2. ));
+        //
+        // // 1-2-component:
+				// //Second order
+        // // Tij(xField, 0, 1) =  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+1)-pi_k(xField-1))/4.;
+        //
+        // // 1-3-component:
+				// //Second order
+        // // Tij(xField, 0, 2) =  coeff3*(pi_k(xField+0)-pi_k(xField-0))*(pi_k(xField+2)-pi_k(xField-2))/4.;
+        //
+        // // 2-2-component:
+        // Tij(xField, 1, 1) =  coeff2 * (-3.* w * Hcon* pi_k(xField) +   zeta_integer(xField) );
+				// //Second order
+				// // +  gradient_pi2/2. ));
+        //
+        // // 2-3-component:
+				// //Second order
+        // // Tij(xField, 1, 2) =  coeff3*(pi_k(xField+1)-pi_k(xField-1))*(pi_k(xField+2)-pi_k(xField-2))/4.;
+        //
+        // // 3-3-component:
+        // Tij(xField, 2, 2) =  coeff2 * (-3.* w * Hcon* pi_k(xField) +   zeta_integer(xField) );
+				// // Second order
+				// // +  gradient_pi2/2. ));
+        // // In the case of Vector parabolic
+        // }
+        // if(method==1) // method=1 Turn on vector elliptic
+        // {
+				// 	// T01:
+        //   T0i(xField, 0)  =  -coeff3  * (pi_k(xField+0)-pi_k(xField-0))/2.;
+        //   // Second order
+        //   // *(1 - (-1 + 1./cs2)* gradient_pi2/2.)
+				// 	// T02:
+        //   T0i(xField, 1)  =  -coeff3 * (pi_k(xField+1)-pi_k(xField-1))/2.;
+        //   // Second order
+        //   // *(1 - (-1 + 1./cs2)* gradient_pi2/2.)
+        //   // T03 :
+        //   T0i(xField, 2)  =  -coeff3  * (pi_k(xField+2)-pi_k(xField-2))/2.;
+        //   // Second order
+        //   // *(1 - (-1 + 1./cs2)* gradient_pi2/2.)
         }
       }
 
@@ -266,10 +288,10 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 			void update_pi_k( double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi,Field<FieldType> & chi_old, Field<FieldType> & pi_k, Field<FieldType> &,  Field<FieldType> & zeta_half , double Omega_fld ,double w, double cs2, double Hcon, double  H_prime)
 			{
         double psi, psi_prime, psi_half;
-        double H_half= Hcon + H_prime *  dtau/2. ; // H(n+1/2) = H(n) + H'(n) dtau/2
-        double Coeff1 = 1./(1. + H_half * dtau/2.);
-
-
+        // WRONG! double H_half= Hcon + H_prime *  dtau/2. ; // H(n+1/2) = H(n) + H'(n) dtau/2 WRONG!
+        //We do not need to write the top equation, since we already have H(n+1/2) by updating the background by half step.
+        //Hcon is at (n+1/2)
+        double Coeff1 = 1./(1. + Hcon * dtau/2.);
 
 			  Site x(phi.lattice());
 			  for (x.first(); x.test(); x.next())
@@ -282,7 +304,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
             //TEST:
             //*****
             //Scalar Field only equation:
-            pi_k(x)=Coeff1 * (pi_k(x)  + dtau * ( zeta_half(x) - H_half * pi_k(x)/2. ) ); //  pi_k(n+1)
+            pi_k(x)=Coeff1 * (pi_k(x)  + dtau * ( zeta_half(x) - Hcon * pi_k(x)/2. ) ); //  pi_k(n+1)
             //*****
             //TEST:
             //*****
@@ -290,8 +312,6 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
             //Full equation
             //pi_k(n+1) = Coeff1 * (pi_k(n) + \Delta T (zeta(n+1/2) + ... ))
 			      // pi_k(x)=Coeff1 * (pi_k(x)  + dtau * ( zeta_half(x) - H_half * pi_k(x)/2. + psi_half ) ); //  pi_k(n+1)
-
-
 
 
             //NOTE: zeta and psi must be at n+1/2 step according to the formula! So we need to update zeta first in the main loop.
@@ -310,18 +330,22 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 			//   piv_k      reference to first derivative of the field
       //   zeta_half  reference to zeta at half steps which is useful for pi_k updating
       //   zeta_integer  reference to zeta at integer steps which is synchronized with other fields
+      //   n_correcor_steps Number of time which goes through predictor corrector method.
 			// Returns:
 			//
 			//////////////////////////
-			// We use predictor corrector method to calculate \zeta precisely specially for non-linear case.
+			// We use predictor corrector method to calculate \zeta precisely for non-linear case. (for linear equation is does not make better)
 			template <class FieldType>
 			void update_zeta(double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi,Field<FieldType> & chi_old, Field<FieldType> & pi_k, Field<FieldType> & zeta_half , Field<FieldType> & zeta_integer, double Omega_fld ,double w, double cs2, double Hcon, double H_prime )
 			{
-			  double CoeffI, CoeffII, psi, psi_old, psi_prime, phi_prime, Laplacian_pi, zeta_old_half, zeta_prime_int_n0, zeta_check ;
+			  double CoeffI, CoeffII, psi, psi_old, psi_prime, phi_prime, Laplacian_pi, zeta_old_half ;
         //Predictor-corrector variables
-        double zeta_predictor_int_n0, zeta_predictor_half_n0, zeta_predictor_half_n1;
-        int numerator=1, n_correcor_steps=10;
+        // double zeta_predictor_int_n0, zeta_predictor_half_n0, zeta_predictor_half_n1, zeta_prime_int_n0, zeta_check ;
+        // int n_correcor_steps=10, numerator;
+
+        //Hcon(n+1)to calculate zeta(n+1/2)
         CoeffI = 1./(1. -  3. * Hcon * w  * dtau/2. );
+        //Since a_kess is at (n+1) so H_prime is at (n+1) which is needed to calculate zeta(n+1/2)
         CoeffII = cs2 * (3. * Hcon * Hcon - 3. * H_prime );
 
 				Site x(phi.lattice());
@@ -336,19 +360,49 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 						// psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau; //psi_prime(n)
 					  // phi_prime= (phi(x) - phi_old(x))/dtau; //phi_prime(n)
 
-            //*****
-            //TEST:
-            //*****
 
+            //***************
+            //TEST *********
+            //***************
             //Scalar Field only equation:
             zeta_old_half=zeta_half(x); // zeta(n-1/2)
             zeta_half(x)= CoeffI * ( zeta_half(x) + dtau * ( 3. * Hcon * ( w * zeta_half(x)/2. ) - CoeffII * pi_k(x) + cs2 * Laplacian_pi) ); // zeta(n+1/2) from zeta(n-1/2) and zeta'(n)
+            //***************
+            //TEST *********
+            //***************
             // computing zeta (n) by taking average ove zeta(n+1/2) and zeta(n-1/2)
+
             //Zeta Check!
             zeta_integer(x)= (zeta_half(x) + zeta_old_half)/2.; //zeta(n)
-            //*****
-            //TEST:
-            //*****
+
+            // //Predictor-Corrector method:
+            // numerator=0;
+            // for (int i=1; i<n_correcor_steps+1; i++)
+            // {
+            // // Initiation of the method from the last loop
+            // zeta_predictor_int_n0 = zeta_integer(x);  //zeta (n+0) = (zeta(n-1/2)+zeta(n+1/2)) /2
+            // // claculating zeta'(n) from the new values after correction
+            // zeta_prime_int_n0 =( 3. * Hcon * ( w * zeta_predictor_int_n0  ) - CoeffII * pi_k(x)  + cs2 * Laplacian_pi); // zeta'(n), Having zeta' at step (n), so all the variables are at step (n)
+            // zeta_predictor_half_n0 =  zeta_predictor_int_n0 -  zeta_prime_int_n0 * dtau/2.;    //zeta(n-1/2) = zeta(n) - zeta'(n) * Delta tau/2
+            // // Now from the new values at steps (n-1/2) and n we compute the new value at n+1/2
+            // zeta_predictor_half_n1= CoeffI * ( zeta_predictor_half_n0 + dtau * ( 3. * Hcon * ( w * zeta_predictor_half_n0/2.  ) - CoeffII * pi_k(x)  + cs2 * Laplacian_pi) ); // zeta_corrected(n+1/2) from zeta(n-1/2) and zeta'(n)
+            // zeta_predictor_int_n0= (zeta_predictor_half_n1 + zeta_predictor_half_n0)/2.; //zeta(n) =[zeta(n+1/2)+zeta(n-1/2)]/2
+            // // Now we must check the relative error between the new zeta_half(x)=zeta_predictor_half_n1, zeta_integer(x)=zeta_predictor_int_n0 and the previous step: zeta_half(x), zeta_integer(x)
+            // if (2.* abs(zeta_integer(x)-zeta_predictor_int_n0)/(zeta_integer(x)+zeta_predictor_int_n0)<1.e-6 &&  2.* abs(zeta_half(x)-zeta_predictor_half_n1)/(zeta_half(x)+zeta_predictor_half_n1) < 1.e-6)break;
+            //  // If the relative error between the values between two successive steps are less than 1% the method is stopped
+            //  // Since the new variables are more precise we use them as a new value of the fields on the lattice
+            //  zeta_old_half=zeta_predictor_half_n0; // zeta(n-1/2) after correction
+            //  zeta_half(x)=zeta_predictor_half_n1; // zeta(n+1/2) after correction
+            //  zeta_integer(x)= (zeta_half(x) + zeta_old_half)/2.; //zeta(n) after correction
+            //  numerator++;
+            // }
+            // if (numerator==n_correcor_steps) cout << "\033[1;31mbold WARNING: PRECISION ERROR ON KESSENCE FIELD ZETA, More than 1% Error\033[0m\n" << '\n';
+            // computing zeta (n) by zeta(n)=zeta(n-1/2)+ zeta'(n) dtau/2.
+            // cout<< abs((zeta_integer(x)-zeta_predictor_int_n0)/(zeta_integer(x))) << '\n';
+            // if (numerator>1) {cout<<"The number of steps to converge: "<<numerator<<endl;}
+            //***************
+            //TEST *********
+            //***************
 
 						//Full Linear terms, zeta at step n+1/2
             // zeta_old_half=zeta_half(x); // zeta(n-1/2)
@@ -357,8 +411,8 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
             // //Zeta Check!
             // zeta_integer(x)= (zeta_half(x) + zeta_old_half)/2.; //zeta(n)
 
-            //Predictor-Corrector method:
-
+            // //Predictor-Corrector method:
+            //
             // for (int i=1; i<n_correcor_steps+1; i++)
             // {
             // // Initiation of the method from the last loop
@@ -379,7 +433,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
             //  numerator++;
             // }
             // if (numerator==n_correcor_steps) cout << "\033[1;31mbold WARNING: PRECISION ERROR ON KESSENCE FIELD ZETA, More than 1% Error\033[0m\n" << '\n';
-            // computing zeta (n) by zeta(n)=zeta(n-1/2)+ zeta'(n) dtau/2.
+            // // computing zeta (n) by zeta(n)=zeta(n-1/2)+ zeta'(n) dtau/2.
             // cout<< abs((zeta_integer(x)-zeta_check)/(zeta_integer(x))) << '\n';
             // if (numerator>1) cout<<"The number of steps to converge: "<<numerator<<endl;
 
