@@ -539,16 +539,16 @@ if (sim.Kess_source_gravity==1)
 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, 	cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 0 );
 		}
 
-		// for (x.first(); x.test(); x.next())
-		// {
-		// 	// The coefficient is because it wanted to to be source according to eq C.2 of Gevolution paper
-		// 	// Note that it is multiplied to dx^2 and is divived by -a^3 because of definition of T00 which is scaled by a^3
-		// 	// We have T00 and Tij according to code's units, but source is important to calculate potentials and moving particles.
-		// 	// There is coefficient between Tij and Sij as source.
-		// 	source(x) += (fourpiG * dx * dx / a) * T00_Kess(x);
-		// 	if (sim.vector_flag == VECTOR_ELLIPTIC)for(int 	c=0;c<3;c++)Bi(x,c)+= (2. * fourpiG * dx * dx / a) * T0i_Kess(x,c);
-		// 	for(int c=0;c<6;c++)Sij(x,c)+=(2. * fourpiG * dx * dx / a) * Tij_Kess(x,c);
-		// }
+		for (x.first(); x.test(); x.next())
+		{
+			// The coefficient is because it wanted to to be source according to eq C.2 of Gevolution paper
+			// Note that it is multiplied to dx^2 and is divived by -a^3 because of definition of T00 which is scaled by a^3
+			// We have T00 and Tij according to code's units, but source is important to calculate potentials and moving particles.
+			// There is coefficient between Tij and Sij as source.
+			source(x) += (fourpiG * dx * dx / a) * T00_Kess(x);
+			if (sim.vector_flag == VECTOR_ELLIPTIC)for(int 	c=0;c<3;c++)Bi(x,c)+= (2. * fourpiG * dx * dx / a) * T0i_Kess(x,c);
+			for(int c=0;c<6;c++)Sij(x,c)+=(2. * fourpiG * dx * dx / a) * Tij_Kess(x,c);
+		}
 }
 #ifdef BENCHMARK
 		kessence_update_time += MPI_Wtime() - ref_time;

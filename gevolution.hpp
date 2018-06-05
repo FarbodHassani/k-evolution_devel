@@ -178,7 +178,7 @@ void prepareFTsource(Field<FieldType> & phi, Field<FieldType> & Tij, Field<Field
 //////////////////////////
 template <class FieldType>
 void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, Field<FieldType> & Tij,
-   double dx,double a, Field<FieldType> & phi,Field<FieldType> & phi_old, Field<FieldType> & chi, Field<FieldType> & pi_k, Field<FieldType> & zeta_integer, double Omega_fld , double w, double cs2, double Hcon, double fourpig, int method )
+   double dx, double a, Field<FieldType> & phi,Field<FieldType> & phi_old, Field<FieldType> & chi, Field<FieldType> & pi_k, Field<FieldType> & zeta_integer, double Omega_fld , double w, double cs2, double Hcon, double fourpig, int method )
 {
     Site xField(phi.lattice());
     double coeff1, coeff2, coeff3, Hdot, psi;
@@ -253,23 +253,23 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 				// // +  gradient_pi2/2. ));
         // // In the case of Vector parabolic
         // }
-        // if(method==1) // method=1 Turn on vector elliptic
-        // {
-				// 	// T01:
-        //   T0i(xField, 0)  =  -coeff3  * (pi_k(xField+0)-pi_k(xField-0))/2.;
-        //   // Second order
-        //   // *(1 - (-1 + 1./cs2)* gradient_pi2/2.)
-				// 	// T02:
-        //   T0i(xField, 1)  =  -coeff3 * (pi_k(xField+1)-pi_k(xField-1))/2.;
-        //   // Second order
-        //   // *(1 - (-1 + 1./cs2)* gradient_pi2/2.)
-        //   // T03 :
-        //   T0i(xField, 2)  =  -coeff3  * (pi_k(xField+2)-pi_k(xField-2))/2.;
-        //   // Second order
-        //   // *(1 - (-1 + 1./cs2)* gradient_pi2/2.)
+        if(method==1) // method=1 Turn on vector elliptic
+        {
+					// T01:
+          T0i(xField, 0)  =  -coeff3 * (pi_k(xField+0)-pi_k(xField-0))/ (2. * dx);
+          // Second order
+          // *(1 - (-1 + 1./cs2)* gradient_pi2/2.)
+					// T02:
+          T0i(xField, 1)  =  -coeff3 * (pi_k(xField+1)-pi_k(xField-1))/ (2. * dx);
+          // Second order
+          // *(1 - (-1 + 1./cs2)* gradient_pi2/2.)
+          // T03 :
+          T0i(xField, 2)  =  -coeff3 * (pi_k(xField+2)-pi_k(xField-2))/ (2. * dx);
+          // Second order
+          // *(1 - (-1 + 1./cs2)* gradient_pi2/2.)
         }
       }
-
+    }
 			//////////////////////////
 			// Update K-essence field (1)
 			//////////////////////////
@@ -296,22 +296,21 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 			  Site x(phi.lattice());
 			  for (x.first(); x.test(); x.next())
 			    {
-            // psi=phi(x) - chi(x);
-            // psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau;
-            // psi_half= psi + psi_prime * dtau/2.; //psi_half (n+1/2) = psi(n) + psi_prime'(n)
+            psi=phi(x) - chi(x);
+            psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau;
+            psi_half= psi + psi_prime * dtau/2.; //psi_half (n+1/2) = psi(n) + psi_prime'(n) dtau/2
 
             //*****
-            //TEST:
+            //LINEAR EQUATION:
             //*****
-            //Scalar Field only equation:
-            pi_k(x)=Coeff1 * (pi_k(x)  + dtau * ( zeta_half(x) - Hcon * pi_k(x)/2. ) ); //  pi_k(n+1)
+            pi_k(x)=Coeff1 * (pi_k(x)  + dtau * ( zeta_half(x) - Hcon * pi_k(x)/2. + psi_half ) ); //  pi_k(n+1)
             //*****
-            //TEST:
+            //LINEAR EQUATION:
             //*****
 
             //Full equation
             //pi_k(n+1) = Coeff1 * (pi_k(n) + \Delta T (zeta(n+1/2) + ... ))
-			      // pi_k(x)=Coeff1 * (pi_k(x)  + dtau * ( zeta_half(x) - H_half * pi_k(x)/2. + psi_half ) ); //  pi_k(n+1)
+			      // pi_k(x)=Coeff1 * (pi_k(x)  + dtau * ( zeta_half(x) - Hcon * pi_k(x)/2. + psi_half ) ); //  pi_k(n+1)
 
 
             //NOTE: zeta and psi must be at n+1/2 step according to the formula! So we need to update zeta first in the main loop.
@@ -339,10 +338,6 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 			void update_zeta(double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi,Field<FieldType> & chi_old, Field<FieldType> & pi_k, Field<FieldType> & zeta_half , Field<FieldType> & zeta_integer, double Omega_fld ,double w, double cs2, double Hcon, double H_prime )
 			{
 			  double CoeffI, CoeffII, psi, psi_old, psi_prime, phi_prime, Laplacian_pi, zeta_old_half ;
-        //Predictor-corrector variables
-        // double zeta_predictor_int_n0, zeta_predictor_half_n0, zeta_predictor_half_n1, zeta_prime_int_n0, zeta_check ;
-        // int n_correcor_steps=10, numerator;
-
         //Hcon(n+1)to calculate zeta(n+1/2)
         CoeffI = 1./(1. -  3. * Hcon * w  * dtau/2. );
         //Since a_kess is at (n+1) so H_prime is at (n+1) which is needed to calculate zeta(n+1/2)
@@ -356,24 +351,27 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 						Laplacian_pi+=pi_k(x+1) + pi_k(x-1) - 2. * pi_k(x);
 						Laplacian_pi+=pi_k(x+2) + pi_k(x-2) - 2. * pi_k(x);
             Laplacian_pi= Laplacian_pi/(dx*dx);
-						// psi=phi(x) - chi(x);
+						psi=phi(x) - chi(x); //psi(n)
 						// psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau; //psi_prime(n)
-					  // phi_prime= (phi(x) - phi_old(x))/dtau; //phi_prime(n)
-
-
+					  phi_prime= (phi(x) - phi_old(x))/dtau; //phi_prime(n+1) since we want to use it to compute zeta (n+3/2)
+            //NOTE: We dont have phi'(n+1) since it will be updated by particles later, but we ***ASSUME** it remains contant and phi_prime(n) = phi_prime(n+1) or take the second derivative for this period approximately to zero!
+            psi_prime= ((phi(x) - chi(x))-(phi_old(x) - chi_old(x)))/dtau;
+            psi = psi + psi_prime * dtau; //psi(n+1) = psi(n) + psi'(n) dtau
             //***************
-            //TEST *********
+            //Linear equation
             //***************
             //Scalar Field only equation:
-            zeta_old_half=zeta_half(x); // zeta(n-1/2)
-            zeta_half(x)= CoeffI * ( zeta_half(x) + dtau * ( 3. * Hcon * ( w * zeta_half(x)/2. ) - CoeffII * pi_k(x) + cs2 * Laplacian_pi) ); // zeta(n+1/2) from zeta(n-1/2) and zeta'(n)
+            zeta_old_half=zeta_half(x); // zeta(n+1/2)
+            zeta_half(x)= CoeffI * ( zeta_half(x) + dtau * ( 3. * Hcon * ( w * zeta_half(x)/2. + cs2 * psi ) - CoeffII * pi_k(x) + 3. * cs2 * phi_prime + cs2 * Laplacian_pi) ); // zeta(n+3/2) from zeta(n+1/2) and zeta'(n+1) so we need to have Phi^{n+1} and Phi'{n+1} and other things are at step (n+1) like pi which we know it is since before zeta pi is updated!
             //***************
-            //TEST *********
+            //Linear equation
             //***************
             // computing zeta (n) by taking average ove zeta(n+1/2) and zeta(n-1/2)
+            zeta_integer(x)= (zeta_half(x) + zeta_old_half)/2.; //zeta(n+1)
 
-            //Zeta Check!
-            zeta_integer(x)= (zeta_half(x) + zeta_old_half)/2.; //zeta(n)
+            //Predictor-corrector variables
+            // double zeta_predictor_int_n0, zeta_predictor_half_n0, zeta_predictor_half_n1, zeta_prime_int_n0, zeta_check ;
+            // int n_correcor_steps=10, numerator;
 
             // //Predictor-Corrector method:
             // numerator=0;
