@@ -821,10 +821,10 @@ if (sim.Kess_source_gravity==1)
         //Approximations: 1-The linear definition of derivative
         //                2-phi_prime = 0
         //                3- cs^2 Laplace pi =0
+        //                4- neglecting the non-linear terms for computing zeta(-1/2)
         //Phi_prime is omitted since in the first loop is zero
         // We also have neglected Laplace term since Laplace itself is small and is multiplied to cs^2 which is very suppressed!
-        //We could naively take \zeta_old_half = zeta_integer but we guess we may make a mistake!
-        // Since int he first loop zeta_half is taken zero to not make a lot of mistake we take it equal to the half next step of it i.e zeta^0 but just for the first loop!
+        // TO MAKE SURE THE APPROXIMATIONS WORK WELL, WE NEED TO INCREASE THE PRECISION AND SEE THE IMPROVEMENTS!
       }
       //Updating zeta to get zeta(1/2) and zeta(0) just in the first loop
       // In sum: zeta(1/2) = zeta(-1/2)=zeta(0) + zeta'(0) dtau for the first loop
