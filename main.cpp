@@ -219,6 +219,8 @@ int main(int argc, char **argv)
 
 	//kessence
 	Field<Real> phi_old;
+  //phi at two step before to compute phi'(n+1/2)
+  Field<Real> phi_older;
 	Field<Real> phi_prime;
 	Field<Real> pi_k;
 	Field<Real> zeta_integer;
@@ -227,6 +229,7 @@ int main(int argc, char **argv)
 	Field<Real> T0i_Kess;
 	Field<Real> Tij_Kess;
 	Field<Cplx> scalarFT_phi_old;
+  Field<Cplx> scalarFT_phi_older;
 	Field<Cplx> scalarFT_phi_prime;
 	Field<Cplx> scalarFT_chi_old;
 	Field<Cplx> scalarFT_pi;
@@ -260,6 +263,10 @@ int main(int argc, char **argv)
 	phi_old.initialize(lat,1);
 	scalarFT_phi_old.initialize(latFT,1);
 	PlanFFT<Cplx> plan_phi_old(&phi_old, &scalarFT_phi_old);
+  //Phi_older to be able to compute \phi'' too
+	phi_older.initialize(lat,1);
+	scalarFT_phi_older.initialize(latFT,1);
+	PlanFFT<Cplx> plan_phi_old(&phi_older, &scalarFT_phi_older);
 	//Phi'
 	phi_prime.initialize(lat,1);
 	scalarFT_phi_prime.initialize(latFT,1);
@@ -419,7 +426,6 @@ int main(int argc, char **argv)
 #endif
 
 
-
 	//******************************************************************
 	//Write spectra check!
 	// Kessence projection Tmunu Test IC
@@ -454,6 +460,11 @@ int main(int argc, char **argv)
 	//Kessence
 	for (x.first(); x.test(); x.next())
 		{
+      //basically we do this to have \Phi_older(n-2),
+      //\Phi(n-1) = \Phi(old) and \Phi(n) which will be updated in this loops
+      // Just note that in the first 2-3 steps it does not work since we
+      //assume \Phi_old(0)=\Phi_older(0)=0 and \Phi_older(1)=0...
+      phi_older(x) =phi_old(x);
 			phi_old(x) =phi(x);
 			chi_old(x) =chi(x);
 		}
@@ -532,11 +543,11 @@ if (sim.Kess_source_gravity==1)
 // Kessence projection Tmunu
  	if (sim.vector_flag == VECTOR_ELLIPTIC)
 		{
-			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, 	cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 1 );
+			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, sim.NL_kessence ,1 );
 		}
  	else
 		{
-			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, 	cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 0 );
+			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, sim.NL_kessence, 0 );
 		}
 
 		for (x.first(); x.test(); x.next())
@@ -818,6 +829,7 @@ if (sim.Kess_source_gravity==1)
       {
         //computing zeta(-1/2)
         zeta_half(x) =zeta_integer(x) - 0.5 * dtau * ( 3. * Hconf(a_kess, fourpiG, cosmo) * ( cosmo.w_kessence * zeta_integer(x) + cosmo.cs2_kessence * phi(x) - chi(x) ) - cosmo.cs2_kessence * (3. * Hconf(a_kess, fourpiG, cosmo) * Hconf(a_kess, fourpiG, cosmo) - 3. * Hconf_prime(a_kess, fourpiG, cosmo) ) * pi_k(x));
+        //********************************************************************************
         //Approximations: 1-The linear definition of derivative
         //                2-phi_prime = 0
         //                3- cs^2 Laplace pi =0
@@ -825,25 +837,37 @@ if (sim.Kess_source_gravity==1)
         //Phi_prime is omitted since in the first loop is zero
         // We also have neglected Laplace term since Laplace itself is small and is multiplied to cs^2 which is very suppressed!
         // TO MAKE SURE THE APPROXIMATIONS WORK WELL, WE NEED TO INCREASE THE PRECISION AND SEE THE IMPROVEMENTS!
+        //********************************************************************************
       }
-      //Updating zeta to get zeta(1/2) and zeta(0) just in the first loop
-      // In sum: zeta(1/2) = zeta(-1/2)=zeta(0) + zeta'(0) dtau for the first loop
-      update_zeta(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_prime(a_kess, fourpiG, cosmo));
-      zeta_half.updateHalo();
-      zeta_integer.updateHalo();
     }
-
-    //Since we have pi(n+1)=pi(n) + pi'(n+1/2), and in pi'(n+1/2) we have H(n+1/2) we update the background before updating the pi to have H(n+1/2)
-    rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0);
-    //First we update pi to have it at n+1 (at first loop from the value at (0) and the value of zeta at 1/2 and H(n+1/2) we update pi at (1))
-    update_pi_k(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo),Hconf_prime(a_kess, fourpiG, cosmo)); // H_old is updated here in the function
-		pi_k.updateHalo();
-    // Now we have pi(n+1) and a_kess(n+1/2) so we update background by halfstep to have a_kess(n+1) to calculate zeta'(n+1) to have zeta(n+1/2)=zeta(n-1/2) + zeta'(n+1) dtau
-    rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0 );
-    //Now from the values of zeta at step (1/2) we calculate zeta(3/2) and then we calculate zeta(1) which is synched with pi(1)
-    update_zeta(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_prime(a_kess, fourpiG, cosmo));
+    //********************************************************************************
+    //Updating zeta to get zeta(n+1/2) and zeta(n+1), in the first loop is getting zeta(1/2) and zeta(1)
+    // In sum: zeta(n+1/2) = zeta(n-1/2)+ zeta'(n)dtau which needs background to be at n with then
+    //\Phi'(n+1/2) is calculated from \phi''(n) = (\Phi'(n) - \Phi'(n-1))/dtau_old
+    // and to have \Phi'(n-1) = \Phi(n-1) - \Phi(n-2)/dtau
+    //Note that here for zeta'(n) we need background to be at n and no need to update it.
+    //\zeta(n+1/2) = \zeta(n-1/2) + \zeta'(n)  dtau
+    //********************************************************************************
+    update_zeta(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_prime(a_kess, fourpiG, cosmo), sim.NL_kessence);
     zeta_half.updateHalo();
+
+    //********************************************************************************
+    //Since we have pi(n+1)=pi(n) + pi'(n+1/2), and in pi'(n+1/2) we have H(n+1/2) we update the background before updating the pi to have H(n+1/2), Moreover zeta(n+1) = zeta(n+1/2) + zeta'(n+1/2), so we put zeta_int updating in the pi updating!
+    //********************************************************************************
+    rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0);
+
+    //********************************************************************************
+    //we update pi to have it at n+1 (at first loop from the value at (0) and the value of zeta at 1/2 and H(n+1/2) we update pi at (1))
+    //In the pi update we also update zeta_int because we need the values of a_kess and H_kess at step n+1/2
+    //By the below update we get pi(n+1) and zeta(n+1)
+    //********************************************************************************
+    update_pi_k(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, zeta_integer, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_prime(a_kess, fourpiG, cosmo), sim.NL_kessence); // H_old is updated here in the function
+		pi_k.updateHalo();
     zeta_integer.updateHalo();
+    //********************************************************************************
+    // Now we have pi(n+1) and a_kess(n+1/2) so we update background by halfstep to have a_kess(n+1)
+    //********************************************************************************
+    rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0 );
 
 	}
 #ifdef BENCHMARK

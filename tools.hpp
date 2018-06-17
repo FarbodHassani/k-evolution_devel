@@ -187,6 +187,7 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 }
 
 
+
 //////////////////////////
 // extractPowerSpectrum
 //////////////////////////
@@ -263,6 +264,65 @@ void writePowerSpectrum(Real * kbin, Real * power, Real * kscatter, Real * pscat
 	}
 }
 
+//////////////////////////
+// writePowerSpectrum
+//////////////////////////
+// Description:
+//   writes power spectra as tabulated data into ASCII file
+//
+// Arguments:
+//   kbin           array containing the central values of k for each bin
+//   power          array containing the central values of P(k) for each bin
+//   kscatter       array containing the statistical error on k for each bin
+//   pscatter       array containing the statistical error on P(k) for each bin
+//   occupation     array containing the number of k-modes contributing to each bin
+//   numbins        total number of bins (length of the arrays)
+//   rescalek       unit conversion factor for k
+//   rescalet       unit conversion factor for T(k)
+//   filename       output file name
+//   description    descriptive header
+//   a              scale factor for this spectrum
+//
+// Returns:
+//
+//////////////////////////
+// void writeTransferfunction(Field<Cplx> & fld1FT, Real * kbin,  int * occupation, const int numbins, const Real rescalek, const Real rescalet, const char * filename, const char * description, const double a)
+// {
+//
+// 	if (parallel.isRoot())
+// 	{
+// 		FILE * outfile = fopen(filename, "w");
+// 		if (outfile == NULL)
+// 		{
+// 			cout << " error opening file for transfer function output!" << endl;
+// 		}
+// 		else
+// 		{
+// 			fprintf(outfile, "# %s\n", description);
+// 			fprintf(outfile, "# redshift z=%f\n", (1./a)-1.);
+// 			fprintf(outfile, "# k              Pk             sigma(k)       sigma(Pk)      count\n");
+// 			for (int i = 0; i < numbins; i++)
+// 			{
+// 				if (occupation[i] > 0)
+// 					fprintf(outfile, "  %e   %e   %e   %e   %d\n", kbin[i]/rescalek, transfer[i]/rescalet);
+// 			}
+// 			fclose(outfile);
+// 		}
+// 	}
+// }
+// rKSite k(pik.lattice());
+// +  k.first();
+// +  if(parallel.isRoot())
+// +  {
+// +      pi_k_FT(k)=0.0;
+// +			// pi_vk(k)=0.0;
+// +      k.next();
+// +  }
+// +  for(;k.test();k.next())
+// +   {
+// +      psi=phi_FT(k)+chi_FT(k);
+// +      psi_old=phi_old_FT(k) + chi_old_FT(k);
+// +      ksquared=2.0 *(cos(2.0*M_PI*k.coord(0)/BoxSize)+ cos(2.0*M_PI*k.coord(1)/BoxSize) + cos(2.0*M_PI*k.coord(2)/BoxSize)-3.0)/(dx*dx);
 
 //////////////////////////
 // computeVectorDiagnostics

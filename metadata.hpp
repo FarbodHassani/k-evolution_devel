@@ -167,7 +167,9 @@ struct metadata
 	int radiation_flag;
 	int out_pk;
 	int out_snapshot;
+  //Kessence
 	int num_pk;
+  int NL_kessence;
 	int numbins;
 	int num_snapshot;
 	int num_restart;
