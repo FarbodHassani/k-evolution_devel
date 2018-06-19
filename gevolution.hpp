@@ -432,8 +432,9 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
           /*Linear(1,2,3)*/      + 3. * Hcon * ( w * zeta_half(x)/2. + cs2 * psi ) - C2 * pi_k(x)
           /*Linear(4,5)*/        + 3. * cs2 * phi_prime + cs2 * Laplacian_pi
           /*Non-linear terms*/   + non_linearity * (
-          /*Non-linear(1,2)*/    + 2. * cs2 * phi(x) * Laplacian_pi- (1. - cs2) * psi * Laplacian_pi
+          /*Non-linear(1,2)*/    + 2. * cs2 * phi(x) * Laplacian_pi - (1. - cs2) * psi * Laplacian_pi
           /*Non-linear(3)  */    - 3. * cs2 * Hcon * (1. + w) * pi_k(x) * Laplacian_pi
+          /*Non-linear(3)  */    +(1. - cs2) * (zeta_integer(x) + psi) * Laplacian_pi
            /*Non-linear(5,6,7)*/  - cs2 * Gradphi_Gradpi + (2. * cs2 -1.) * Gradpsi_Gradpi - C3 * Gradpi_Gradpi
           /*Non-linear(8)  */    + 2. * (1. - cs2) * GradPsiZeta_Gradpi
                                                     )
@@ -461,7 +462,6 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         //zeta(n+1) = zeta(n+1/2) + zeta'(n)dtau/2
         //***********************************************************************************
         zeta_integer(x) = zeta_half(x) +   zeta_prime_int_n0 * dtau/2.;
-
              }
       }
 

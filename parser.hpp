@@ -1062,10 +1062,7 @@ if (!parseParameter(params, numparam, "T_kessence file", ic.tk_kessence) && ic.g
 	sim.boxsize = -1.;
 	sim.wallclocklimit = -1.;
 	sim.z_in = 0.;
-	//kessence part
-	sim.nKe_numsteps = 1;
-	sim.Kess_source_gravity = 0;
-	//kessence end
+
 	if (parseParameter(params, numparam, "vector method", par_string))
 	{
 		if (par_string[0] == 'p' || par_string[0] == 'P')
@@ -1249,9 +1246,19 @@ if (!parseParameter(params, numparam, "T_kessence file", ic.tk_kessence) && ic.g
 	{
 			cosmo.w_kessence=-0.9;
 	}
-	parseParameter(params, numparam, "nKe_numsteps",  sim.nKe_numsteps);
-	parseParameter(params, numparam, "Kessence source gravity",  sim.Kess_source_gravity);
-	//kessence end
+  if (!parseParameter(params, numparam, "nKe_numsteps",  sim.nKe_numsteps))
+  {
+    sim.nKe_numsteps = 1;
+  }
+  if (!parseParameter(params, numparam, "Kessence source gravity", sim.Kess_source_gravity))
+  {
+    sim.Kess_source_gravity = 0;
+  }
+  if (!parseParameter(params, numparam, "NL_kessence", sim.NL_kessence))
+  {
+    sim.NL_kessence = 0; //Default is linear kessence.
+  }
+  //kessence end
 
 	cosmo.num_ncdm = MAX_PCL_SPECIES-2;
 	if (!parseParameter(params, numparam, "m_ncdm", cosmo.m_ncdm, cosmo.num_ncdm))
@@ -1362,7 +1369,8 @@ if (!parseParameter(params, numparam, "T_kessence file", ic.tk_kessence) && ic.g
 	else
 	{
 		//Kessence part added
-		COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad << ", h = " << cosmo.h << ", Omega_kessence0= "<<cosmo.Omega_kessence<<", w_kessence= "<<cosmo.w_kessence<<endl;
+    COUT << "Kessence source gravity = " << sim.Kess_source_gravity<< ", Non-linear kessence = " << sim.NL_kessence<< ", Number of kessence update = " <<sim.nKe_numsteps <<endl;
+		COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad << ", h = " << cosmo.h << ", Omega_kessence0= "<<cosmo.Omega_kessence<<", w_kessence= "<<cosmo.w_kessence<<", cs^2 (kessence)= "<<cosmo.cs2_kessence<<endl;
 		cosmo.Omega_Lambda = 1. - cosmo.Omega_m - cosmo.Omega_kessence - cosmo.Omega_rad;
 	}
 

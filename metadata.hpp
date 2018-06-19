@@ -169,7 +169,6 @@ struct metadata
 	int out_snapshot;
   //Kessence
 	int num_pk;
-  int NL_kessence;
 	int numbins;
 	int num_snapshot;
 	int num_restart;
@@ -195,6 +194,7 @@ struct metadata
 	//Kessence part
 	int nKe_numsteps;
 	int Kess_source_gravity;
+  int NL_kessence;
 	//kessence end
 };
 
