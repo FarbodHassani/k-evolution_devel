@@ -300,7 +300,6 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 			template <class FieldType>
 			void update_pi_k( double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi,Field<FieldType> & chi_old, Field<FieldType> & pi_k , Field<FieldType> & zeta_integer, Field<FieldType> & zeta_half, double Omega_fld ,double w, double cs2, double Hcon, double  H_prime, int non_linearity)
 			{
-
         double psi, psi_prime, psi_half;
         double Coeff1 = 1./(1. + Hcon * dtau/2.);
 			  Site x(phi.lattice());
@@ -448,7 +447,6 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
           // zeta'(n) from the new values at n, zeta(n)...
           // like zeta_integer(x) (n)
           //**********************************************
-
           zeta_prime_int_n0 =
           /*Linear(1,2,3)*/      + 3. * Hcon * ( w * zeta_integer(x) + cs2 * psi ) - C2 * pi_k(x)
           /*Linear(4,5)*/        + 3. * cs2 * phi_prime + cs2 * Laplacian_pi
