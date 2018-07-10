@@ -228,7 +228,7 @@ int main(int argc, char **argv)
 	Field<Real> T0i_Kess;
 	Field<Real> Tij_Kess;
 	Field<Cplx> scalarFT_phi_old;
-	Field<Cplx> scalarFT_phi_prime;
+	Field<Cplx> phi_prime_scalarFT;
 	Field<Cplx> scalarFT_chi_old;
 	Field<Cplx> scalarFT_pi;
 	// Field<Cplx> scalarFT_zeta_integer;
@@ -263,8 +263,8 @@ int main(int argc, char **argv)
 	PlanFFT<Cplx> plan_phi_old(&phi_old, &scalarFT_phi_old);
 	//Phi'
 	phi_prime.initialize(lat,1);
-	scalarFT_phi_prime.initialize(latFT,1);
-	PlanFFT<Cplx> plan_phi_prime(&phi_prime, &scalarFT_phi_prime);
+	phi_prime_scalarFT.initialize(latFT,1);
+	PlanFFT<Cplx> phi_prime_plan(&phi_prime, &phi_prime_scalarFT);
 	//pi_k kessence
 	pi_k.initialize(lat,1);
 	scalarFT_pi.initialize(latFT,1);
@@ -338,7 +338,7 @@ int main(int argc, char **argv)
 	dtau_old = 0.;
 
 	if (ic.generator == ICGEN_BASIC)
-		generateIC_basic(sim, ic, cosmo, fourpiG, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &phi_old, &pi_k, &zeta_half, &chi, &Bi, &source, &Sij, &scalarFT, &scalarFT_phi_old, &scalarFT_pi, &scalarFT_zeta_half, &BiFT, &SijFT, &plan_phi,  &plan_phi_old, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_source, &plan_Sij);
+		generateIC_basic(sim, ic, cosmo, fourpiG, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &pi_k, &zeta_half, &chi, &Bi, &source, &Sij, &scalarFT, &scalarFT_pi, &scalarFT_zeta_half, &BiFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_source, &plan_Sij);
 	// generates ICs on the fly
 	else if (ic.generator == ICGEN_READ_FROM_DISK)
 		readIC(sim, ic, cosmo, fourpiG, a, tau, dtau, dtau_old, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, cycle, snapcount, pkcount, restartcount);
@@ -408,6 +408,18 @@ int main(int argc, char **argv)
 	COUT << COLORTEXT_GREEN << " initialization complete." << COLORTEXT_RESET << endl << endl;
 #endif
 
+// for (x.first(); x.test(); x.next())
+//   {
+//     //\Phi(n-1) = \Phi(old) and \Phi(n) which will be updated in this loops
+//     // Just note that in the first 2-3 steps it does not work since we
+//     phi_old(x) =phi(x);
+//     chi_old(x) =chi(x);
+//     if(cycle==0)
+//     {
+//       phi_prime(x)=1.e-3*x.coord(1);
+//     }
+//   }
+
 #ifdef HAVE_CLASS
 	if (sim.radiation_flag > 0)
 	{
@@ -437,21 +449,13 @@ int main(int argc, char **argv)
 	// 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, chi, pi_k, zeta_integer_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 0 );
 	// 		}
 	//
-// writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi_prime, &phi, &pi_k, &zeta_integer, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &scalarFT_phi_prime ,&scalarFT_pi, &scalarFT_zeta_integer, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_phi_prime, &plan_pi_k, &plan_zeta_integer, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
-	// cout<<"Hconf_class: "<<Hconf_class( a, cosmo)<<" a: "<<a<<" z: "<<1./(a)-1.<<endl;
-	// for (kFT.first(); kFT.test(); kFT.next())
-	// {
-	// 		// cout<<"k: "<<kFT<<"pi_k: "<<pi_k(kFT)<<"  phi: "<<phi(kFT)<<" H: "<<Hconf(a, fourpiG, cosmo)<<" H pi: "<<Hconf(a, fourpiG, cosmo) *pi_k(kFT)<<" pi'-phi: " <<phi(kFT)-zeta_integer_k(kFT)<<endl;
-	// }
-	//******************************************************************
-	//End of testing
-	//******************************************************************
+// writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
 
-	// for (x.first(); x.test(); x.next())
-	// 	{
-	// 		pi_k(x)=1./(Hconf(1./(1.+100.), fourpiG, cosmo));
-	// 		zeta_integer_k(x)=0.;
-	// 	}
+// writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
+
+// writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
+
+
 	while (true)    // main loop
 	{
 
@@ -744,10 +748,13 @@ if (sim.Kess_source_gravity==1)
 
 #ifdef CHECK_B
 			//kessence included
-			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi_prime, &phi, &pi_k, &zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &scalarFT_phi_prime ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_phi_prime, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
+			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
 #else
 			//kessence included
-			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi_prime, &phi, &pi_k, &zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &scalarFT_phi_prime ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_phi_prime, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
+			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
+      writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
+
+
 #endif
 
 			pkcount++;

@@ -139,7 +139,7 @@ double Hconf(const double a, const double fourpiG, const cosmology cosmo)
 {
 	return sqrt((2. * fourpiG / 3.) * (((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) / a) + (cosmo.Omega_Lambda * a * a)
 	+ (cosmo.Omega_rad / a / a)+ (cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence)* a * a)));
-	// cout<<"Omega_rad: "<<cosmo.Omega_rad<<endl;
+	// cout<<"Omega_rad: "<<cosmo.Omega_rad<<" cosmo.Omega_Lambda"<<cosmo.Omega_Lambda<<endl;
 }
 
 // Here the normalization factor is not \rho_crit=1, it is what it should be in th enormal unit.
@@ -149,17 +149,16 @@ double Omega_m(const double a, const cosmology cosmo) { return cosmo.Omega_m / (
 //
 double Omega_rad(const double a, const cosmology cosmo) { return (cosmo.Omega_rad + (bg_ncdm(a, cosmo) + cosmo.Omega_cdm + cosmo.Omega_b - cosmo.Omega_m) * a) / ((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) * a + cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence)* a * a * a * a + cosmo.Omega_Lambda * a * a * a * a + cosmo.Omega_rad); }
 
-//Here Omega_Lambda is both kessence and Lambda
-double Omega_Lambda(const double a, const cosmology cosmo) { return (cosmo.Omega_Lambda+cosmo.Omega_kessence) / ((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) / a / a / a + cosmo.Omega_Lambda + cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence) + cosmo.Omega_rad / a / a / a / a);}
+//Here Omega_Lambda is just Lambda
+double Omega_Lambda(const double a, const cosmology cosmo) { return cosmo.Omega_Lambda / ((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) / a / a / a + cosmo.Omega_Lambda + cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence) + cosmo.Omega_rad / a / a / a / a);}
 
 double Hconf_class(const double a, const cosmology cosmo)
 {
-	double H0_class=0.00022593979933110373; // H0 in unit of 1/Mpc H0=100h/c;
-	// cout<<"Omega_rad: "<<cosmo.Omega_rad<<" cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)): "<<cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)<<"cosmo.Omega_kessence: "<<cosmo.Omega_kessence<<" cosmo.Omega_Lambda: "<<cosmo.Omega_Lambda<<endl;
+  double H0_class=100*cosmo.h/(C_SPEED_OF_LIGHT*100.);
+ //0.00022593979933110373; // H0 in unit of 1/Mpc H0=100h/c;
 	return H0_class * sqrt( ((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) / a) + (cosmo.Omega_Lambda * a * a)
 	+ (cosmo.Omega_rad / a / a)+ (cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence)* a * a) );
 }
-
 
 //////////////////////////
 // Hconf_prime

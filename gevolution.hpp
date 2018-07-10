@@ -337,7 +337,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 			template <class FieldType>
 			void update_zeta(double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi, Field<FieldType> & chi_old, Field<FieldType> & pi_k , Field<FieldType> & zeta_half, double Omega_fld ,double w, double cs2, double Hcon, double H_prime, int non_linearity )
 			  {
-        double Gradphi_Gradpi, Gradpsi_Gradpi, Gradpi_Gradpi, GradPsiZeta_Gradpi, Dx_psi, Dy_psi, Dz_psi;
+        double Gradphi_Gradpi, Gradpsi_Gradpi, Gradpi_Gradpi, GradZeta_Gradpi, Dx_psi, Dy_psi, Dz_psi;
 			  double C1, C2, C3, psi, psi_old, psi_prime, phi_prime, Laplacian_pi, zeta_old_integer, zeta_old_half ;
         //Since a_kess is at n so H_prime is at n which is needed to calculate zeta(n+1/2)
         //**************************************************************
@@ -355,7 +355,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         Gradphi_Gradpi=0.;
         Gradpsi_Gradpi=0.;
         Gradpi_Gradpi=0.;
-        GradPsiZeta_Gradpi=0.;
+        GradZeta_Gradpi=0.;
 				Site x(phi.lattice());
 				for (x.first(); x.test(); x.next())
 					{
@@ -410,13 +410,12 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
             Gradpi_Gradpi+=0.25 * (pi_k(x + 1)  - pi_k(x - 1)) * (pi_k(x + 1) - pi_k(x - 1)) / (dx * dx);
             Gradpi_Gradpi+=0.25 * (pi_k(x + 2)  - pi_k(x - 2)) * (pi_k(x + 2) - pi_k(x - 2)) / (dx * dx);
             //*************************************************************
-            //GradPsiZeta_Gradpi = Grad_pi . Grad_ (zeta + psi)
-            //Grad_pi . Grad_ (zeta + psi) = Grad_pi (Grad_zeta + Grad_Psi)
+            //GradZeta_Gradpi = Grad_pi . Grad_ (zeta )
             //zeta_integer from previous step is at n
             //*************************************************************
-            GradPsiZeta_Gradpi= 0.25* (zeta_half(x+0) - zeta_half(x-0) + Dx_psi) * (pi_k(x+0) - pi_k(x-0)) / (dx * dx);
-            GradPsiZeta_Gradpi+=0.25* (zeta_half(x+1) - zeta_half(x-1) + Dy_psi) * (pi_k(x+1) - pi_k(x-1)) / (dx * dx);
-            GradPsiZeta_Gradpi+=0.25* (zeta_half(x+2) - zeta_half(x-2) + Dz_psi) * (pi_k(x+2) - pi_k(x-2)) / (dx * dx);
+            GradZeta_Gradpi= 0.25* (zeta_half(x+0) - zeta_half(x-0) ) * (pi_k(x+0) - pi_k(x-0)) / (dx * dx);
+            GradZeta_Gradpi+=0.25* (zeta_half(x+1) - zeta_half(x-1) ) * (pi_k(x+1) - pi_k(x-1)) / (dx * dx);
+            GradZeta_Gradpi+=0.25* (zeta_half(x+2) - zeta_half(x-2) ) * (pi_k(x+2) - pi_k(x-2)) / (dx * dx);
           }
           //***********************************
           // Having the values at previous steps
@@ -432,14 +431,37 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
           /*Linear(1,2,3)*/      + 3. * Hcon * ( w * zeta_half(x)/2. + cs2 * psi ) - C2 * pi_k(x)
           /*Linear(4,5)*/        + 3. * cs2 * phi_prime + cs2 * Laplacian_pi
           /*Non-linear terms*/   + non_linearity * (
-          /*Non-linear(1,2)*/    + 2. * cs2 * phi(x) * Laplacian_pi - (1. - cs2) * psi * Laplacian_pi
+          /*Non-linear(1,2)*/    + 2. * cs2 * phi(x) * Laplacian_pi
           /*Non-linear(3)  */    - 3. * cs2 * Hcon * (1. + w) * pi_k(x) * Laplacian_pi
-          /*Non-linear(3)  */    +(1. - cs2) * (zeta_half(x) + psi) * Laplacian_pi
-           /*Non-linear(5,6,7)*/  - cs2 * Gradphi_Gradpi + (2. * cs2 -1.) * Gradpsi_Gradpi - C3 * Gradpi_Gradpi
-          /*Non-linear(8)  */    + 2. * (1. - cs2) * GradPsiZeta_Gradpi
+          /*Non-linear(3)  */    +(1. - cs2) * (zeta_half(x) ) * Laplacian_pi
+           /*Non-linear(5,6,7)*/  - cs2 * Gradphi_Gradpi + Gradpsi_Gradpi - C3 * Gradpi_Gradpi
+          /*Non-linear(8)  */    + 2. * (1. - cs2) * GradZeta_Gradpi
                                                     )
                                                       )
                                       );
+            //
+            // cout<<"Linear terms= + 3. * Hcon * ( w * zeta_half(x)/2. + cs2 * psi ) - C2 * pi_k(x) + 3. * cs2 * phi_prime + cs2 * Laplacian_pi " <<+ 3. * Hcon * ( w * zeta_half(x)/2. + cs2 * psi ) - C2 * pi_k(x)
+            // /*Linear(4,5)*/        + 3. * cs2 * phi_prime + cs2 * Laplacian_pi
+            //
+            //    <<"zeta * Laplacian_pi= "<< (zeta_half(x) ) * Laplacian_pi
+            //
+            // <<" Gradpsi_Gradpi = "<<Gradpsi_Gradpi
+            //
+            //  <<" (2. + 3. * w + cs2 ) *  Hcon/2. * Gradpi_Gradpi= "<<
+            //  (2. + 3. * w  ) *  Hcon/2. * Gradpi_Gradpi<<endl;
+
+            //
+            // cout<<"(2. + 3. * w  ) *  Hcon/2.= "<< (2. + 3. * w  ) *  Hcon/2.<<endl;
+            // cout << " 3. * Hcon * ( w * zeta_half(x)/2. + cs2 * psi ) - C2 * pi_k(x)+ 3. * cs2 * phi_prime + cs2 * Laplacian_pi="
+            //  << 3. * Hcon * ( w * zeta_half(x)/2. + cs2 * psi ) - C2 * pi_k(x)  + 3. * cs2 * phi_prime + cs2 * Laplacian_pi
+            // <<"  2. * cs2 * phi(x) * Laplacian_pi = "<< 2. * cs2 * phi(x) * Laplacian_pi
+            // //
+            // <<" +(1. - cs2) * (zeta_half(x) ) * Laplacian_pi=  "<< +(1. - cs2) * (zeta_half(x) ) * Laplacian_pi
+            // //
+            // <<" Hcon * (1. + w) * pi_k(x) * Laplacian_pi "<<Hcon * (1. + w) * pi_k(x) * Laplacian_pi
+            // //
+            // <<" (zeta_half(x) ) * Laplacian_pi =   "<<(zeta_half(x) ) * Laplacian_pi
+            // <<endl;
           //**********************************************************************
           //Computing zeta(n+1)
           //**********************************************************************
