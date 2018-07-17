@@ -337,7 +337,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 			template <class FieldType>
 			void update_zeta(double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi, Field<FieldType> & chi_old, Field<FieldType> & pi_k , Field<FieldType> & zeta_half, double Omega_fld ,double w, double cs2, double Hcon, double H_prime, int non_linearity )
 			  {
-        double Gradphi_Gradpi, Gradpsi_Gradpi, Gradpi_Gradpi, GradZeta_Gradpi, Dx_psi, Dy_psi, Dz_psi;
+        double Gradphi_Gradpi, Gradpsi_Gradpi, Gradpi_Gradpi, GradZeta_Gradpi, Gradi_nablai_pi_Grad_pi_squared, Dx_psi, Dy_psi, Dz_psi;
 			  double C1, C2, C3, psi, psi_old, psi_prime, phi_prime, Laplacian_pi, zeta_old_integer, zeta_old_half ;
         //Since a_kess is at n so H_prime is at n which is needed to calculate zeta(n+1/2)
         //**************************************************************
@@ -356,6 +356,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         Gradpsi_Gradpi=0.;
         Gradpi_Gradpi=0.;
         GradZeta_Gradpi=0.;
+        Gradi_nablai_pi_Grad_pi_squared=0;
 				Site x(phi.lattice());
 				for (x.first(); x.test(); x.next())
 					{
@@ -416,6 +417,64 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
             GradZeta_Gradpi= 0.25* (zeta_half(x+0) - zeta_half(x-0) ) * (pi_k(x+0) - pi_k(x-0)) / (dx * dx);
             GradZeta_Gradpi+=0.25* (zeta_half(x+1) - zeta_half(x-1) ) * (pi_k(x+1) - pi_k(x-1)) / (dx * dx);
             GradZeta_Gradpi+=0.25* (zeta_half(x+2) - zeta_half(x-2) ) * (pi_k(x+2) - pi_k(x-2)) / (dx * dx);
+
+            //**********************************************************
+            //New term whcih comes from 3 fields and 4 spatial derivative
+            //1:  + 3 pi^{(0,0,2}(x,y,z) pi^{(0,0,1)}(x,y,z)^2
+            //2:  + pi^{(0,0,2)}(x,y,z) {pi}^{(0,1,0)}(x,y,z)^2
+            //3:  + 4 pi^{(0,0,1)}(x,y,z) pi^{(0,1,0)}(x,y,z) pi^{(0,1,1)}(x,y,z)
+            //4:  + pi^{(0,2,0)}(x,y,z) pi^{(0,0,1)}(x,y,z)^2
+            //5:  + 3 pi^{(0,1,0)}(x,y,z)^2 pi^{(0,2,0)}(x,y,z)
+            //6:  + pi^{(0,0,2)}(x,y,z) pi^{(1,0,0)}(x,y,z)^2
+            //7:  + pi^{(0,2,0)}(x,y,z) pi^{(1,0,0)}(x,y,z)^2
+            //8:  + 4 pi^{(0,0,1)}(x,y,z) pi^{(1,0,0)}(x,y,z) pi^{(1,0,1)}(x,y,z)
+            //9:  +  4 pi^{(0,1,0)}(x,y,z) pi^{(1,0,0)}(x,y,z) pi^{(1,1,0)}(x,y,z)
+            //10: + pi^{(2,0,0,0)}(x,y,z) pi^{(0,0,1,0)}(x,y,z)^2
+            //11: + pi^{(0,1,0)}(x,y,z)^2 pi^{(2,0,0)}(x,y,z)
+            //12: + 3 pi^{(1,0,0)}(x,y,z)^2 pi^{(2,0,0)}(x,y,z)
+
+            //*********************************************************
+            Gradi_nablai_pi_Grad_pi_squared =
+            //1:  + 3 pi^{(0,0,2}(x,y,z) pi^{(0,0,1)}(x,y,z)^2
+            + 3. * (pi_k(x - 2) + pi_k(x + 2) - 2. * pi_k(x))/(dx*dx)
+            * 0.25 * (pi_k(x + 2)  - pi_k(x - 2)) * (pi_k(x + 2) - pi_k(x - 2)) / (dx * dx)
+            //2:  + pi^{(0,0,2)}(x,y,z) {pi}^{(0,1,0)}(x,y,z)^2
+            + (pi_k(x - 2) + pi_k(x + 2) - 2. * pi_k(x))/(dx*dx)
+            * 0.25 * (pi_k(x + 1)  - pi_k(x - 1)) * (pi_k(x + 1) - pi_k(x - 1)) / (dx * dx)
+            //3:  + 4 pi^{(0,0,1)}(x,y,z) pi^{(0,1,0)}(x,y,z) pi^{(0,1,1)}(x,y,z)
+            //Definition of f^{(1,1)}(x,y) = (f_{x+1,y+1} - f_{x+1,y-1} - f_{x-1,y+1} + f_{x-1,y-1})/(4*dx^2)
+            //In LATfield f_{x+1,y+1} = f(x + 0 + 1)
+            + 4. *  0.25 * (pi_k(x + 2)  - pi_k(x - 2)) * (pi_k(x + 1) - pi_k(x - 1)) / (dx * dx) *
+            0.25 *(pi_k(x + 1 + 2) - pi_k(x + 1 - 2) - pi_k(x - 1 + 2) + pi_k(x - 1 - 2) )/(dx*dx)
+            //4:  + pi^{(0,2,0)}(x,y,z) pi^{(0,0,1)}(x,y,z)^2
+            + (pi_k(x - 1) + pi_k(x + 1) - 2. * pi_k(x))/(dx*dx)
+            * 0.25 * (pi_k(x + 2)  - pi_k(x - 2)) * (pi_k(x + 2) - pi_k(x - 2)) / (dx * dx)
+            //5:  + 3 pi^{(0,1,0)}(x,y,z)^2 pi^{(0,2,0)}(x,y,z)
+            + 3. * (pi_k(x - 1) + pi_k(x + 1) - 2. * pi_k(x))/(dx*dx)
+            * 0.25 * (pi_k(x + 1)  - pi_k(x - 1)) * (pi_k(x + 1) - pi_k(x - 1)) / (dx * dx)
+            //6:  + pi^{(0,0,2)}(x,y,z) pi^{(1,0,0)}(x,y,z)^2
+            + (pi_k(x - 2) + pi_k(x + 2) - 2. * pi_k(x))/(dx*dx)
+            * 0.25 * (pi_k(x + 0)  - pi_k(x - 0)) * (pi_k(x + 0) - pi_k(x - 0)) / (dx * dx)
+            //7:  + pi^{(0,2,0)}(x,y,z) pi^{(1,0,0)}(x,y,z)^2
+            + (pi_k(x - 1) + pi_k(x + 1) - 2. * pi_k(x))/(dx*dx)
+            * 0.25 * (pi_k(x + 0)  - pi_k(x - 0)) * (pi_k(x + 0) - pi_k(x - 0)) / (dx * dx)
+            //8:  + 4 pi^{(0,0,1)}(x,y,z) pi^{(1,0,0)}(x,y,z) pi^{(1,0,1)}(x,y,z)
+            //Definition of f^{(1,1)}(x,z) = (f_{x+1,z+1} - f_{x+1,z-1} - f_{x-1,z+1} + f_{x-1,z-1})/(4*dx^2)
+            //In LATfield f_{x+1,z+1} = f(x + 0 + 2)
+            + 4. *  0.25 * (pi_k(x + 2)  - pi_k(x - 2)) * (pi_k(x + 0) - pi_k(x - 0)) / (dx * dx) *
+            0.25 *(pi_k(x + 0 + 2) - pi_k(x + 0 - 2) - pi_k(x - 0 + 2) + pi_k(x - 0 - 2) )/(dx*dx)
+            //9:  +  4 pi^{(0,1,0)}(x,y,z) pi^{(1,0,0)}(x,y,z) pi^{(1,1,0)}(x,y,z)
+            + 4. *  0.25 * (pi_k(x + 1)  - pi_k(x - 1)) * (pi_k(x + 0) - pi_k(x - 0)) / (dx * dx) *
+            0.25 * (pi_k(x + 0 + 1) - pi_k(x + 0 - 1) - pi_k(x - 0 + 1) + pi_k(x - 0 - 1) )/(dx*dx)
+            //10: + pi^{(2,0,0)}(x,y,z) pi^{(0,0,1)}(x,y,z)^2
+            + (pi_k(x - 0) + pi_k(x + 0) - 2. * pi_k(x))/(dx*dx)
+            * 0.25 * (pi_k(x + 2)  - pi_k(x - 2)) * (pi_k(x + 2) - pi_k(x - 2)) / (dx * dx)
+            //11: + pi^{(0,1,0)}(x,y,z)^2 pi^{(2,0,0)}(x,y,z)
+            + (pi_k(x - 0) + pi_k(x + 1) - 2. * pi_k(x))/(dx*dx)
+            * 0.25 * (pi_k(x + 1)  - pi_k(x - 1)) * (pi_k(x + 1) - pi_k(x - 1)) / (dx * dx)
+            //12: + 3 pi^{(1,0,0)}(x,y,z)^2 pi^{(2,0,0)}(x,y,z)
+            + 3. * (pi_k(x - 0) + pi_k(x + 0) - 2. * pi_k(x))/(dx*dx)
+            * 0.25 * (pi_k(x + 0)  - pi_k(x - 0)) * (pi_k(x + 0) - pi_k(x - 0)) / (dx * dx);
           }
           //***********************************
           // Having the values at previous steps
@@ -431,11 +490,12 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
           /*Linear(1,2,3)*/      + 3. * Hcon * ( w * zeta_half(x)/2. + cs2 * psi ) - C2 * pi_k(x)
           /*Linear(4,5)*/        + 3. * cs2 * phi_prime + cs2 * Laplacian_pi
           /*Non-linear terms*/   + non_linearity * (
-          /*Non-linear(1,2)*/    + 2. * cs2 * phi(x) * Laplacian_pi
+          /*Non-linear(1,2)*/    - cs2 * (phi(x) - psi) * Laplacian_pi
           /*Non-linear(3)  */    - 3. * cs2 * Hcon * (1. + w) * pi_k(x) * Laplacian_pi
-          /*Non-linear(3)  */    +(1. - cs2) * (zeta_half(x) ) * Laplacian_pi
+          /*Non-linear(3)  */    + (1. - cs2) * (zeta_half(x) ) * Laplacian_pi
            /*Non-linear(5,6,7)*/  - cs2 * Gradphi_Gradpi + Gradpsi_Gradpi - C3 * Gradpi_Gradpi
           /*Non-linear(8)  */    + 2. * (1. - cs2) * GradZeta_Gradpi
+/*Non-linear Higher order 9:*/   - (1. -cs2)/2. * Gradi_nablai_pi_Grad_pi_squared
                                                     )
                                                       )
                                       );
