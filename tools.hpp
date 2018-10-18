@@ -217,7 +217,7 @@ void extractPowerSpectrum(Field<Cplx> & fldFT, Real * kbin, Real * power, Real *
 #endif
 
 
-//////////////////////////
+///////////////////////////
 // writePowerSpectrum
 //////////////////////////
 // Description:
@@ -235,15 +235,65 @@ void extractPowerSpectrum(Field<Cplx> & fldFT, Real * kbin, Real * power, Real *
 //   filename       output file name
 //   description    descriptive header
 //   a              scale factor for this spectrum
+//   z_target       target redshift for this output (used only if EXACT_OUTPUT_REDSHIFTS is defined)
 //
 // Returns:
 //
 //////////////////////////
 
-void writePowerSpectrum(Real * kbin, Real * power, Real * kscatter, Real * pscatter, int * occupation, const int numbins, const Real rescalek, const Real rescalep, const char * filename, const char * description, const double a)
+void writePowerSpectrum(Real * kbin, Real * power, Real * kscatter, Real * pscatter, int * occupation, const int numbins, const Real rescalek, const Real rescalep, const char * filename, const char * description, double a, const double z_target = -1)
 {
 	if (parallel.isRoot())
 	{
+#ifdef EXACT_OUTPUT_REDSHIFTS
+		Real * power2 = (Real *) malloc(numbins * sizeof(Real));
+
+		for (int i = 0; i < numbins; i++)
+			power2[i] = power[i]/rescalep;
+
+		if (1. / a < z_target + 1.)
+		{
+			FILE * infile = fopen(filename, "r");
+			double weight = 1.;
+			int count = 0;
+			if (infile != NULL)
+			{
+				fscanf(infile, "%*[^\n]\n");
+				if (fscanf(infile, "# redshift z=%lf\n", &weight) != 1)
+				{
+					cout << " error parsing power spectrum file header for interpolation (EXACT_OUTPUT_REDSHIFTS)" << endl;
+					weight = 1.;
+				}
+				else
+				{
+					weight = (weight - z_target) / (1. + weight - 1./a);
+					fscanf(infile, "%*[^\n]\n");
+					for (int i = 0; i < numbins; i++)
+					{
+						if (occupation[i] > 0)
+						{
+#ifdef SINGLE
+							if(fscanf(infile, " %*e %e %*e %*e %*d \n", power2+i) != 1)
+#else
+							if(fscanf(infile, " %*e %le %*e %*e %*d \n", power2+i) != 1)
+#endif
+							{
+								cout << " error parsing power spectrum file data " << i << " for interpolation (EXACT_OUTPUT_REDSHIFTS)" << endl;
+								break;
+							}
+							else count++;
+						}
+					}
+				}
+				fclose(infile);
+
+				for (int i = 0; i < numbins; i++)
+					power2[i] = (1.-weight)*power2[i] + weight*power[i]/rescalep;
+
+				a = 1. / (z_target + 1.);
+			}
+		}
+#endif // EXACT_OUTPUT_REDSHIFTS
 		FILE * outfile = fopen(filename, "w");
 		if (outfile == NULL)
 		{
@@ -257,10 +307,17 @@ void writePowerSpectrum(Real * kbin, Real * power, Real * kscatter, Real * pscat
 			for (int i = 0; i < numbins; i++)
 			{
 				if (occupation[i] > 0)
+#ifdef EXACT_OUTPUT_REDSHIFTS
+					fprintf(outfile, "  %e   %e   %e   %e   %d\n", kbin[i]/rescalek, power2[i], kscatter[i]/rescalek, pscatter[i]/rescalep/ sqrt(occupation[i]), occupation[i]);
+#else
 					fprintf(outfile, "  %e   %e   %e   %e   %d\n", kbin[i]/rescalek, power[i]/rescalep, kscatter[i]/rescalek, pscatter[i]/rescalep/ sqrt(occupation[i]), occupation[i]);
+#endif
 			}
 			fclose(outfile);
 		}
+#ifdef EXACT_OUTPUT_REDSHIFTS
+		free(power2);
+#endif
 	}
 }
 

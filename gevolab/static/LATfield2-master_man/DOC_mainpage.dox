@@ -1,0 +1,37 @@
+/*!\mainpage 
+
+
+\section intro_sec Introduction
+
+LATField2, the second version of the LATfield library is a simple C++ framework for lattice based simulation on massively parallel computer.
+
+
+Version 1.1:
+
+- Output server completly rebuilt.
+- A particles handler for colisionless particles
+
+
+
+Version 1.0:
+
+- the parallelization has been rebuilt to distribute 2 of the lattice dimensions into a 2-dimensional MPI process grid.
+- A FFT wrapper for 3d cubic lattices. 
+- HDF5 I/O (serial and parallel).
+- An I/O server has been implemented to improve I/O from compute nodes. (Beta)
+
+\section install_sec Downloads
+
+The library git repository is on gitHub: https://github.com/daverio/LATfield2.git. To clone it:
+
+git clone https://github.com/daverio/LATfield2.git
+
+
+\section getstart_sec Getting Started
+
+The best way to start with LATfield is to jump into the examples starting with the "getting started" example. The FFT example will explain the usage of the PlanFFT class and the IOserver example the IO server. There is a fourth example which show how to build a Poisson solver, but is currently not documented.
+
+
+
+*/
+

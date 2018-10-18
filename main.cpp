@@ -458,6 +458,7 @@ int main(int argc, char **argv)
 
 	while (true)    // main loop
 	{
+    // cout<<"tau: "<<tau<<" z: "<<1./(a) -1.<<endl;
 
 	//Kessence
 	for (x.first(); x.test(); x.next())
@@ -752,6 +753,7 @@ if (sim.Kess_source_gravity==1)
 #else
 			//kessence included
 			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
+
       writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
 
 
@@ -759,6 +761,27 @@ if (sim.Kess_source_gravity==1)
 
 			pkcount++;
 		}
+
+    // cout<<"EXACT_OUTPUT_REDSHIFTS: "<<EXACT_OUTPUT_REDSHIFTS<<endl;
+    #ifdef EXACT_OUTPUT_REDSHIFTS
+    		tmp = a;
+    		rungekutta4bg(tmp, fourpiG, cosmo, 0.5 * dtau);
+    		rungekutta4bg(tmp, fourpiG, cosmo, 0.5 * dtau);
+
+    		if (pkcount < sim.num_pk && 1. / tmp < sim.z_pk[pkcount] + 1.)
+    		{
+    			writeSpectra(sim, cosmo, fourpiG, a, pkcount,
+    #ifdef HAVE_CLASS
+    					class_background, class_perturbs, class_spectra, ic,
+    #endif
+    					&pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij
+    #ifdef CHECK_B
+    					, &Bi_check, &BiFT_check, &plan_Bi_check
+    #endif
+    			);
+    		}
+    #endif // EXACT_OUTPUT_REDSHIFTS
+
 
 #ifdef BENCHMARK
 		spectra_output_time += MPI_Wtime() - ref_time;
