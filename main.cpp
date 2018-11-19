@@ -545,7 +545,7 @@ int norm_kFT_squared = 0.;
       //****************************
       //****PRINTING AVERAGE OVER TIME
       //****************************
-      check_field(  zeta_half, 1. , " H pi_k", numpts3d);
+      // check_field(  zeta_half, 1. , " H pi_k", numpts3d);
       avg_pi =average(  pi_k, Hconf(a, fourpiG, cosmo), numpts3d ) ;
       avg_zeta =average(  zeta_half,1., numpts3d ) ;
       avg_phi =average(  phi , 1., numpts3d ) ;
