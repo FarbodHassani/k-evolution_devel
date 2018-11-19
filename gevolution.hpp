@@ -283,6 +283,108 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         }
       }
     }
+
+
+#ifdef BACKREACTION_TEST
+  //Checking field
+  //Credit: David  and Lorenzo!
+    template <class FieldType>
+    void check_field(Field<FieldType> & field, double constant , string field_name, long n3, string message = "")
+    {
+    Site x(field.lattice());
+    ios::fmtflags f(cout.flags());
+    double max = 0., hom = 0., sum = 0., temp;
+    for(x.first(); x.test(); x.next())
+    {
+    temp = field(x);
+    hom += temp;
+    sum += fabs(temp);
+    if(fabs(temp) >= max)
+    {
+    max = fabs(temp);
+    }
+    }
+    parallel.max(max);
+    parallel.sum(sum);
+    parallel.sum(hom);
+    sum /= n3;
+    hom /= n3;
+    COUT << scientific << setprecision(6);
+    COUT << message
+    << setw(17) << field_name
+    << " Max = " << setw(9) << max * constant
+    << " hom = " << setw(9) << hom * constant
+    << endl;
+    cout.flags(f);
+    }
+
+
+    // Printing out the average and Maximum
+    template <class FieldType>
+    double average(Field<FieldType> & field, double constant , long n3)
+    {
+    Site x(field.lattice());
+    ios::fmtflags f(cout.flags());
+    double max = 0., hom = 0., sum = 0., temp;
+    for(x.first(); x.test(); x.next())
+    {
+    temp = field(x);
+    hom += temp;
+    sum += fabs(temp);
+    if(fabs(temp) >= max)
+    {
+    max = fabs(temp);
+    }
+    }
+    parallel.max(max);
+    parallel.sum(sum);
+    parallel.sum(hom);
+    sum /= n3;
+    hom /= n3;
+    return hom * constant;
+    // COUT << scientific << setprecision(6);
+    // COUT << message
+    // << setw(17) << field_name
+    // << " Max = " << setw(9) << max * constant
+    // << " hom = " << setw(9) << hom * constant
+    // << endl;
+    // cout.flags(f);
+    }
+
+
+    // Printing out Maximum
+    template <class FieldType>
+    double maximum(Field<FieldType> & field, double constant , long n3)
+    {
+    Site x(field.lattice());
+    ios::fmtflags f(cout.flags());
+    double max = 0., hom = 0., sum = 0., temp;
+    for(x.first(); x.test(); x.next())
+    {
+    temp = field(x);
+    hom += temp;
+    sum += fabs(temp);
+    if(fabs(temp) >= max)
+    {
+    max = fabs(temp);
+    }
+    }
+    parallel.max(max);
+    parallel.sum(sum);
+    parallel.sum(hom);
+    sum /= n3;
+    hom /= n3;
+    return max * constant;
+    // COUT << scientific << setprecision(6);
+    // COUT << message
+    // << setw(17) << field_name
+    // << " Max = " << setw(9) << max * constant
+    // << " hom = " << setw(9) << hom * constant
+    // << endl;
+    // cout.flags(f);
+    }
+
+#endif
 			//////////////////////////
 			// Update K-essence field (pi)
 			//////////////////////////

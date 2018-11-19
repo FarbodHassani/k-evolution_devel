@@ -1,6 +1,6 @@
 # programming environment
 COMPILER     := mpic++
-INCLUDE      := -I/usr/local/include/gsl  -I../LATfield2-master  -I /Users/farbod/Packages/hdf5-1.10.1/hdf5/include    # add the path to LATfield2 and other libraries (if necessary)
+INCLUDE      := -I/usr/local/include/gsl  -I/Users/farbod/Dropbox/Projects/k-evolution/Kevolution/LATfield2-master/  -I /Users/farbod/Packages/hdf5-1.10.1/hdf5/include    # add the path to LATfield2 and other libraries (if necessary)
 LIB          :=-L/Users/farbod/Packages/hdf5-1.10.1/hdf5/lib -lfftw3 -lm -lhdf5 -lgsl -lgslcblas
 
 # target and source
@@ -19,6 +19,7 @@ DLATFIELD2   := -DFFT3D -DHDF5
 DGEVOLUTION  := -DPHINONLINEAR
 DGEVOLUTION  += -DBENCHMARK
 DGEVOLUTION  += -DEXACT_OUTPUT_REDSHIFTS
+DGEVOLUTION  += -BACKREACTION_TEST
 #DGEVOLUTION  += -DCHECK_B
 #DGEVOLUTION  += -DHAVE_CLASS # requires OPT -fopenmp and LIB -lclass
 
