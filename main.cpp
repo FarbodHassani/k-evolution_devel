@@ -681,9 +681,9 @@ if (sim.Kess_source_gravity==1)
 			// Note that it is multiplied to dx^2 and is divived by -a^3 because of definition of T00 which is scaled by a^3
 			// We have T00 and Tij according to code's units, but source is important to calculate potentials and moving particles.
 			// There is coefficient between Tij and Sij as source.
-			source(x) += (fourpiG * dx * dx / a) * T00_Kess(x);
+			source(x) += T00_Kess(x);
 			if (sim.vector_flag == VECTOR_ELLIPTIC)for(int 	c=0;c<3;c++)Bi(x,c)+= (2. * fourpiG * dx * dx / a) * T0i_Kess(x,c);
-			for(int c=0;c<6;c++)Sij(x,c)+=(2. * fourpiG * dx * dx / a) * Tij_Kess(x,c);
+			for(int c=0;c<6;c++)Sij(x,c)+=(2.) * Tij_Kess(x,c);
 		}
 }
 #ifdef BENCHMARK
@@ -767,8 +767,8 @@ if (sim.Kess_source_gravity==1)
 			else
 			{
 				if (cycle == 0)
-					fprintf(outfile, "# background statistics\n# cycle   tau/boxsize    a             conformal H/H0  phi(k=0)       T00(k=0)\n");
-				fprintf(outfile, " %6d   %e   %e   %e   %e   %e\n", cycle, tau, a, Hconf(a, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo), scalarFT(kFT).real(), T00hom);
+					fprintf(outfile, "# background statistics\n# cycle   tau/boxsize    a             conformal H/H0         Hconf_prime       phi(k=0)       T00(k=0)\n");
+				fprintf(outfile, " %6d   %e   %e   %e   %e   %e   %e\n", cycle, tau, a, Hconf(a, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo),Hconf_prime(a_kess, fourpiG, cosmo), scalarFT(kFT).real(), T00hom);
 				fclose(outfile);
 			}
 		}
