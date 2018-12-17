@@ -238,8 +238,8 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         //STRESS TENSOR COMPONENTS
         //************************
         // 0-0-component: (Time,Time)
-        T00(xField)       = - coeff1 * ( -3. * cs2 * Hcon * pi_k(xField) + zeta_half(xField)
-                          /*Non-linear*/ -  non_linearity * (1. - 2. * cs2) * gradientpi_squared / 2.  );
+        T00(xField)       =  + coeff1 * ( -3. * cs2 * Hcon * pi_k(xField) + zeta_half(xField)
+                          /*Non-linear*/ +  non_linearity * (1. - 2. * cs2) * gradientpi_squared / 2.  );
         //*************************************************************************************
         // 1-1-component: (X,X)
         Tij(xField, 0, 0) = + coeff2 * (-3.* w * Hcon* pi_k(xField) + zeta_half(xField)
