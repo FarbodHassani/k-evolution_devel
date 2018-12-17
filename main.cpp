@@ -682,7 +682,7 @@ if (sim.Kess_source_gravity==1)
 			// We have T00 and Tij according to code's units, but source is important to calculate potentials and moving particles.
 			// There is coefficient between Tij and Sij as source.
 			source(x) += T00_Kess(x);
-			if (sim.vector_flag == VECTOR_ELLIPTIC)for(int 	c=0;c<3;c++)Bi(x,c)+= (2. * fourpiG * dx * dx / a) * T0i_Kess(x,c);
+			if (sim.vector_flag == VECTOR_ELLIPTIC)for(int 	c=0;c<3;c++)Bi(x,c)+=  T0i_Kess(x,c);
 			for(int c=0;c<6;c++)Sij(x,c)+=(2.) * Tij_Kess(x,c);
 		}
 }
