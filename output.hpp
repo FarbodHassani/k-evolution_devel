@@ -612,7 +612,6 @@ ioserver.closeOstream();
 			extractPowerSpectrum(*T00_KessFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, false, KTYPE_LINEAR);
 			sprintf(filename, "%s%s%03d_delta_kess.dat", sim.output_path, sim.basename_pk, pkcount);
 			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI* cosmo.Omega_kessence * cosmo.Omega_kessence * pow(a, -3.* cosmo.w_kessence) * pow(a, -3.* cosmo.w_kessence), filename, "power spectrum of delta_kessence", a, sim.z_pk[pkcount]);
-			// writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of delta_kessence", a);
 		 }
 
      // Phi_prime is dimensionful so we divide  to Hconf to make dimensionless!
@@ -677,6 +676,18 @@ ioserver.closeOstream();
 			sprintf(filename, "%s%s%03d_delta.dat", sim.output_path, sim.basename_pk, pkcount);
 			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * (cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) * (cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)), filename, "power spectrum of delta", a, sim.z_pk[pkcount]);
 		}
+
+    //Kessence Cross Power delta_kess * delta_m
+    // cout<<"MASK_DELTAKESS_DELTA: "<<MASK_DELTAKESS_DELTA<<"MASK_Delta_KESS: "<<MASK_Delta_KESS<<endl;
+    if (sim.out_pk & MASK_DELTAKESS_DELTA  && sim.out_pk & MASK_Delta_KESS)
+    {
+       // P (\deltam \delta_kess)= deltarho_kess * \delta_m / Omega_kess *a^(-3(1+w)) ) Omega_m *a^-3 since in the defnition we have a^3 T00
+       // We already included a^(-3) in the denominator, so we only need take the rest into account.
+       // Which are just a^{-3w} and Omega_kess and Omega_m
+      extractCrossSpectrum(*scalarFT, *T00_KessFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
+      sprintf(filename, "%s%s%03d_deltakess_deltam.dat", sim.output_path, sim.basename_pk, pkcount);
+      writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * (cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) * cosmo.Omega_kessence *  pow(a, -3.* cosmo.w_kessence)  , filename, "cross power spectrum of delta_m and  delta_kess", a, sim.z_pk[pkcount]);
+    }
 
 		if (cosmo.num_ncdm > 0 || sim.baryon_flag)
 		{

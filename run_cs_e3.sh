@@ -12,8 +12,8 @@ mpirun -np 8 ./gevolution -n 4 -m 2 -s settings_cs_e3.ini
 rm gevolution
 
 ##Bash For making folder
-foldername=$(date +%Y.%m.%d.%H.%M.%S)
-mkdir -p /Users/farbod/Packages/Gevolution/Kessence_Machinery/Gevolution_Notebook/Plots_Gevolution_Jupyter/Gevolution_outputs/"$foldername"
+#foldername=$(date +%Y.%m.%d.%H.%M.%S)
+#mkdir -p /Users/farbod/Packages/Gevolution/Kessence_Machinery/Gevolution_Notebook/Plots_Gevolution_Jupyter/Gevolution_outputs/"$foldername"
 
 
-cp ./output/* /Users/farbod/Packages/Gevolution/Kessence_Machinery/Gevolution_Notebook/Plots_Gevolution_Jupyter/Gevolution_outputs/"$foldername"
+#cp ./output/* /Users/farbod/Packages/Gevolution/Kessence_Machinery/Gevolution_Notebook/Plots_Gevolution_Jupyter/Gevolution_outputs/"$foldername"
