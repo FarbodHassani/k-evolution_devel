@@ -397,6 +397,7 @@ int main(int argc, char **argv)
 	hdr.num_files = 1;
 	hdr.Omega0 = cosmo.Omega_m;
 	hdr.OmegaLambda = cosmo.Omega_Lambda;
+  hdr.OmegaLambda = 1-cosmo.Omega_m;
 	hdr.HubbleParam = cosmo.h;
 	hdr.BoxSize = sim.boxsize / GADGET_LENGTH_CONVERSION;
 	hdr.flag_sfr = 0;
