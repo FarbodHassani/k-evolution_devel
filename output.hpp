@@ -350,20 +350,20 @@ if (sim.out_snapshot & MASK_T_KESS)
 	// COUT<<"output kesssence energy"<<endl;
 	#ifdef EXTERNAL_IO
 			T00_Kess->saveHDF5_server_write(NUMBER_OF_IO_FILES);
-			T0i_Kess->saveHDF5_server_write(NUMBER_OF_IO_FILES);
-			Tij_Kess->saveHDF5_server_write(NUMBER_OF_IO_FILES);
+			// T0i_Kess->saveHDF5_server_write(NUMBER_OF_IO_FILES);
+			// Tij_Kess->saveHDF5_server_write(NUMBER_OF_IO_FILES);
 	#else
 			if (sim.downgrade_factor > 1)
 			{
 				T00_Kess->saveHDF5_coarseGrain3D(h5filename + filename + "_T00_Kess.h5", sim.downgrade_factor);
-				T0i_Kess->saveHDF5_coarseGrain3D(h5filename + filename + "_T0i_Kess.h5", sim.downgrade_factor);
-				Tij_Kess->saveHDF5_coarseGrain3D(h5filename + filename + "_Tij_Kess.h5", sim.downgrade_factor);
+				// T0i_Kess->saveHDF5_coarseGrain3D(h5filename + filename + "_T0i_Kess.h5", sim.downgrade_factor);
+				// Tij_Kess->saveHDF5_coarseGrain3D(h5filename + filename + "_Tij_Kess.h5", sim.downgrade_factor);
 			}
 			else
 			{
 				T00_Kess->saveHDF5(h5filename + filename + "_T00_Kess.h5");
-				T0i_Kess->saveHDF5(h5filename + filename + "_T0i_Kess.h5");
-				Tij_Kess->saveHDF5(h5filename + filename + "_Tij_Kess.h5");
+				// T0i_Kess->saveHDF5(h5filename + filename + "_T0i_Kess.h5");
+				// Tij_Kess->saveHDF5(h5filename + filename + "_Tij_Kess.h5");
 			}
 	#endif
 }
