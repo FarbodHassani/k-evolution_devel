@@ -1,5 +1,5 @@
 //////////////////////////
-// Copyright (c) 2015-2016 Julian Adamek (Université de Genève)
+// Copyright (c) 2015-2018 Julian Adamek
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -26,17 +26,13 @@
 //
 // main control sequence of Geneva N-body code with evolution of metric perturbations (gevolution)
 //
-// Author: Julian Adamek (Université de Genève & Observatoire de Paris)
+// Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
-// Last modified: February 2017
+// Last modified: November 2018
 //
 //////////////////////////
+
 #include <stdlib.h>
-#ifdef BACKREACTION_TEST
-#include <iomanip>
-#include<fstream>
-#include<sstream>
-#endif
 #ifdef HAVE_CLASS
 #include "class.h"
 #undef MAX			// due to macro collision this has to be done BEFORE including LATfield2 headers!
@@ -45,6 +41,7 @@
 #include "LATfield2.hpp"
 #include "metadata.hpp"
 #include "class_tools.hpp"
+#include "tools.hpp"
 #include "background.hpp"
 #include "Particles_gevolution.hpp"
 #include "gevolution.hpp"
@@ -58,7 +55,6 @@
 #endif
 #include "radiation.hpp"
 #include "parser.hpp"
-#include "tools.hpp"
 #include "output.hpp"
 #include "hibernation.hpp"
 
@@ -76,11 +72,11 @@ int main(int argc, char **argv)
 
 	double initialization_time;
 	double run_time;
-  double kessence_update_time=0; // How much time is put on updating the kessence field
 	double cycle_time=0;
 	double projection_time = 0;
 	double snapshot_output_time = 0;
 	double spectra_output_time = 0;
+	double lightcone_output_time = 0;
 	double gravity_solver_time = 0;
 	double fft_time = 0;
 	int fft_count = 0;
@@ -88,9 +84,6 @@ int main(int argc, char **argv)
 	int update_q_count = 0;
 	double moveParts_time = 0;
 	int  moveParts_count =0;
-	//kessence
-	double a_kess;
-
 
 #endif  //BENCHMARK
 
@@ -98,11 +91,11 @@ int main(int argc, char **argv)
 	int io_size = 0;
 	int io_group_size = 0;
 
-	int i, j, cycle = 0, snapcount = 0, pkcount = 0, restartcount = 0, usedparams, numparam = 0, numsteps, numspecies;
+	int i, j, cycle = 0, snapcount = 0, pkcount = 0, restartcount = 0, usedparams, numparam = 0, numsteps, numspecies, done_hij;
 	int numsteps_ncdm[MAX_PCL_SPECIES-2];
 	long numpts3d;
 	int box[3];
-	double dtau, dtau_old, dx, tau, a, fourpiG, tau_Lambda, tmp, start_time;
+	double dtau, dtau_old, dtau_older, dx, tau, a, fourpiG, tau_Lambda, tmp, start_time;
 	double maxvel[MAX_PCL_SPECIES];
 	FILE * outfile;
 	char filename[2*PARAM_MAX_LENGTH+24];
@@ -112,7 +105,6 @@ int main(int argc, char **argv)
 	metadata sim;
 	cosmology cosmo;
 	icsettings ic;
-	gadget2_header hdr;
 	Real T00hom;
 
 #ifndef H5_DEBUG
@@ -158,10 +150,9 @@ int main(int argc, char **argv)
 #endif
 
 	COUT << COLORTEXT_WHITE << endl;
-	COUT << "| /  "<<endl;
-	COUT << "|/    _      _   _  _ , _" << endl;
-	COUT << "|\\  (-' \\/ (_) (_ (_| (  ( (_) /\\/	version 1.0    running on " << n*m << " cores." << endl;
-  COUT << "| \\" << endl << COLORTEXT_RESET << endl;
+	COUT << "  _   _      _         __ ,  _" << endl;
+	COUT << " (_| (-' \\/ (_) (_ (_| (  ( (_) /\\/	version 1.2 beta    running on " << n*m << " cores." << endl;
+	COUT << "  -'" << endl << COLORTEXT_RESET << endl;
 
 	if (settingsfile == NULL)
 	{
@@ -192,7 +183,6 @@ int main(int argc, char **argv)
 
 	h5filename.reserve(2*PARAM_MAX_LENGTH);
 	h5filename.assign(sim.output_path);
-	h5filename += sim.basename_snapshot;
 
 	box[0] = sim.numpts;
 	box[1] = sim.numpts;
@@ -211,36 +201,20 @@ int main(int argc, char **argv)
 	double f_params[5];
 
 	Field<Real> phi;
+  Field<Real> phi_old;
+  //phi at two step before to compute phi'(n+1/2)
+	Field<Real> phi_prime;
 	Field<Real> source;
 	Field<Real> chi;
-	Field<Real> chi_old;
 	Field<Real> Sij;
 	Field<Real> Bi;
 	Field<Cplx> scalarFT;
+  Field<Cplx> scalarFT_phi_old;
+  Field<Cplx> phi_prime_scalarFT;
 	Field<Cplx> SijFT;
 	Field<Cplx> BiFT;
 	source.initialize(lat,1);
 	phi.initialize(lat,1);
-
-	//kessence
-	Field<Real> phi_old;
-  //phi at two step before to compute phi'(n+1/2)
-	Field<Real> phi_prime;
-	Field<Real> pi_k;
-	// Field<Real> zeta_integer;
-  Field<Real> zeta_half;
-	Field<Real> T00_Kess;
-	Field<Real> T0i_Kess;
-	Field<Real> Tij_Kess;
-	Field<Cplx> scalarFT_phi_old;
-	Field<Cplx> phi_prime_scalarFT;
-	Field<Cplx> scalarFT_chi_old;
-	Field<Cplx> scalarFT_pi;
-	// Field<Cplx> scalarFT_zeta_integer;
-  Field<Cplx> scalarFT_zeta_half;
-	Field<Cplx> T00_KessFT;
-	Field<Cplx> T0i_KessFT;
-	Field<Cplx> Tij_KessFT;
 	chi.initialize(lat,1);
 	scalarFT.initialize(latFT,1);
 	PlanFFT<Cplx> plan_source(&source, &scalarFT);
@@ -259,48 +233,63 @@ int main(int argc, char **argv)
 	BiFT_check.initialize(latFT,3);
 	PlanFFT<Cplx> plan_Bi_check(&Bi_check, &BiFT_check);
 #endif
-	//Kessence end
+phi_old.initialize(lat,1);
+scalarFT_phi_old.initialize(latFT,1);
+PlanFFT<Cplx> plan_phi_old(&phi_old, &scalarFT_phi_old);
+//Phi'
+phi_prime.initialize(lat,1);
+phi_prime_scalarFT.initialize(latFT,1);
+PlanFFT<Cplx> phi_prime_plan(&phi_prime, &phi_prime_scalarFT);
 
-	//Kessence part initializing
-	//Phi_old
-	phi_old.initialize(lat,1);
-	scalarFT_phi_old.initialize(latFT,1);
-	PlanFFT<Cplx> plan_phi_old(&phi_old, &scalarFT_phi_old);
-	//Phi'
-	phi_prime.initialize(lat,1);
-	phi_prime_scalarFT.initialize(latFT,1);
-	PlanFFT<Cplx> phi_prime_plan(&phi_prime, &phi_prime_scalarFT);
-	//pi_k kessence
-	pi_k.initialize(lat,1);
-	scalarFT_pi.initialize(latFT,1);
-	PlanFFT<Cplx> plan_pi_k(&pi_k, &scalarFT_pi);
-	//zeta_integer_k kessence
-	// zeta_half.initialize(lat,1);
-	// scalarFT_zeta_half.initialize(latFT,1);
-	// PlanFFT<Cplx> plan_zeta_half(&zeta_half, &scalarFT_zeta_half);
-  //zeta_half_k kessence
-  zeta_half.initialize(lat,1);
-  scalarFT_zeta_half.initialize(latFT,1);
-  PlanFFT<Cplx> plan_zeta_half(&zeta_half, &scalarFT_zeta_half);
-	//chi_old initialize
-	chi_old.initialize(lat,1);
-	scalarFT_chi_old.initialize(latFT,1);
-	PlanFFT<Cplx> plan_chi_old(&chi_old, &scalarFT_chi_old);
-	//Stress tensor initializing
-	T00_Kess.initialize(lat,1);
-	T00_KessFT.initialize(latFT,1);
-	PlanFFT<Cplx> plan_T00_Kess(&T00_Kess, &T00_KessFT);
-	// T00_Kess.alloc();  // It seems we don't need it!
-	T0i_Kess.initialize(lat,3);
-	T0i_KessFT.initialize(latFT,3);
-	PlanFFT<Cplx> plan_T0i_Kess(&T0i_Kess, &T0i_KessFT);
-	// T0i_Kess.alloc();
-	Tij_Kess.initialize(lat,3,3,symmetric);
-	Tij_KessFT.initialize(latFT,3,3,symmetric);
-	PlanFFT<Cplx> plan_Tij_Kess(&Tij_Kess, &Tij_KessFT);
-	// Tij_Kess.alloc();
-	// kessence end
+	Field<Real> * lcbuffer[LIGHTCONE_MAX_FIELDS*LIGHTCONE_THICKNESS];
+	Lattice * lclat[LIGHTCONE_MAX_FIELDS];
+#ifdef LIGHTCONE_DOWNGRADE
+	int dgbox[3];
 
+	for (i = 0; i < 3; i++) dgbox[i] = box[i] / LIGHTCONE_DOWNGRADE;
+#endif
+
+#ifndef HAVE_HEALPIX
+	if (sim.num_lightcone > 0)
+	{
+		for (i = 0, j = 0; i < sim.num_lightcone; i++)
+		{
+			j |= sim.out_lightcone[i];
+		}
+
+		if (j & MASK_PHI)
+		{
+			lclat[LIGHTCONE_PHI_OFFSET] = new Lattice(3,box,0);
+			for (i = 0; i < LIGHTCONE_THICKNESS; i++)
+				lcbuffer[LIGHTCONE_THICKNESS*LIGHTCONE_PHI_OFFSET+i] = new Field<Real>((*lclat[LIGHTCONE_PHI_OFFSET]), 1);
+		}
+
+		if (j & MASK_CHI)
+		{
+			lclat[LIGHTCONE_CHI_OFFSET] = new Lattice(3,box,0);
+			for (i = 0; i < LIGHTCONE_THICKNESS; i++)
+				lcbuffer[LIGHTCONE_THICKNESS*LIGHTCONE_CHI_OFFSET+i] = new Field<Real>((*lclat[LIGHTCONE_CHI_OFFSET]), 1);
+		}
+
+		if (j & MASK_B)
+		{
+			lclat[LIGHTCONE_B_OFFSET] = new Lattice(3,box,0);
+			for (i = 0; i < 3*LIGHTCONE_THICKNESS; i++)
+				lcbuffer[LIGHTCONE_THICKNESS*LIGHTCONE_B_OFFSET+i] = new Field<Real>((*lclat[LIGHTCONE_B_OFFSET]), 1);
+		}
+
+		if (j & MASK_HIJ)
+		{
+#ifdef LIGHTCONE_DOWNGRADE
+			lclat[LIGHTCONE_HIJ_OFFSET] = new Lattice(3,dgbox,0);
+#else
+			lclat[LIGHTCONE_HIJ_OFFSET] = new Lattice(3,box,0);
+#endif
+			for (i = 0; i < 5*LIGHTCONE_THICKNESS; i++)
+				lcbuffer[LIGHTCONE_THICKNESS*LIGHTCONE_HIJ_OFFSET+i] = new Field<Real>((*lclat[LIGHTCONE_HIJ_OFFSET]), 1);
+		}
+	}
+#endif
 
 	update_cdm_fields[0] = &phi;
 	update_cdm_fields[1] = &chi;
@@ -327,24 +316,21 @@ int main(int argc, char **argv)
 	}
 	parallel.min(sim.movelimit);
 
-	fourpiG = 1.5 * sim.boxsize * sim.boxsize / C_SPEED_OF_LIGHT / C_SPEED_OF_LIGHT; // Just a definition to make Friedmann equation simplofied! and working with normak numbers
+	fourpiG = 1.5 * sim.boxsize * sim.boxsize / C_SPEED_OF_LIGHT / C_SPEED_OF_LIGHT;
 	a = 1. / (1. + sim.z_in);
 	tau = particleHorizon(a, fourpiG, cosmo);
 	tau_Lambda = -1.0;
 
 	if (sim.Cf * dx < sim.steplimit / Hconf(a, fourpiG, cosmo))
-		// dtau = sim.Cf * dx / sim.nKe_numsteps;
-    dtau = sim.Cf * dx;
-
+		dtau = sim.Cf * dx;
 	else
-		// dtau = sim.steplimit / Hconf(a, fourpiG, cosmo) / sim.nKe_numsteps;
-    dtau = sim.steplimit / Hconf(a, fourpiG, cosmo);
+		dtau = sim.steplimit / Hconf(a, fourpiG, cosmo);
 
 	dtau_old = 0.;
+	dtau_older = 0.;
 
 	if (ic.generator == ICGEN_BASIC)
-		generateIC_basic(sim, ic, cosmo, fourpiG, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &pi_k, &zeta_half, &chi, &Bi, &source, &Sij, &scalarFT, &scalarFT_pi, &scalarFT_zeta_half, &BiFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_source, &plan_Sij);
-	// generates ICs on the fly
+		generateIC_basic(sim, ic, cosmo, fourpiG, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij); // generates ICs on the fly
 	else if (ic.generator == ICGEN_READ_FROM_DISK)
 		readIC(sim, ic, cosmo, fourpiG, a, tau, dtau, dtau_old, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, cycle, snapcount, pkcount, restartcount);
 #ifdef ICGEN_PREVOLUTION
@@ -388,24 +374,6 @@ int main(int argc, char **argv)
 	}
 #endif
 
-	for (i = 0; i < 6; i++)
-	{
-		hdr.npart[i] = 0;
-		hdr.npartTotal[i] = 0;
-		hdr.mass[i] = 0.;
-	}
-	hdr.num_files = 1;
-	hdr.Omega0 = cosmo.Omega_m;
-	hdr.OmegaLambda = cosmo.Omega_Lambda;
-  hdr.OmegaLambda = 1-cosmo.Omega_m;
-	hdr.HubbleParam = cosmo.h;
-	hdr.BoxSize = sim.boxsize / GADGET_LENGTH_CONVERSION;
-	hdr.flag_sfr = 0;
-	hdr.flag_cooling = 0;
-	hdr.flag_feedback = 0;
-	for (i = 0; i < 256 - 6 * 4 - 6 * 8 - 2 * 8 - 2 * 4 - 6 * 4 - 2 * 4 - 4 * 8; i++)
-		hdr.fill[i] = 0;
-
 #ifdef BENCHMARK
 	initialization_time = MPI_Wtime() - start_time;
 	parallel.sum(initialization_time);
@@ -415,9 +383,15 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef HAVE_CLASS
-	if (sim.radiation_flag > 0)
+#ifdef COSIRA_HACK
+	initializeCLASSstructures(sim, ic, cosmo, class_background, class_perturbs, class_spectra);
+#endif // COSIRA_HACK
+	if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
 	{
+#ifndef COSIRA_HACK
 		initializeCLASSstructures(sim, ic, cosmo, class_background, class_perturbs, class_spectra);
+#endif // COSIRA_HACK
+#ifndef MULTISTEP_PROJECTION
 		if (sim.gr_flag > 0 && a < 1. / (sim.z_switch_linearchi + 1.) && (ic.generator == ICGEN_BASIC || (ic.generator == ICGEN_READ_FROM_DISK && cycle == 0)))
 		{
 			prepareFTchiLinear(class_background, class_perturbs, class_spectra, scalarFT, sim, ic, cosmo, fourpiG, a);
@@ -426,213 +400,58 @@ int main(int argc, char **argv)
 				chi(x) += source(x);
 			chi.updateHalo();
 		}
+#endif
 	}
 #endif
 
-
-//INITIAL CONDITION If U wanna set it yourself
-// for (x.first(); x.test(); x.next())
-//   {
-//     zeta_half(x)=1.e-3;
-//     pi_k(x)=1.e-3;
-//   }
-// for (kFT.first(); kFT.test(); kFT.next())
-// {
-//   phi(k)=0;
-// }
-
-#ifdef BACKREACTION_TEST
-//   //****************************
-//   //****SAVE DATA To test Backreaction
-//   //****************************
-  FILE* Result_avg;
-  FILE* Result_real;
-  FILE* Result_fourier;
-  FILE* Result_max;
-
-
-  char filename_avg[60];
-  char filename_real[60];
-  char filename_fourier[60];
-  char filename_max[60];
-
-
-  snprintf(filename_avg, sizeof(filename_avg),"./output/Result_avg.txt");
-  snprintf(filename_real, sizeof(filename_real),"./output/Result_real.txt");
-  snprintf(filename_fourier, sizeof(filename_fourier),"./output/Result_fourier.txt");
-  snprintf(filename_max, sizeof(filename_max),"./output/Results_max.txt");
-
-  // ofstream out(filename_avg,ios::out);
-  ofstream out_avg(filename_avg,ios::out);
-  ofstream out_real(filename_real,ios::out);
-  ofstream out_fourier(filename_fourier,ios::out);
-  ofstream out_max(filename_max,ios::out);
-
-
-  Result_avg=fopen(filename_avg,"w");
-  Result_real=fopen(filename_real,"w");
-  Result_fourier=fopen(filename_fourier,"w");
-  Result_max=fopen(filename_max,"w");
-
-
-  out_avg<<"### The result of the verage over time \n### d tau = "<< dtau<<endl;
-  out_avg<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
-  out_avg<<"### initial time = "<< tau <<endl;
-  out_avg<<"### 1- tau\t2- average(H pi_k)\t3- average (zeta)\t 4- average (phi)\t5-z(redshift)   " <<endl;
-
-
-  out_max<<"### The result of the maximum over time \n### d tau = "<< dtau<<endl;
-  out_max<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
-  out_max<<"### initial time = "<< tau <<endl;
-  out_max<<"### 1- tau\t2- max(H pi_k)\t3- max (zeta)\t 4- max (phi)   " <<endl;
-
-
-  out_real<<"### The result of the verage over time \n### d tau = "<< dtau<<endl;
-  out_real<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
-  out_real<<"### initial time = "<< tau <<endl;
-  out_real<<"### 1- tau\t2- pi_k(x)\t3-zeta(x)\t 4-x" <<endl;
-
-
-  out_fourier<<"### The result of the verage over time \n### d tau = "<< dtau<<endl;
-  out_fourier<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
-  out_fourier<<"### initial time = "<< tau <<endl;
-  out_fourier<<"### 1- tau\t 2- pi_k(k)\t\t3-zeta(k)\t\t4-|k|\t\t 5-vec{k} \t 6-|k|^2"<<endl;
-
-//defining the average
-double avg_pi = 0.;
-double avg_zeta = 0.;
-double avg_phi = 0.;
-
-double max_pi = 0.;
-double max_zeta = 0.;
-double max_phi = 0.;
-
-int norm_kFT_squared = 0.;
-#endif
-
-	//******************************************************************
-	//Write spectra check!
-	// Kessence projection Tmunu Test IC
-	//******************************************************************
-	//  	if (sim.vector_flag == VECTOR_ELLIPTIC)
-	// 		{
-	// 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, chi, pi_k, zeta_integer_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 1 );
-	// 		}
-	//  	else
-	// 		{
-	// 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, chi, pi_k, zeta_integer_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 0 );
-	// 		}
-	//
-// writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
-
-// writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
-
-// writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
-
-
 	while (true)    // main loop
 	{
-    //Kessence
-  	for (x.first(); x.test(); x.next())
-  		{
-        // cout<<"tau: "<<tau<<" z: "<<1./(a) -1.<<endl;
-        //\Phi(n-1) = \Phi(old) and \Phi(n) which will be updated in this loops
-        // Just note that in the first 2-3 steps it does not work since we
-  			phi_old(x) =phi(x);
-  			chi_old(x) =chi(x);
-         // if(x.coord(0)==32 && x.coord(1)==12 && x.coord(2)==32) cout<<"zeta_half: "<<zeta_half(x)<<endl;
-  		}
-#ifdef BACKREACTION_TEST
-      //****************************
-      //****PRINTING AVERAGE OVER TIME
-      //****************************
-      // check_field(  zeta_half, 1. , " H pi_k", numpts3d);
-      avg_pi =average(  pi_k, Hconf(a, fourpiG, cosmo), numpts3d ) ;
-      avg_zeta =average(  zeta_half,1., numpts3d ) ;
-      avg_phi =average(  phi , 1., numpts3d ) ;
-
-      max_pi =maximum(  pi_k, Hconf(a, fourpiG, cosmo), numpts3d ) ;
-      max_zeta =maximum(  zeta_half,1., numpts3d ) ;
-      max_phi =maximum(  phi , 1., numpts3d ) ;
-
-      COUT << scientific << setprecision(8);
-      // if(parallel.isRoot())
-      // {
-        // fprintf(Result_avg,"\n %20.20e %20.20e ", tau, avg ) ;
-      out_avg<<setw(9) << tau <<"\t"<< setw(9) << avg_pi<<"\t"<< setw(9) << avg_zeta<<"\t"<< setw(9) << avg_phi<<"\t"<< setw(9) << 1./a -1.<<endl;
-
-        out_max<<setw(9) << tau <<"\t"<< setw(9) << max_pi<<"\t"<< setw(9) << max_zeta<<"\t"<< setw(9) << max_phi<<endl;
-
-      // }
-      //****************************
-      //****PRINTING REAL SPACE INFO
-      //****************************
-      for (x.first(); x.test(); x.next())
-    	{
-          //NL_test, Printing out average
-        if(x.coord(0)==32 && x.coord(1)==32 && x.coord(2)==32)
-        {
-          // if(parallel.isRoot())
-          // {
-          out_real<<setw(9) << tau <<"\t"<< setw(9) <<pi_k (x)<<"\t"<< setw(9)<<zeta_half (x)<<"\t"<<x<<endl;
-          // }
-        }
-    	}
-      //****************************
-      //FOURIER PRINTING
-      //****************************
-      for(kFT.first();kFT.test();kFT.next())
-      {
-        norm_kFT_squared= kFT.coord(0)*kFT.coord(0) + kFT.coord(1) * kFT.coord(1) + kFT.coord(2) * kFT.coord(2);
-        if(norm_kFT_squared == 1)
-        {
-          out_fourier<<setw(9) << tau <<"\t"<< setw(9) << scalarFT_pi(kFT)<<"\t"<< setw(9)<<scalarFT_zeta_half (kFT)<<"\t"<<kFT<<"\t"<<norm_kFT_squared<<endl;
-        }
-      }
-      //**********************
-      //END ADDED************
-      //**********************
-#endif
-
 #ifdef BENCHMARK
 		cycle_start_time = MPI_Wtime();
 #endif
 		// construct stress-energy tensor
+#ifndef MULTISTEP_PROJECTION	// multistep projection: projection_init is called at the beginning of the particle update
 		projection_init(&source);
 #ifdef HAVE_CLASS
-		if (sim.radiation_flag > 0)
+		if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
 			projection_T00_project(class_background, class_perturbs, class_spectra, source, scalarFT, &plan_source, sim, ic, cosmo, fourpiG, a);
+#endif
 #endif
 		if (sim.gr_flag > 0)
 		{
 			projection_T00_project(&pcls_cdm, &source, a, &phi);
 			if (sim.baryon_flag)
 				projection_T00_project(&pcls_b, &source, a, &phi);
+#ifndef MULTISTEP_PROJECTION	// multistep projection: non-cold species are projected at each of their update steps
 			for (i = 0; i < cosmo.num_ncdm; i++)
 			{
-				if (a >= 1. / (sim.z_switch_deltancdm[i] + 1.))
+				if (a >= 1. / (sim.z_switch_deltancdm[i] + 1.) && sim.numpcl[1+sim.baryon_flag+i] > 0)
 					projection_T00_project(pcls_ncdm+i, &source, a, &phi);
-				else if (sim.radiation_flag == 0)
+				else if (sim.radiation_flag == 0 || (a >= 1. / (sim.z_switch_deltancdm[i] + 1.) && sim.numpcl[1+sim.baryon_flag+i] == 0))
 				{
 					tmp = bg_ncdm(a, cosmo, i);
 					for(x.first(); x.test(); x.next())
 						source(x) += tmp;
 				}
 			}
+#endif
 		}
 		else
 		{
 			scalarProjectionCIC_project(&pcls_cdm, &source);
 			if (sim.baryon_flag)
 				scalarProjectionCIC_project(&pcls_b, &source);
+#ifndef MULTISTEP_PROJECTION	// multistep projection: non-cold species are projected at each of their update steps
 			for (i = 0; i < cosmo.num_ncdm; i++)
 			{
-				if (a >= 1. / (sim.z_switch_deltancdm[i] + 1.))
+				if (a >= 1. / (sim.z_switch_deltancdm[i] + 1.) && sim.numpcl[1+sim.baryon_flag+i] > 0)
 					scalarProjectionCIC_project(pcls_ncdm+i, &source);
 			}
+#endif
 		}
 		projection_T00_comm(&source);
 
+#ifndef VECTOREXTRA
 		if (sim.vector_flag == VECTOR_ELLIPTIC)
 		{
 			projection_init(&Bi);
@@ -641,11 +460,12 @@ int norm_kFT_squared = 0.;
 				projection_T0i_project(&pcls_b, &Bi, &phi);
 			for (i = 0; i < cosmo.num_ncdm; i++)
 			{
-				if (a >= 1. / (sim.z_switch_Bncdm[i] + 1.))
+				if (a >= 1. / (sim.z_switch_Bncdm[i] + 1.) && sim.numpcl[1+sim.baryon_flag+i] > 0)
 					projection_T0i_project(pcls_ncdm+i, &Bi, &phi);
 			}
 			projection_T0i_comm(&Bi);
 		}
+#endif
 
 		projection_init(&Sij);
 		projection_Tij_project(&pcls_cdm, &Sij, a, &phi);
@@ -654,7 +474,10 @@ int norm_kFT_squared = 0.;
 		if (a >= 1. / (sim.z_switch_linearchi + 1.))
 		{
 			for (i = 0; i < cosmo.num_ncdm; i++)
-				projection_Tij_project(pcls_ncdm+i, &Sij, a, &phi);
+			{
+				if (sim.numpcl[1+sim.baryon_flag+i] > 0)
+					projection_Tij_project(pcls_ncdm+i, &Sij, a, &phi);
+			}
 		}
 		projection_Tij_comm(&Sij);
 
@@ -662,36 +485,6 @@ int norm_kFT_squared = 0.;
 		projection_time += MPI_Wtime() - cycle_start_time;
 		ref_time = MPI_Wtime();
 #endif
-
-if (sim.Kess_source_gravity==1)
-{
-// Kessence projection Tmunu
-// In the projection zeta_integer comes, since synched with particles..
- 	if (sim.vector_flag == VECTOR_ELLIPTIC)
-		{
-			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, sim.NL_kessence ,1 );
-		}
- 	else
-		{
-			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, sim.NL_kessence, 0 );
-		}
-
-		for (x.first(); x.test(); x.next())
-		{
-			// The coefficient is because it wanted to to be source according to eq C.2 of Gevolution paper
-			// Note that it is multiplied to dx^2 and is divived by -a^3 because of definition of T00 which is scaled by a^3
-			// We have T00 and Tij according to code's units, but source is important to calculate potentials and moving particles.
-			// There is coefficient between Tij and Sij as source.
-			source(x) += T00_Kess(x);
-			if (sim.vector_flag == VECTOR_ELLIPTIC)for(int 	c=0;c<3;c++)Bi(x,c)+=  T0i_Kess(x,c);
-			for(int c=0;c<6;c++)Sij(x,c)+=(2.) * Tij_Kess(x,c);
-		}
-}
-#ifdef BENCHMARK
-		kessence_update_time += MPI_Wtime() - ref_time;
-		ref_time = MPI_Wtime();
-#endif
-// Kessence projection Tmunu end
 
 		if (sim.gr_flag > 0)
 		{
@@ -768,8 +561,8 @@ if (sim.Kess_source_gravity==1)
 			else
 			{
 				if (cycle == 0)
-					fprintf(outfile, "# background statistics\n# cycle   tau/boxsize    a             conformal H/H0         Hconf_prime       phi(k=0)       T00(k=0)\n");
-				fprintf(outfile, " %6d   %e   %e   %e   %e   %e   %e\n", cycle, tau, a, Hconf(a, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo),Hconf_prime(a_kess, fourpiG, cosmo), scalarFT(kFT).real(), T00hom);
+					fprintf(outfile, "# background statistics\n# cycle   tau/boxsize    a             conformal H/H0  phi(k=0)       T00(k=0)\n");
+				fprintf(outfile, " %6d   %e   %e   %e   %e   %e\n", cycle, tau, a, Hconf(a, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo), scalarFT(kFT).real(), T00hom);
 				fclose(outfile);
 			}
 		}
@@ -808,6 +601,25 @@ if (sim.Kess_source_gravity==1)
 
 		if (sim.vector_flag == VECTOR_ELLIPTIC)
 		{
+#ifdef VECTOREXTRA
+			prepareFTvector(phi, Bi, Sij, 0.5 / (fourpiG * dx * dx));
+			projection_init(&Bi);
+			projection_T0i_project(&pcls_cdm, &Bi, &phi);
+			if (sim.baryon_flag)
+				projection_T0i_project(&pcls_b, &Bi, &phi);
+			for (i = 0; i < cosmo.num_ncdm; i++)
+			{
+				if (a >= 1. / (sim.z_switch_Bncdm[i] + 1.) && sim.numpcl[1+sim.baryon_flag+i] > 0)
+					projection_T0i_project(pcls_ncdm+i, &Bi, &phi);
+			}
+			projection_T0i_comm(&Bi);
+			for (x.first(); x.test(); x.next())
+			{
+				Bi(x, 0) += Sij(x, 0);
+				Bi(x, 1) += Sij(x, 1);
+				Bi(x, 2) += Sij(x, 2);
+			}
+#endif
 #ifdef BENCHMARK
 			ref2_time= MPI_Wtime();
 #endif
@@ -842,8 +654,15 @@ if (sim.Kess_source_gravity==1)
 		ref_time = MPI_Wtime();
 #endif
 
+		// lightcone output
+		if (sim.num_lightcone > 0)
+			writeLightcones(sim, cosmo, fourpiG, a, tau, dtau, dtau_old, dtau_older, maxvel[0], cycle, h5filename + sim.basename_lightcone, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &chi, &Bi, &Sij, &BiFT, &SijFT, &plan_Bi, &plan_Sij, lcbuffer, lclat, done_hij);
+		else done_hij = 0;
 
-
+#ifdef BENCHMARK
+		lightcone_output_time += MPI_Wtime() - ref_time;
+		ref_time = MPI_Wtime();
+#endif
 
 		// snapshot output
 		if (snapcount < sim.num_snapshot && 1. / a < sim.z_snapshot[snapcount] + 1.)
@@ -851,13 +670,18 @@ if (sim.Kess_source_gravity==1)
 			COUT << COLORTEXT_CYAN << " writing snapshot" << COLORTEXT_RESET << " at z = " << ((1./a) - 1.) <<  " (cycle " << cycle << "), tau/boxsize = " << tau << endl;
 
 #ifdef CHECK_B
-			//kessence included
-			writeSnapshots(sim, cosmo, fourpiG, hdr, a, snapcount, h5filename, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
-
+			writeSnapshots(sim, cosmo, fourpiG, a, done_hij, snapcount, h5filename + sim.basename_snapshot,
+        #ifdef HAVE_CLASS
+          class_background, class_perturbs, class_spectra, ic,
+        #endif
+         &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
 #else
-			//kessence included
-			writeSnapshots(sim, cosmo, fourpiG, hdr, a, snapcount, h5filename, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij);
-			#endif
+			writeSnapshots(sim, cosmo, fourpiG, a, done_hij, snapcount, h5filename + sim.basename_snapshot,
+        #ifdef HAVE_CLASS
+          class_background, class_perturbs, class_spectra, ic,
+        #endif
+         &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij);
+#endif
 
 			snapcount++;
 		}
@@ -870,52 +694,190 @@ if (sim.Kess_source_gravity==1)
 		// power spectra
 		if (pkcount < sim.num_pk && 1. / a < sim.z_pk[pkcount] + 1.)
 		{
+
+#ifdef COSIRA_HACK
+			if (sim.gr_flag > 0)
+			{
+				COUT << COLORTEXT_CYAN << " writing power spectra" << COLORTEXT_RESET << " at z = " << ((1./a) - 1.) <<  " (cycle " << cycle << "), tau/boxsize = " << tau << endl;
+
+        writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
+
+				writeSpectra(sim, cosmo, fourpiG, a, pkcount,
+#ifdef HAVE_CLASS
+					class_background, class_perturbs, class_spectra, ic,
+#endif
+					&pcls_cdm, &pcls_b, pcls_ncdm, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij
+#ifdef CHECK_B
+					, &Bi_check, &BiFT_check, &plan_Bi_check
+#endif
+				);
+
+				pkcount++;
+
+				COUT << " COSIRA hack: computing gauge transformation..." << endl;
+
+				long tmp2;
+				float * pcldata = NULL;
+				gsl_spline * tk_d1 = NULL;
+				gsl_spline * tk_d2 = NULL;
+				gsl_spline * tk_t1 = NULL;
+				gsl_spline * tk_t2 = NULL;
+				double * temp1 = NULL;
+				Field<Real> * psource = &source;
+
+				loadTransferFunctions(class_background, class_perturbs, class_spectra, tk_d1, tk_t1, "tot", sim.boxsize, (1. / a) - 1., cosmo.h);
+				loadTransferFunctions(class_background, class_perturbs, class_spectra, tk_d2, tk_t2, NULL, sim.boxsize, (1. / a) - 1., cosmo.h);
+
+				temp1 = (double *) malloc(tk_d1->size * sizeof(double));
+
+				for (i = 0; i < tk_d2->size; i++)
+					temp1[i] = -tk_d2->y[i] * M_PI * sqrt(Pk_primordial(tk_d2->x[i] * cosmo.h / sim.boxsize, ic) / tk_d2->x[i]) / tk_d2->x[i];
+				gsl_spline_free(tk_t2);
+				tk_t2 = gsl_spline_alloc(gsl_interp_cspline, tk_d2->size);
+				gsl_spline_init(tk_t2, tk_d2->x, temp1, tk_d2->size);
+				gsl_spline_free(tk_d2);
+
+				tmp = 3. * Hconf(a, fourpiG, cosmo)  * M_PI;
+
+				for (i = 0; i < tk_d1->size; i++)
+					temp1[i] = 3. * tk_t2->y[i] - tmp * tk_t1->y[i] * sqrt(Pk_primordial(tk_d1->x[i] * cosmo.h / sim.boxsize, ic) / tk_d1->x[i]) / tk_d1->x[i] / tk_d1->x[i] / tk_d1->x[i];
+
+				gsl_spline_free(tk_d1);
+				gsl_spline_free(tk_t1);
+				tk_d1 = gsl_spline_alloc(gsl_interp_cspline, tk_t2->size);
+				gsl_spline_init(tk_d1, tk_t2->x, temp1, tk_t2->size);
+				gsl_spline_free(tk_t2);
+				free(temp1);
+
+				if (ic.flags & ICFLAG_CORRECT_DISPLACEMENT)
+				{
+					loadHomogeneousTemplate(ic.pclfile[0], tmp2, pcldata);
+					generateCICKernel(source, tmp2, pcldata, ic.numtile[0]);
+					free(pcldata);
+				}
+				else
+					generateCICKernel(source);
+				plan_source.execute(FFT_FORWARD);
+				generateDisplacementField(scalarFT, 0., tk_d1, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE);
+				gsl_spline_free(tk_d1);
+				plan_source.execute(FFT_BACKWARD);
+				source.updateHalo();
+
+				source.saveHDF5(h5filename + "_displacement.h5");
+
+				i = MAX;
+				pcls_cdm.moveParticles(displace_pcls_ic_basic, 1., &psource, 1, NULL, &tmp, &i, 1);
+				COUT << " Poisson gauge -> N-body gauge, cdm particles maximum displacement = " << tmp * sim.numpts << " lattice units." << endl;
+				sim.gr_flag = 0;
+			}
+#endif // COSIRA_HACK
+#ifdef NMGAUGE_HACK
+			if (sim.gr_flag == 0)
+			{
+				COUT << COLORTEXT_CYAN << " writing power spectra" << COLORTEXT_RESET << " at z = " << ((1./a) - 1.) <<  " (cycle " << cycle << "), tau/boxsize = " << tau << endl;
+        writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
+
+				writeSpectra(sim, cosmo, fourpiG, a, pkcount,
+#ifdef HAVE_CLASS
+					class_background, class_perturbs, class_spectra, ic,
+#endif
+					&pcls_cdm, &pcls_b, pcls_ncdm, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij
+#ifdef CHECK_B
+					, &Bi_check, &BiFT_check, &plan_Bi_check
+#endif
+				);
+
+				pkcount++;
+
+				COUT << " Nm-gauge hack: computing gauge transformation..." << endl;
+
+				long tmp2;
+				float * pcldata = NULL;
+				gsl_spline * tk_d1 = NULL;
+				gsl_spline * tk_t1 = NULL;
+				double * temp1 = NULL;
+				Field<Real> * psource = &source;
+
+				loadTransferFunctions("gaugetrafo.dat", tk_d1, tk_t1, "L", sim.boxsize, cosmo.h);
+
+				temp1 = (double *) malloc(tk_d1->size * sizeof(double));
+
+				for (i = 0; i < tk_d1->size; i++)
+					temp1[i] = tk_d1->y[i] * M_PI * sqrt(Pk_primordial(tk_d1->x[i] * cosmo.h / sim.boxsize, ic) / tk_d1->x[i]) * cosmo.h / sim.boxsize;
+				gsl_spline_free(tk_t1);
+				tk_t1 = gsl_spline_alloc(gsl_interp_cspline, tk_d1->size);
+				gsl_spline_init(tk_t1, tk_d1->x, temp1, tk_d1->size);
+				gsl_spline_free(tk_d1);
+				free(temp1);
+
+				if (ic.flags & ICFLAG_CORRECT_DISPLACEMENT)
+				{
+					loadHomogeneousTemplate(ic.pclfile[0], tmp2, pcldata);
+					generateCICKernel(source, tmp2, pcldata, ic.numtile[0]);
+					free(pcldata);
+				}
+				else
+					generateCICKernel(source);
+				plan_source.execute(FFT_FORWARD);
+				generateDisplacementField(scalarFT, 0., tk_t1, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE);
+				gsl_spline_free(tk_t1);
+				plan_source.execute(FFT_BACKWARD);
+				source.updateHalo();
+
+				i = MAX;
+				pcls_cdm.moveParticles(displace_pcls_ic_basic, 1., &psource, 1, NULL, &tmp, &i, 1);
+				COUT << " Newtonian motion gauge -> N-body gauge, cdm particles maximum displacement = " << tmp * sim.numpts << " lattice units." << endl;
+			}
+#endif // NMGAUGE_HACK
 			COUT << COLORTEXT_CYAN << " writing power spectra" << COLORTEXT_RESET << " at z = " << ((1./a) - 1.) <<  " (cycle " << cycle << "), tau/boxsize = " << tau << endl;
 
-#ifdef CHECK_B
-			//kessence included
-			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
-#else
-			//kessence included
-			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
-
-      writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
-
-
+			writeSpectra(sim, cosmo, fourpiG, a, pkcount,
+#ifdef HAVE_CLASS
+				class_background, class_perturbs, class_spectra, ic,
 #endif
+				&pcls_cdm, &pcls_b, pcls_ncdm, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij
+#ifdef CHECK_B
+				, &Bi_check, &BiFT_check, &plan_Bi_check
+#endif
+			);
 
 			pkcount++;
 		}
 
-    // cout<<"EXACT_OUTPUT_REDSHIFTS: "<<EXACT_OUTPUT_REDSHIFTS<<endl;
-    #ifdef EXACT_OUTPUT_REDSHIFTS
-    		tmp = a;
-    		rungekutta4bg(tmp, fourpiG, cosmo, 0.5 * dtau);
-    		rungekutta4bg(tmp, fourpiG, cosmo, 0.5 * dtau);
+#ifdef EXACT_OUTPUT_REDSHIFTS
+		tmp = a;
+		rungekutta4bg(tmp, fourpiG, cosmo, 0.5 * dtau);
+		rungekutta4bg(tmp, fourpiG, cosmo, 0.5 * dtau);
 
-    		if (pkcount < sim.num_pk && 1. / tmp < sim.z_pk[pkcount] + 1.)
-    		{
-    			writeSpectra(sim, cosmo, fourpiG, a, pkcount,
-    #ifdef HAVE_CLASS
-    					class_background, class_perturbs, class_spectra, ic,
-    #endif
-    					&pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij
-    #ifdef CHECK_B
-    					, &Bi_check, &BiFT_check, &plan_Bi_check
-    #endif
-		    );
-    writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
+		if (pkcount < sim.num_pk && 1. / tmp < sim.z_pk[pkcount] + 1.)
+		{
+      writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
 
-
-    		}
-    #endif // EXACT_OUTPUT_REDSHIFTS
-
+			writeSpectra(sim, cosmo, fourpiG, a, pkcount,
+#ifdef HAVE_CLASS
+					class_background, class_perturbs, class_spectra, ic,
+#endif
+					&pcls_cdm, &pcls_b, pcls_ncdm, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij
+#ifdef CHECK_B
+					, &Bi_check, &BiFT_check, &plan_Bi_check
+#endif
+			);
+		}
+#endif // EXACT_OUTPUT_REDSHIFTS
 
 #ifdef BENCHMARK
 		spectra_output_time += MPI_Wtime() - ref_time;
 #endif
 
-		if (pkcount >= sim.num_pk && snapcount >= sim.num_snapshot) break; // simulation complete
+		if (pkcount >= sim.num_pk && snapcount >= sim.num_snapshot)
+		{
+			for (i = 0; i < sim.num_lightcone; i++)
+			{
+				if (sim.lightcone[i].z + 1. < 1. / a)
+					i = sim.num_lightcone + 1;
+			}
+			if (i == sim.num_lightcone) break; // simulation complete
+		}
 
 		// compute number of step subdivisions for particle updates
 		numsteps = 1;
@@ -961,71 +923,22 @@ if (sim.Kess_source_gravity==1)
 			COUT << endl;
 		}
 
-		//Kessence
-#ifdef BENCHMARK
-		ref_time = MPI_Wtime();
+#ifdef MULTISTEP_PROJECTION		// multistep projection: non-cold species are projected at each of their update steps
+		projection_init(&source);
+#ifdef HAVE_CLASS
+		if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
+		{
+			tmp = a;
+			for (j = 0; j < 2 * numsteps; j++)
+				rungekutta4bg(tmp, fourpiG, cosmo, 0.5 * dtau / numsteps);
+			projection_T00_project(class_background, class_perturbs, class_spectra, source, scalarFT, &plan_source, sim, ic, cosmo, fourpiG, tmp);
+		}
 #endif
-        for (x.first(); x.test(); x.next())
-    		{
-    			phi_prime(x) =(phi(x)-phi_old(x))/(dtau);
-    		}
-        // We just need to update halo when we want to calculate spatial derivative or use some neibours at the same time! So here wo do not nee to update halo for phi_prime!
-//**********************
-//Kessence - LeapFrog:START
-//**********************
-  double a_kess=a;
-  //First we update zeta_half to have it at -1/2 just in the first loop
-  if(cycle==0)
-  {
-    for (i=0;i<sim.nKe_numsteps;i++)
+#endif
+    for (x.first(); x.test(); x.next())
     {
-      //computing zeta_half(-1/2) and zeta_int(-1) but we do not work with zeta(-1)
-      update_zeta(-dtau/ (2. * sim.nKe_numsteps) , dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_prime(a_kess, fourpiG, cosmo), sim.NL_kessence);
-      // zeta_integer.updateHalo();
-      zeta_half.updateHalo();
+      phi_prime(x) =(phi(x)-phi_old(x))/(dtau);
     }
-  }
-
- //Then fwe start the main loop zeta is updated to get zeta(n+1/2) from pi(n) and zeta(n-1/2)
-	for (i=0;i<sim.nKe_numsteps;i++)
-	{
-
-    //********************************************************************************
-    //Updating zeta_integer to get zeta_integer(n+1/2) and zeta_integer(n+1), in the first loop is getting zeta_integer(1/2) and zeta_integer(1)
-    // In sum: zeta_integer(n+1/2) = zeta_integer(n-1/2)+ zeta_integer'(n)dtau which needs background to be at n with then
-    //Note that here for zeta_integer'(n) we need background to be at n and no need to update it.
-    //\zeta_integer(n+1/2) = \zeta_integer(n-1/2) + \zeta_integer'(n)  dtau
-    //We also update zeta_int from n to n+1
-    //********************************************************************************
-    update_zeta(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_prime(a_kess, fourpiG, cosmo), sim.NL_kessence);
-    // zeta_integer.updateHalo();
-    zeta_half.updateHalo();
-    //********************************************************************************
-    //Since we have pi(n+1)=pi(n) + pi'(n+1/2), and in pi'(n+1/2) we have H(n+1/2) we update the background before updating the pi to have H(n+1/2), Moreover zeta(n+1) = zeta(n+1/2) + zeta'(n+1/2), so we put zeta_int updating in the pi updating!
-    //********************************************************************************
-    rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0);
-    //********************************************************************************
-    //we update pi to have it at n+1 (at first loop from the value at (0) and the value of zeta_integer at 1/2 and H(n+1/2) we update pi at (1))
-    //In the pi update we also update zeta_int because we need the values of a_kess and H_kess at step n+1/2
-    //By the below update we get pi(n+1) and zeta(n+1)
-    //********************************************************************************
-    update_pi_k(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_prime(a_kess, fourpiG, cosmo), sim.NL_kessence); // H_old is updated here in the function
-		pi_k.updateHalo();
-
-    //********************************************************************************
-    // Now we have pi(n+1) and a_kess(n+1/2) so we update background by halfstep to have a_kess(n+1)
-    //********************************************************************************
-    rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0 );
-
-	}
-#ifdef BENCHMARK
-    kessence_update_time += MPI_Wtime() - ref_time;
-    ref_time = MPI_Wtime();
-#endif
-//**********************
-//Kessence - LeapFrog: End
-//**********************
-
 		for (j = 0; j < numsteps; j++) // particle update
 		{
 #ifdef BENCHMARK
@@ -1043,9 +956,9 @@ if (sim.Kess_source_gravity==1)
 				}
 				else
 				{
-					maxvel[0] = pcls_cdm.updateVel(update_q_Newton, (dtau + dtau_old) / 2., update_cdm_fields, ((sim.radiation_flag > 0 && a < 1. / (sim.z_switch_linearchi + 1.)) ? 2 : 1), f_params);
+					maxvel[0] = pcls_cdm.updateVel(update_q_Newton, (dtau + dtau_old) / 2., update_cdm_fields, ((sim.radiation_flag + sim.fluid_flag > 0 && a < 1. / (sim.z_switch_linearchi + 1.)) ? 2 : 1), f_params);
 					if (sim.baryon_flag)
-						maxvel[1] = pcls_b.updateVel(update_q_Newton, (dtau + dtau_old) / 2., update_b_fields, ((sim.radiation_flag > 0 && a < 1. / (sim.z_switch_linearchi + 1.)) ? 2 : 1), f_params);
+						maxvel[1] = pcls_b.updateVel(update_q_Newton, (dtau + dtau_old) / 2., update_b_fields, ((sim.radiation_flag + sim.fluid_flag > 0 && a < 1. / (sim.z_switch_linearchi + 1.)) ? 2 : 1), f_params);
 				}
 
 #ifdef BENCHMARK
@@ -1055,12 +968,14 @@ if (sim.Kess_source_gravity==1)
 
 			for (i = 0; i < cosmo.num_ncdm; i++)
 			{
+				if (sim.numpcl[1+sim.baryon_flag+i] == 0) continue;
+
 				if (j % (numsteps / numsteps_ncdm[i]) == 0)
 				{
 					if (sim.gr_flag > 0)
 						maxvel[i+1+sim.baryon_flag] = pcls_ncdm[i].updateVel(update_q, (dtau + dtau_old) / 2. / numsteps_ncdm[i], update_ncdm_fields, (1. / a < ic.z_relax + 1. ? 3 : 2), f_params);
 					else
-						maxvel[i+1+sim.baryon_flag] = pcls_ncdm[i].updateVel(update_q_Newton, (dtau + dtau_old) / 2. / numsteps_ncdm[i], update_ncdm_fields, ((sim.radiation_flag > 0 && a < 1. / (sim.z_switch_linearchi + 1.)) ? 2 : 1), f_params);
+						maxvel[i+1+sim.baryon_flag] = pcls_ncdm[i].updateVel(update_q_Newton, (dtau + dtau_old) / 2. / numsteps_ncdm[i], update_ncdm_fields, ((sim.radiation_flag + sim.fluid_flag > 0 && a < 1. / (sim.z_switch_linearchi + 1.)) ? 2 : 1), f_params);
 
 #ifdef BENCHMARK
 					update_q_count++;
@@ -1074,6 +989,8 @@ if (sim.Kess_source_gravity==1)
 
 			for (i = 0; i < cosmo.num_ncdm; i++)
 			{
+				if (sim.numpcl[1+sim.baryon_flag+i] == 0) continue;
+
 				if (numsteps > 1 && ((numsteps_ncdm[i] == 1 && j == numsteps / 2) || (numsteps_ncdm[i] == numsteps / 2 && j % 2 > 0)))
 				{
 					if (sim.gr_flag > 0)
@@ -1084,6 +1001,28 @@ if (sim.Kess_source_gravity==1)
 						moveParts_count++;
 						moveParts_time += MPI_Wtime() - ref2_time;
 						ref2_time = MPI_Wtime();
+#endif
+#ifdef MULTISTEP_PROJECTION		// multistep projection: non-cold species are projected at each of their update steps
+					if (sim.radiation_flag == 0 || a >= 1. / (sim.z_switch_deltancdm[i] + 1.))
+					{
+						if (sim.gr_flag > 0)
+						{
+							tmp = a;
+							rungekutta4bg(tmp, fourpiG, cosmo, 0.5 * dtau / numsteps);
+							projection_T00_project(pcls_ncdm+i, &source, tmp, &phi, 1. / (double) numsteps_ncdm[i]);
+						}
+						else
+						{
+							tmp = pcls_ncdm[i].parts_info()->mass;
+							pcls_ncdm[i].parts_info()->mass /= (double) numsteps_ncdm[i];
+							scalarProjectionCIC_project(pcls_ncdm+i, &source);
+							pcls_ncdm[i].parts_info()->mass = tmp;
+						}
+					}
+#ifdef BENCHMARK
+						projection_time += MPI_Wtime() - ref2_time;
+						ref2_time = MPI_Wtime();
+#endif
 #endif
 				}
 			}
@@ -1122,6 +1061,8 @@ if (sim.Kess_source_gravity==1)
 			f_params[1] = a * a * sim.numpts;
 			for (i = 0; i < cosmo.num_ncdm; i++)
 			{
+				if (sim.numpcl[1+sim.baryon_flag+i] == 0) continue;
+
 				if (numsteps_ncdm[i] == numsteps)
 				{
 					if (sim.gr_flag > 0)
@@ -1132,6 +1073,28 @@ if (sim.Kess_source_gravity==1)
 						moveParts_count++;
 						moveParts_time += MPI_Wtime() - ref2_time;
 						ref2_time = MPI_Wtime();
+#endif
+#ifdef MULTISTEP_PROJECTION		// multistep projection: non-cold species are projected at each of their update steps
+					if (sim.radiation_flag == 0 || a >= 1. / (sim.z_switch_deltancdm[i] + 1.))
+					{
+						if (sim.gr_flag > 0)
+						{
+							tmp = a;
+							rungekutta4bg(tmp, fourpiG, cosmo, 0.5 * dtau / numsteps);
+							projection_T00_project(pcls_ncdm+i, &source, tmp, &phi, 1. / (double) numsteps_ncdm[i]);
+						}
+						else
+						{
+							tmp = pcls_ncdm[i].parts_info()->mass;
+							pcls_ncdm[i].parts_info()->mass /= (double) numsteps_ncdm[i];
+							scalarProjectionCIC_project(pcls_ncdm+i, &source);
+							pcls_ncdm[i].parts_info()->mass = tmp;
+						}
+					}
+#ifdef BENCHMARK
+						projection_time += MPI_Wtime() - ref2_time;
+						ref2_time = MPI_Wtime();
+#endif
 #endif
 				}
 			}
@@ -1169,11 +1132,11 @@ if (sim.Kess_source_gravity==1)
 				if (sim.vector_flag == VECTOR_ELLIPTIC)
 				{
 					plan_Bi_check.execute(FFT_BACKWARD);
-					hibernate(sim, ic, cosmo, &pcls_cdm, &pcls_b, pcls_ncdm, phi, pi_k, zeta_half, chi, Bi_check, a, tau, dtau, cycle);
+					hibernate(sim, ic, cosmo, &pcls_cdm, &pcls_b, pcls_ncdm, phi, chi, Bi_check, a, tau, dtau, cycle);
 				}
 				else
 #endif
-				hibernate(sim, ic, cosmo, &pcls_cdm, &pcls_b, pcls_ncdm, phi, pi_k, zeta_half, chi, Bi, a, tau, dtau, cycle);
+				hibernate(sim, ic, cosmo, &pcls_cdm, &pcls_b, pcls_ncdm, phi, chi, Bi, a, tau, dtau, cycle);
 				break;
 			}
 		}
@@ -1187,14 +1150,15 @@ if (sim.Kess_source_gravity==1)
 			if (sim.vector_flag == VECTOR_ELLIPTIC)
 			{
 				plan_Bi_check.execute(FFT_BACKWARD);
-				hibernate(sim, ic, cosmo, &pcls_cdm, &pcls_b, pcls_ncdm, phi, pi_k, zeta_half, chi, Bi, a, tau, dtau, cycle, restartcount);
+				hibernate(sim, ic, cosmo, &pcls_cdm, &pcls_b, pcls_ncdm, phi, chi, Bi_check, a, tau, dtau, cycle, restartcount);
 			}
 			else
 #endif
-			hibernate(sim, ic, cosmo, &pcls_cdm, &pcls_b, pcls_ncdm, phi, pi_k, zeta_half, chi, Bi, a, tau, dtau, cycle, restartcount);
+			hibernate(sim, ic, cosmo, &pcls_cdm, &pcls_b, pcls_ncdm, phi, chi, Bi, a, tau, dtau, cycle, restartcount);
 			restartcount++;
 		}
 
+		dtau_older = dtau_old;
 		dtau_old = dtau;
 
 		if (sim.Cf * dx < sim.steplimit / Hconf(a, fourpiG, cosmo))
@@ -1211,12 +1175,105 @@ if (sim.Kess_source_gravity==1)
 
 	COUT << COLORTEXT_GREEN << " simulation complete." << COLORTEXT_RESET << endl;
 
+#ifdef BENCHMARK
+		ref_time = MPI_Wtime();
+#endif
+
+#ifndef HAVE_HEALPIX
+	if (sim.num_lightcone > 0) // metric lightcone output
+	{
+		for (i = 0, j = 0; i < sim.num_lightcone; i++)
+		{
+			j |= sim.out_lightcone[i];
+		}
+
+		if (j & MASK_PHI)
+		{
+			COUT << COLORTEXT_CYAN << " writing phi lightcone data" << COLORTEXT_RESET << endl;
+
+			for (i = 0; i < LIGHTCONE_THICKNESS; i++)
+			{
+				if (LIGHTCONE_THICKNESS > 1)
+					sprintf(filename, "_phi_%d.h5", i);
+				else
+					sprintf(filename, "_phi.h5");
+
+				lcbuffer[LIGHTCONE_THICKNESS*LIGHTCONE_PHI_OFFSET+i]->saveHDF5(h5filename + sim.basename_lightcone + filename);
+
+				delete lcbuffer[LIGHTCONE_THICKNESS*LIGHTCONE_PHI_OFFSET+i];
+			}
+
+			delete lclat[LIGHTCONE_PHI_OFFSET];
+		}
+
+		if (j & MASK_CHI)
+		{
+			COUT << COLORTEXT_CYAN << " writing chi lightcone data" << COLORTEXT_RESET << endl;
+
+			for (i = 0; i < LIGHTCONE_THICKNESS; i++)
+			{
+				if (LIGHTCONE_THICKNESS > 1)
+					sprintf(filename, "_chi_%d.h5", i);
+				else
+					sprintf(filename, "_chi.h5");
+
+				lcbuffer[LIGHTCONE_THICKNESS*LIGHTCONE_CHI_OFFSET+i]->saveHDF5(h5filename + sim.basename_lightcone + filename);
+
+				delete lcbuffer[LIGHTCONE_THICKNESS*LIGHTCONE_CHI_OFFSET+i];
+			}
+
+			delete lclat[LIGHTCONE_CHI_OFFSET];
+		}
+
+		if (j & MASK_B)
+		{
+			COUT << COLORTEXT_CYAN << " writing B lightcone data" << COLORTEXT_RESET << endl;
+
+			for (i = 0; i < 3*LIGHTCONE_THICKNESS; i++)
+			{
+				if (LIGHTCONE_THICKNESS > 1)
+					sprintf(filename, "_B%d_%d.h5", (i%3)+1, i/3);
+				else
+					sprintf(filename, "_B%d.h5", i+1);
+
+				lcbuffer[LIGHTCONE_THICKNESS*LIGHTCONE_B_OFFSET+i]->saveHDF5(h5filename + sim.basename_lightcone + filename);
+
+				delete lcbuffer[LIGHTCONE_THICKNESS*LIGHTCONE_B_OFFSET+i];
+			}
+
+			delete lclat[LIGHTCONE_B_OFFSET];
+		}
+
+		if (j & MASK_HIJ)
+		{
+			COUT << COLORTEXT_CYAN << " writing hij lightcone data" << COLORTEXT_RESET << endl;
+
+			for (i = 0; i < 5*LIGHTCONE_THICKNESS; i++)
+			{
+				if (LIGHTCONE_THICKNESS > 1)
+					sprintf(filename, "_h%d%d_%d.h5", ((i%5) < 3 ? 1 : 2), (i%5) + ((i%5) < 3 ? 1 : -1), i/5);
+				else
+					sprintf(filename, "_h%d%d.h5", (i < 3 ? 1 : 2), i + (i < 3 ? 1 : -1));
+
+				lcbuffer[LIGHTCONE_THICKNESS*LIGHTCONE_HIJ_OFFSET+i]->saveHDF5(h5filename + sim.basename_lightcone + filename);
+
+				delete lcbuffer[LIGHTCONE_THICKNESS*LIGHTCONE_HIJ_OFFSET+i];
+			}
+
+			delete lclat[LIGHTCONE_HIJ_OFFSET];
+		}
+	}
+#endif
+
 #ifdef HAVE_CLASS
-	if (sim.radiation_flag > 0)
+#ifndef COSIRA_HACK
+	if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
+#endif // COSIRA_HACK
 		freeCLASSstructures(class_background, class_perturbs, class_spectra);
 #endif
 
 #ifdef BENCHMARK
+	lightcone_output_time += MPI_Wtime() - ref_time;
 	run_time = MPI_Wtime() - start_time;
 
 	parallel.sum(run_time);
@@ -1224,8 +1281,8 @@ if (sim.Kess_source_gravity==1)
 	parallel.sum(projection_time);
 	parallel.sum(snapshot_output_time);
 	parallel.sum(spectra_output_time);
+	parallel.sum(lightcone_output_time);
 	parallel.sum(gravity_solver_time);
-  parallel.sum(kessence_update_time);
 	parallel.sum(fft_time);
 	parallel.sum(update_q_time);
 	parallel.sum(moveParts_time);
@@ -1238,11 +1295,9 @@ if (sim.Kess_source_gravity==1)
 	COUT << "main loop        : "  << hourMinSec(cycle_time) << " ; " << 100. * cycle_time/run_time <<"%."<<endl;
 
 	COUT << "----------- main loop: components -----------"<<endl;
-
 	COUT << "projections                : "<< hourMinSec(projection_time) << " ; " << 100. * projection_time/cycle_time <<"%."<<endl;
-  //Kessence update
-  COUT << "Kessence_update                : "<< hourMinSec(kessence_update_time) << " ; " << 100. * kessence_update_time/cycle_time <<"%."<<endl;
 	COUT << "snapshot outputs           : "<< hourMinSec(snapshot_output_time) << " ; " << 100. * snapshot_output_time/cycle_time <<"%."<<endl;
+	COUT << "lightcone outputs          : "<< hourMinSec(lightcone_output_time) << " ; " << 100. * lightcone_output_time/cycle_time <<"%."<<endl;
 	COUT << "power spectra outputs      : "<< hourMinSec(spectra_output_time) << " ; " << 100. * spectra_output_time/cycle_time <<"%."<<endl;
 	COUT << "update momenta (count: "<<update_q_count <<"): "<< hourMinSec(update_q_time) << " ; " << 100. * update_q_time/cycle_time <<"%."<<endl;
 	COUT << "move particles (count: "<< moveParts_count <<"): "<< hourMinSec(moveParts_time) << " ; " << 100. * moveParts_time/cycle_time <<"%."<<endl;

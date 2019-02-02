@@ -1,55 +1,109 @@
-# gevolution-1.1
+CLASS: Cosmic Linear Anisotropy Solving System  {#mainpage}
+==============================================
 
-Copyright (c) 2015-2016 Julian Adamek
-(Université de Genève & Observatoire de Paris)
+Authors: Julien Lesgourgues and Thomas Tram
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-  
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
-  
-**The Software is provided "as is", without warranty of any kind, expressed or
-implied, including but not limited to the warranties of merchantability,
-fitness for a particular purpose and noninfringement. In no event shall the
-authors or copyright holders be liable for any claim, damages or other
-liability, whether in an action of contact, tort or otherwise, arising from,
-out of or in connection with the Software or the use or other dealings in
-the Software.**
+with several major inputs from other people, especially Benjamin
+Audren, Simon Prunet, Jesus Torrado, Miguel Zumalacarregui, Francesco
+Montanari, etc.
 
-## Compilation and usage
+For download and information, see http://class-code.net
 
-Before compilation, make sure that all required external libraries are
-installed:
 
-* LATfield2 [version 1.1](https://github.com/daverio/LATfield2.git)
-* FFTW version 3
-* GNU Scientific Library (GSL) including CBLAS
-* HDF5
+Compiling CLASS and getting started
+-----------------------------------
 
-Make sure that the include paths are set properly, or add them to the
-makefile. Also check the compiler settings in the makefile. The code is
-compiled by typing:
+(the information below can also be found on the webpage, just below
+the download button)
 
-    make
+After downloading the code, unpack the archive (tar -zxvf
+class_v*.tar.gz), go to the class directory (cd class_v*/) and compile
+(make clean; make class). If the first compilation attempt fails, you
+may need to open the Makefile and adapt the name of the compiler
+(default: gcc), of the optimization flag (default: -O4) and of the
+OpenMP flag (default: -fopenmp; this flag is facultative, you are free
+to compile without OpenMP if you don't want parallel execution; note
+that you need the version 4.2 or higher of gcc to be able to compile
+with -fopenmp). Several details on the CLASS compilation are given on
+the wiki page
 
-A typical command to run a simulation looks like this:
+https://github.com/lesgourg/class_public/wiki/Installation
 
-    mpirun -np 16 ./gevolution -n 4 -m 4 -s settings.ini
+(in particular, for compiling on Mac 10.9 Mavericks).
 
-For further information, please refer to the User Manual (manual.pdf)
+To check that the code runs, type:
 
-## Credits
+    ./class explanatory.ini
 
-If you use gevolution for scientific work, we kindly ask you to cite
-*Adamek J., Daverio D., Durrer R., and Kunz M., Nature Phys. 12, 346 (2016)*
-in your publications.
+The explanatory.ini file is a reference input file, containing and
+explaining the use of all possible input parameters. We recommend to
+read it, to keep it unchanged (for future reference), and to create
+for your own purposes some shorter input files, containing only the
+input lines which are useful for you. Input files must have a *.ini
+extension.
 
-For bug reports and other important feedback you can contact the authors,
-julian.adamek@obspm.fr (for queries related to gevolution)
-developers@latfield.org (for queries related to the LATfield2 library)
+If you want to play with the precision/speed of the code, you can use
+one of the provided precision files (e.g. cl_permille.pre) or modify
+one of them, and run with two input files, for instance:
 
+    ./class test.ini cl_permille.pre
+
+The automatically-generated documentation is located in
+
+    doc/manual/html/index.html
+    doc/manual/CLASS_manual.pdf
+
+On top of that, if you wish to modify the code, you will find lots of
+comments directly in the files.
+
+Python
+------
+
+To use CLASS from python, or ipython notebooks, or from the Monte
+Python parameter extraction code, you need to compile not only the
+code, but also its python wrapper. This can be done by typing just
+'make' instead of 'make class'. More details on the wrapper and its
+compilation are found on the wiki page
+
+https://github.com/lesgourg/class_public/wiki
+
+Plotting utility
+----------------
+
+Since version 2.3, the package includes an improved plotting script
+called CPU.py (Class Plotting Utility), written by Benjamin Audren and
+Jesus Torrado. It can plot the Cl's, the P(k) or any other CLASS
+output, for one or several models, as well as their ratio or percentage
+difference. The syntax and list of available options is obtained by
+typing 'pyhton CPU.py --help'. There is a similar script for MATLAB,
+written by Thomas Tram. To use it, once in MATLAB, type 'help
+plot_CLASS_output.m'
+
+Developing the code
+--------------------
+
+If you want to develop the code, we suggest that you download it from
+the github webpage
+
+https://github.com/lesgourg/class_public
+
+rather than from class-code.net. Then you will enjoy all the feature
+of git repositories. You can even develop your own branch and get it
+merged to the public distribution. For related instructions, check
+
+https://github.com/lesgourg/class_public/wiki/Public-Contributing
+
+Using the code
+--------------
+
+You can use CLASS freely, provided that in your publications, you cite
+at least the paper `CLASS II: Approximation schemes <http://arxiv.org/abs/1104.2933>`_. Feel free to cite more CLASS papers!
+
+Support
+-------
+
+To get support, please open a new issue on the
+
+https://github.com/lesgourg/class_public
+
+webpage!
