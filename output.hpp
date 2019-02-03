@@ -350,20 +350,20 @@ if (sim.out_snapshot & MASK_T_KESS)
 	// COUT<<"output kesssence energy"<<endl;
 	#ifdef EXTERNAL_IO
 			T00_Kess->saveHDF5_server_write(NUMBER_OF_IO_FILES);
-			T0i_Kess->saveHDF5_server_write(NUMBER_OF_IO_FILES);
-			Tij_Kess->saveHDF5_server_write(NUMBER_OF_IO_FILES);
+			// T0i_Kess->saveHDF5_server_write(NUMBER_OF_IO_FILES);
+			// Tij_Kess->saveHDF5_server_write(NUMBER_OF_IO_FILES);
 	#else
 			if (sim.downgrade_factor > 1)
 			{
 				T00_Kess->saveHDF5_coarseGrain3D(h5filename + filename + "_T00_Kess.h5", sim.downgrade_factor);
-				T0i_Kess->saveHDF5_coarseGrain3D(h5filename + filename + "_T0i_Kess.h5", sim.downgrade_factor);
-				Tij_Kess->saveHDF5_coarseGrain3D(h5filename + filename + "_Tij_Kess.h5", sim.downgrade_factor);
+				// T0i_Kess->saveHDF5_coarseGrain3D(h5filename + filename + "_T0i_Kess.h5", sim.downgrade_factor);
+				// Tij_Kess->saveHDF5_coarseGrain3D(h5filename + filename + "_Tij_Kess.h5", sim.downgrade_factor);
 			}
 			else
 			{
 				T00_Kess->saveHDF5(h5filename + filename + "_T00_Kess.h5");
-				T0i_Kess->saveHDF5(h5filename + filename + "_T0i_Kess.h5");
-				Tij_Kess->saveHDF5(h5filename + filename + "_Tij_Kess.h5");
+				// T0i_Kess->saveHDF5(h5filename + filename + "_T0i_Kess.h5");
+				// Tij_Kess->saveHDF5(h5filename + filename + "_Tij_Kess.h5");
 			}
 	#endif
 }
@@ -679,7 +679,7 @@ ioserver.closeOstream();
 
     //Kessence Cross Power delta_kess * delta_m
     // cout<<"MASK_DELTAKESS_DELTA: "<<MASK_DELTAKESS_DELTA<<"MASK_Delta_KESS: "<<MASK_Delta_KESS<<endl;
-    if (sim.out_pk & MASK_DELTAKESS_DELTA  && sim.out_pk & MASK_Delta_KESS)
+    if ( sim.gr_flag > 0 && sim.out_pk & MASK_Delta_KESS && sim.out_pk & MASK_DELTAKESS_DELTA  && sim.out_pk & MASK_Delta_KESS)
     {
        // P (\deltam \delta_kess)= deltarho_kess * \delta_m / Omega_kess *a^(-3(1+w)) ) Omega_m *a^-3 since in the defnition we have a^3 T00
        // We already included a^(-3) in the denominator, so we only need take the rest into account.
