@@ -4,9 +4,9 @@
 //
 // Parser for settings file
 //
-// Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
+// Author: Julian Adamek (Université de Genève & Observatoire de Paris)
 //
-// Last modified: November 2018
+// Last modified: November 2016
 //
 //////////////////////////
 
@@ -124,10 +124,8 @@ int loadParameterFile(const char * filename, parameter * & params)
 	int numparam = 0;
 	int i = 0;
 
-#ifdef LATFIELD2_HPP
 	if (parallel.grid_rank()[0] == 0) // read file
 	{
-#endif
 		FILE * paramfile;
 		char line[PARAM_MAX_LINESIZE];
 		char pname[PARAM_MAX_LENGTH];
@@ -137,53 +135,38 @@ int loadParameterFile(const char * filename, parameter * & params)
 
 		if (paramfile == NULL)
 		{
-#ifdef LATFIELD2_HPP
 			cerr << " proc#" << parallel.rank() << ": error in loadParameterFile! Unable to open parameter file " << filename << "." << endl;
 			parallel.abortForce();
-#else
-			cerr << " error in loadParameterFile! Unable to open parameter file " << filename << "." << endl;
-			return -1;
-#endif
 		}
 
 		while (!feof(paramfile) && !ferror(paramfile))
 		{
-			if (fgets(line, PARAM_MAX_LINESIZE, paramfile) == NULL) break;
+			fgets(line, PARAM_MAX_LINESIZE, paramfile);
 
 			if (readline(line, pname, pvalue) == true) numparam++;
 		}
 
 		if (numparam == 0)
 		{
-			fclose(paramfile);
-#ifdef LATFIELD2_HPP
 			cerr << " proc#" << parallel.rank() << ": error in loadParameterFile! No valid data found in file " << filename << "." << endl;
+			fclose(paramfile);
 			parallel.abortForce();
-#else
-			cerr << " error in loadParameterFile! No valid data found in file " << filename << "." << endl;
-			return -1;
-#endif
 		}
 
 		params = (parameter *) malloc(sizeof(parameter) * numparam);
 
 		if (params == NULL)
 		{
-			fclose(paramfile);
-#ifdef LATFIELD2_HPP
 			cerr << " proc#" << parallel.rank() << ": error in loadParameterFile! Memory error." << endl;
+			fclose(paramfile);
 			parallel.abortForce();
-#else
-			cerr << " error in loadParameterFile! Memory error." << endl;
-			return -1;
-#endif
 		}
 
 		rewind(paramfile);
 
 		while (!feof(paramfile) && !ferror(paramfile) && i < numparam)
 		{
-			if (fgets(line, PARAM_MAX_LINESIZE, paramfile) == NULL) break;
+			fgets(line, PARAM_MAX_LINESIZE, paramfile);
 
 			if (readline(line, params[i].name, params[i].value) == true)
 			{
@@ -196,17 +179,11 @@ int loadParameterFile(const char * filename, parameter * & params)
 
 		if (i < numparam)
 		{
-			free(params);
-#ifdef LATFIELD2_HPP
 			cerr << " proc#" << parallel.rank() << ": error in loadParameterFile! File may have changed or file pointer corrupted." << endl;
+			free(params);
 			parallel.abortForce();
-#else
-			cerr << " error in loadParameterFile! File may have changed or file pointer corrupted." << endl;
-			return -1;
-#endif
 		}
 
-#ifdef LATFIELD2_HPP
 		parallel.broadcast_dim0<int>(numparam, 0);
 	}
 	else
@@ -223,7 +200,6 @@ int loadParameterFile(const char * filename, parameter * & params)
 	}
 
 	parallel.broadcast_dim0<parameter>(params, numparam, 0);
-#endif
 
 	return numparam;
 }
@@ -247,9 +223,7 @@ int loadParameterFile(const char * filename, parameter * & params)
 
 void saveParameterFile(const char * filename, parameter * params, const int numparam, bool used_only = true)
 {
-#ifdef LATFIELD2_HPP
 	if (parallel.isRoot())
-#endif
 	{
 		FILE * paramfile;
 
@@ -657,8 +631,14 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 
 				if (strcmp(item, "Phi") == 0 || strcmp(item, "phi") == 0)
 					pvalue |= MASK_PHI;
-        else if (strcmp(item, "phi_prime") == 0 || strcmp(item, "Phi_prime") == 0)
-  					pvalue |= MASK_PHI_PRIME;
+          //Kessence part
+				else if (strcmp(item, "phi_prime") == 0 || strcmp(item, "Phi_prime") == 0)
+						pvalue |= MASK_PHI_PRIME;
+				else if (strcmp(item, "pi_k") == 0 || strcmp(item, "Pi_k") == 0)
+					pvalue |= MASK_PI_K;
+				else if (strcmp(item, "zeta") == 0 || strcmp(item, "zeta") == 0)
+					pvalue |= MASK_zeta;
+          //Kessence end
 				else if (strcmp(item, "Chi") == 0 || strcmp(item, "chi") == 0)
 					pvalue |= MASK_CHI;
 				else if (strcmp(item, "Pot") == 0 || strcmp(item, "pot") == 0 || strcmp(item, "Psi_N") == 0 || strcmp(item, "psi_N") == 0 || strcmp(item, "PsiN") == 0 || strcmp(item, "psiN") == 0)
@@ -677,8 +657,6 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 					pvalue |= MASK_HIJ;
 				else if (strcmp(item, "Gadget") == 0 || strcmp(item, "Gadget2") == 0 || strcmp(item, "gadget") == 0 || strcmp(item, "gadget2") == 0)
 					pvalue |= MASK_GADGET;
-				else if (strcmp(item, "multi-Gadget") == 0 || strcmp(item, "multi-Gadget2") == 0 || strcmp(item, "multi-gadget") == 0 || strcmp(item, "multi-gadget2") == 0)
-					pvalue |= MASK_GADGET | MASK_MULTI;
 				else if (strcmp(item, "Particles") == 0 || strcmp(item, "particles") == 0 || strcmp(item, "pcls") == 0 || strcmp(item, "part") == 0)
 					pvalue |= MASK_PCLS;
 				else if (strcmp(item, "cross") == 0 || strcmp(item, "X-spectra") == 0 || strcmp(item, "x-spectra") == 0)
@@ -687,15 +665,30 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 					pvalue |= MASK_DELTA;
 				else if (strcmp(item, "delta_N") == 0 || strcmp(item, "deltaN") == 0)
 					pvalue |= MASK_DBARE;
+					//kessence part
+				else if (strcmp(item, "T_Kess") == 0 || strcmp(item, "T_Kessence") == 0)
+					pvalue |= MASK_T_KESS;
 
+				else if (strcmp(item, "Delta_Kess") == 0 || strcmp(item, "delta_Kessence") == 0)
+					pvalue |= MASK_Delta_KESS;
+        else if (strcmp(item, "Cross_dkess_dm") == 0 || strcmp(item, "Cross_dkess_dmatter") == 0)
+          pvalue |= MASK_DELTAKESS_DELTA;
+
+					//Kessence end
 				start = comma+1;
 				while (*start == ' ' || *start == '\t') start++;
 			}
 
 			if (strcmp(start, "Phi") == 0 || strcmp(start, "phi") == 0)
 				pvalue |= MASK_PHI;
-      else if (strcmp(start, "Phi_prime") == 0 || strcmp(start, "phi_prime") == 0)
-  				pvalue |= MASK_PHI_PRIME;
+      //kessence part
+			else if (strcmp(start, "Phi_prime") == 0 || strcmp(start, "phi_prime") == 0)
+				pvalue |= MASK_PHI_PRIME;
+			else if (strcmp(start, "Pi_k") == 0 || strcmp(start, "pi_k") == 0)
+				pvalue |= MASK_PI_K;
+			else if (strcmp(start, "zeta") == 0 || strcmp(start, "zeta") == 0)
+				pvalue |= MASK_zeta;
+        //Kessence end
 			else if (strcmp(start, "Chi") == 0 || strcmp(start, "chi") == 0)
 				pvalue |= MASK_CHI;
 			else if (strcmp(start, "Pot") == 0 || strcmp(start, "pot") == 0 || strcmp(start, "Psi_N") == 0 || strcmp(start, "psi_N") == 0 || strcmp(start, "PsiN") == 0 || strcmp(start, "psiN") == 0)
@@ -714,8 +707,6 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 				pvalue |= MASK_HIJ;
 			else if (strcmp(start, "Gadget") == 0 || strcmp(start, "Gadget2") == 0 || strcmp(start, "gadget") == 0 || strcmp(start, "gadget2") == 0)
 				pvalue |= MASK_GADGET;
-			else if (strcmp(start, "multi-Gadget") == 0 || strcmp(start, "multi-Gadget2") == 0 || strcmp(start, "multi-gadget") == 0 || strcmp(start, "multi-gadget2") == 0)
-				pvalue |= MASK_GADGET | MASK_MULTI;
 			else if (strcmp(start, "Particles") == 0 || strcmp(start, "particles") == 0 || strcmp(start, "pcls") == 0 || strcmp(start, "part") == 0)
 				pvalue |= MASK_PCLS;
 			else if (strcmp(start, "cross") == 0 || strcmp(start, "X-spectra") == 0 || strcmp(start, "x-spectra") == 0)
@@ -752,10 +743,6 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 //
 //////////////////////////
 
-#ifndef LATFIELD2_HPP
-#define COUT cout
-#endif
-
 int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosmology & cosmo, icsettings & ic)
 {
 	char par_string[PARAM_MAX_LENGTH];
@@ -763,12 +750,14 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	char * pptr[MAX_PCL_SPECIES];
 	int usedparams = 0;
 	int i;
-	double tmp;
 
 	// parse settings for IC generator
 
 	ic.pkfile[0] = '\0';
 	ic.tkfile[0] = '\0';
+	//kessence part
+	ic.tk_kessence[0]='\0';
+	//kessence end
 	ic.metricfile[0][0] = '\0';
 	ic.metricfile[1][0] = '\0';
 	ic.metricfile[2][0] = '\0';
@@ -808,9 +797,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		else
 		{
 			COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": IC generator not recognized!" << endl;
-#ifdef LATFIELD2_HPP
 			parallel.abortForce();
-#endif
 		}
 	}
 	else
@@ -826,27 +813,20 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		if (!parseParameter(params, numparam, "particle file", pptr, i))
 		{
 			COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": no particle file specified!" << endl;
-#ifdef LATFIELD2_HPP
 			parallel.abortForce();
-#endif
 		}
 	}
 	else if (!parseParameter(params, numparam, "template file", pptr, i))
 	{
 		COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": no template file specified!" << endl;
-#ifdef LATFIELD2_HPP
 		parallel.abortForce();
-#endif
 	}
 
 	for (; i < MAX_PCL_SPECIES; i++)
-	{
-		if (ic.generator == ICGEN_READ_FROM_DISK)
-			strcpy(ic.pclfile[i], "/dev/null");
-		else
-			strcpy(ic.pclfile[i], ic.pclfile[i-1]);
-	}
-
+		strcpy(ic.pclfile[i], ic.pclfile[i-1]);
+//Kessence part
+if (!parseParameter(params, numparam, "T_kessence file", ic.tk_kessence) && ic.generator != ICGEN_READ_FROM_DISK);
+//kessence end
 #ifdef ICGEN_FALCONIC
 	if ((!parseParameter(params, numparam, "mPk file", ic.pkfile) && !parseParameter(params, numparam, "Tk file", ic.tkfile) && ic.generator != ICGEN_READ_FROM_DISK && ic.generator != ICGEN_FALCONIC)
 #else
@@ -862,9 +842,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		COUT << " initial transfer functions will be computed by calling CLASS" << endl;
 #else
 		COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": no power spectrum file nor transfer function file specified!" << endl;
-#ifdef LATFIELD2_HPP
 		parallel.abortForce();
-#endif
 #endif
 	}
 
@@ -897,21 +875,13 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	for (; i < MAX_PCL_SPECIES; i++)
 		ic.numtile[i] = ic.numtile[i-1];
 
-	if (ic.numtile[0] <= 0 && ic.generator != ICGEN_READ_FROM_DISK)
+	for (i = 0; i < MAX_PCL_SPECIES; i++)
 	{
-		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": tiling number for cdm particle template not set properly; using default value (1)" << endl;
-		ic.numtile[0] = 1;
-	}
-
-	for (i = 1; i < MAX_PCL_SPECIES; i++)
-	{
-		if (ic.numtile[i] < 0 && ic.generator != ICGEN_READ_FROM_DISK)
+		if (ic.numtile[i] <= 0 && ic.generator != ICGEN_READ_FROM_DISK)
 		{
 			COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": tiling number for particle template not set properly; using default value (1)" << endl;
 			ic.numtile[i] = 1;
 		}
-		else if (ic.generator == ICGEN_READ_FROM_DISK && strcmp(ic.pclfile[i], "/dev/null") != 0)
-			ic.numtile[i] = 1;
 	}
 
 	if (ic.pkfile[0] != '\0')
@@ -950,9 +920,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		else
 		{
 			COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": baryon treatment not supported!" << endl;
-#ifdef LATFIELD2_HPP
 			parallel.abortForce();
-#endif
 		}
 	}
 	else if (ic.generator == ICGEN_READ_FROM_DISK)
@@ -965,18 +933,12 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		sim.baryon_flag = 2;
 	}
 
-	if (sim.baryon_flag == 1 && ic.numtile[1] <= 0 && ic.generator != ICGEN_READ_FROM_DISK)
-	{
-		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": tiling number for baryon particle template not set properly; using default value (1)" << endl;
-		ic.numtile[1] = 1;
-	}
-
 	if (parseParameter(params, numparam, "radiation treatment", par_string))
 	{
-		if (par_string[0] == 'i' || par_string[0] == 'I' || par_string[0] == 'b' || par_string[0] == 'B')
+		if (par_string[0] == 'i' || par_string[0] == 'I')
 		{
 			sim.radiation_flag = 0;
-			COUT << " radiation treatment set to: " << COLORTEXT_CYAN << "background" << COLORTEXT_RESET << endl;
+			COUT << " radiation treatment set to: " << COLORTEXT_CYAN << "ignore" << COLORTEXT_RESET << endl;
 		}
 #ifdef HAVE_CLASS
 		else if (par_string[0] == 'c' || par_string[0] == 'C')
@@ -996,60 +958,18 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		else
 		{
 			COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": radiation treatment not supported!" << endl;
-#ifdef LATFIELD2_HPP
 			parallel.abortForce();
-#endif
 		}
 #else
 		else
 		{
 			sim.radiation_flag = 0;
-			COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": CLASS is not available, setting radiation treatment = background" << endl;
+			COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": CLASS is not available, setting radiation treatment = ignore" << endl;
 		}
 #endif
 	}
 	else
 			sim.radiation_flag = 0;
-
-	if (parseParameter(params, numparam, "fluid treatment", par_string))
-	{
-		if (par_string[0] == 'b' || par_string[0] == 'B')
-		{
-			sim.fluid_flag = 0;
-			COUT << " fluid treatment set to: " << COLORTEXT_CYAN << "background" << COLORTEXT_RESET << endl;
-		}
-#ifdef HAVE_CLASS
-		else if (par_string[0] == 'c' || par_string[0] == 'C')
-		{
-			sim.fluid_flag = 1;
-			COUT << " fluid treatment set to: " << COLORTEXT_CYAN << "CLASS" << COLORTEXT_RESET << endl;
-			if ((ic.pkfile[0] != '\0' || ic.tkfile[0] != '\0')
-#ifdef ICGEN_PREVOLUTION
-				&& ic.generator != ICGEN_PREVOLUTION
-#endif
-				)
-			{
-				COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": using fluid treatment = CLASS and providing initial power spectra / transfer functions independently" << endl;
-				COUT << "              is dangerous! In order to ensure consistency, it is recommended to call CLASS directly." << endl;
-			}
-		}
-		else
-		{
-			COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": fluid treatment not supported!" << endl;
-#ifdef LATFIELD2_HPP
-			parallel.abortForce();
-#endif
-		}
-#else
-		else
-		{
-			sim.fluid_flag = 0;
-			COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": CLASS is not available, setting fluid treatment = background" << endl;
-		}
-#endif
-	}
-	else
-			sim.fluid_flag = 0;
 
 	parseParameter(params, numparam, "relaxation redshift", ic.z_relax);
 
@@ -1083,9 +1003,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		if (!parseParameter(params, numparam, "prevolution redshift", ic.z_ic))
 		{
 			COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": no starting redshift specified for IC generator = prevolution" << endl;
-#ifdef LATFIELD2_HPP
 			parallel.abortForce();
-#endif
 		}
 
 		parseParameter(params, numparam, "prevolution Courant factor", ic.Cf);
@@ -1137,11 +1055,9 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	sim.gr_flag = 0;
 	sim.out_pk = 0;
 	sim.out_snapshot = 0;
-	sim.out_lightcone[0] = 0;
 	sim.num_pk = MAX_OUTPUTS;
 	sim.numbins = 0;
 	sim.num_snapshot = MAX_OUTPUTS;
-	sim.num_lightcone = 0;
 	sim.num_restart = MAX_OUTPUTS;
 	for (i = 0; i < MAX_PCL_SPECIES; i++) sim.tracer_factor[i] = 1;
 	sim.Cf = 1.;
@@ -1165,9 +1081,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		else
 		{
 			COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": vector method not supported!" << endl;
-#ifdef LATFIELD2_HPP
 			parallel.abortForce();
-#endif
 		}
 	}
 
@@ -1179,9 +1093,6 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 
 	if (!parseParameter(params, numparam, "Pk file base", sim.basename_pk))
 		strcpy(sim.basename_pk, "pk");
-
-	if (!parseParameter(params, numparam, "lightcone file base", sim.basename_lightcone))
-		strcpy(sim.basename_lightcone, "lightcone");
 
 	if (!parseParameter(params, numparam, "output path", sim.output_path))
 		sim.output_path[0] = '\0';
@@ -1196,18 +1107,14 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	if (sim.boxsize <= 0. || !isfinite(sim.boxsize))
 	{
 		COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": simulation box size not set properly!" << endl;
-#ifdef LATFIELD2_HPP
 		parallel.abortForce();
-#endif
 	}
 
 	parseParameter(params, numparam, "Ngrid", sim.numpts);
 	if (sim.numpts < 2 || !isfinite(sim.numpts))
 	{
 		COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": number of grid points not set properly!" << endl;
-#ifdef LATFIELD2_HPP
 		parallel.abortForce();
-#endif
 	}
 
 	if (parseParameter(params, numparam, "downgrade factor", sim.downgrade_factor))
@@ -1215,22 +1122,14 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		if (sim.downgrade_factor < 1 || sim.downgrade_factor >= sim.numpts || !isfinite(sim.downgrade_factor))
 		{
 			COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": downgrade factor makes no sense!" << endl;
-#ifdef LATFIELD2_HPP
 			parallel.abortForce();
 		}
 		if (sim.downgrade_factor > 1 && (sim.numpts % parallel.grid_size()[0] || sim.numpts % parallel.grid_size()[1] || (sim.numpts / parallel.grid_size()[0]) % sim.downgrade_factor || (sim.numpts / parallel.grid_size()[1]) % sim.downgrade_factor))
 		{
 			COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": downgrade factor does not appear to be compatible with process layout at given Ngrid!" << endl;
 			parallel.abortForce();
-#endif
 		}
 	}
-
-	parseParameter(params, numparam, "Courant factor", sim.Cf);
-
-	if (ic.Cf < 0.) ic.Cf = sim.Cf;
-
-	parseParameter(params, numparam, "time step limit", sim.steplimit);
 
 	if (!parseParameter(params, numparam, "move limit", sim.movelimit))
 		sim.movelimit = (double) sim.numpts;
@@ -1238,9 +1137,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	if (!parseParameter(params, numparam, "initial redshift", sim.z_in))
 	{
 		COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": initial redshift not specified!" << endl;
-#ifdef LATFIELD2_HPP
 		parallel.abortForce();
-#endif
 	}
 
 	if (ic.z_relax < -1.) ic.z_relax = sim.z_in;
@@ -1268,290 +1165,8 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 
 	parseParameter(params, numparam, "hibernation wallclock limit", sim.wallclocklimit);
 
-	parseFieldSpecifiers(params, numparam, "lightcone outputs", sim.out_lightcone[0]);
 	parseFieldSpecifiers(params, numparam, "snapshot outputs", sim.out_snapshot);
 	parseFieldSpecifiers(params, numparam, "Pk outputs", sim.out_pk);
-
-	if(!parseParameter(params, numparam, "lightcone pixel factor", sim.pixelfactor[0]))
-		sim.pixelfactor[0] = 0.5;
-
-	if(!parseParameter(params, numparam, "lightcone shell factor", sim.shellfactor[0]))
-		sim.shellfactor[0] = 1.;
-
-	if(!parseParameter(params, numparam, "lightcone covering", sim.covering[0]))
-		sim.covering[0] = 2. + 4. / sim.Cf / sim.shellfactor[0];
-
-	i = 2;
-	if(parseParameter(params, numparam, "lightcone Nside", sim.Nside[0], i))
-	{
-		if (i < 1)
-		{
-			COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": parsing of lightcone Nside parameter failed, assuming minimum value Nside=2" << endl;
-			sim.Nside[0][0] = 2;
-		}
-		if (i < 2) sim.Nside[0][1] = sim.Nside[0][0];
-		if (sim.Nside[0][0] < 2)
-		{
-			COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": lightcone Nside parameter out of bounds, assuming minimum value Nside=2" << endl;
-			sim.Nside[0][0] = 2;
-		}
-		else
-		{
-			for (i = 2; i < sim.Nside[0][0]; i *= 2);
-			if (i != sim.Nside[0][0])
-			{
-				COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": lightcone Nside parameter was found to be no power of two, assuming nearest value Nside=" << i << endl;
-				sim.Nside[0][0] = i;
-			}
-		}
-		if (sim.Nside[0][1] < sim.Nside[0][0])
-		{
-			COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": lightcone Nside parameter out of bounds, assuming minimum value Nside=" << sim.Nside[0][0] << endl;
-			sim.Nside[0][1] = sim.Nside[0][0];
-		}
-		else
-		{
-			for (i = 2; i < sim.Nside[0][1]; i *= 2);
-			if (i != sim.Nside[0][1])
-			{
-				COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": lightcone Nside parameter was found to be no power of two, assuming nearest value Nside=" << i << endl;
-				sim.Nside[0][1] = i;
-			}
-		}
-	}
-	else
-	{
-		sim.Nside[0][0] = 2;
-		for (sim.Nside[0][1] = 2; sim.Nside[0][1] < sim.numpts; sim.Nside[0][1] *= 2);
-	}
-
-	for (i = 1; i < MAX_OUTPUTS; i++)
-	{
-		sim.out_lightcone[i] = sim.out_lightcone[0];
-		sim.Nside[i][0] = sim.Nside[0][0];
-		sim.Nside[i][1] = sim.Nside[0][1];
-		sim.pixelfactor[i] = sim.pixelfactor[0];
-		sim.shellfactor[i] = sim.shellfactor[0];
-		sim.covering[i] = sim.covering[0];
-	}
-
-	i = 3;
-	if (parseParameter(params, numparam, "lightcone vertex", sim.lightcone[0].vertex, i))
-	{
-		if (i != 3 || sim.lightcone[0].vertex[0] < 0. || sim.lightcone[0].vertex[0] >= sim.boxsize || sim.lightcone[0].vertex[1] < 0. || sim.lightcone[0].vertex[1] >= sim.boxsize || sim.lightcone[0].vertex[2] < 0. || sim.lightcone[0].vertex[2] >= sim.boxsize)
-		{
-			COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": parsing of lightcone geometry failed, no lightcone will be written!" << endl;
-		}
-		else
-		{
-			sim.num_lightcone = 1;
-			for (i = 0; i < 3; i++) sim.lightcone[0].vertex[i] /= sim.boxsize;
-
-			if (parseParameter(params, numparam, "lightcone opening half-angle", sim.lightcone[0].opening))
-			{
-				if (sim.lightcone[0].opening > 180. || sim.lightcone[0].opening <= 0.)
-				{
-					COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": lightcone opening half-angle out of bounds, assuming full sky" << endl;
-					sim.lightcone[0].opening = -1.;
-				}
-				else sim.lightcone[0].opening = cos(sim.lightcone[0].opening * M_PI / 180.);
-			}
-			else
-				sim.lightcone[0].opening = -1.;
-
-			i = 2;
-			if (parseParameter(params, numparam, "lightcone distance", sim.lightcone[0].distance, i))
-			{
-				sim.lightcone[0].distance[0] /= sim.boxsize;
-				if (i > 1)
-				{
-					sim.lightcone[0].distance[1] /= sim.boxsize;
-					qsort((void *) sim.lightcone[0].distance, 2, sizeof(double), sort_descending);
-				}
-				else
-					sim.lightcone[0].distance[1] = 0.;
-			}
-			else
-			{
-				sim.lightcone[0].distance[0] = 0.5;
-				sim.lightcone[0].distance[1] = 0.;
-			}
-
-			if (!parseParameter(params, numparam, "lightcone redshift", sim.lightcone[0].z))
-				sim.lightcone[0].z = 0.;
-
-			i = 3;
-			if(parseParameter(params, numparam, "lightcone direction", sim.lightcone[0].direction, i))
-			{
-				if (i == 2)
-				{
-					tmp = sin(sim.lightcone[0].direction[0] * M_PI / 180.);
-					sim.lightcone[0].direction[2] = cos(sim.lightcone[0].direction[0] * M_PI / 180.);
-					sim.lightcone[0].direction[0] = tmp * cos(sim.lightcone[0].direction[1] * M_PI / 180.);
-					sim.lightcone[0].direction[1] = tmp * sin(sim.lightcone[0].direction[1] * M_PI / 180.);
-				}
-				else if (i == 3)
-				{
-					tmp = sqrt(sim.lightcone[0].direction[0] * sim.lightcone[0].direction[0] + sim.lightcone[0].direction[1] * sim.lightcone[0].direction[1] + sim.lightcone[0].direction[2] * sim.lightcone[0].direction[2]);
-					sim.lightcone[0].direction[0] /= tmp;
-					sim.lightcone[0].direction[1] /= tmp;
-					sim.lightcone[0].direction[2] /= tmp;
-				}
-				else
-				{
-					COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": parsing of lightcone geometry failed, no lightcone will be written!" << endl;
-					sim.num_lightcone = 0;
-				}
-			}
-			else
-			{
-				sim.lightcone[0].direction[0] = 0.;
-				sim.lightcone[0].direction[1] = 0.;
-				sim.lightcone[0].direction[2] = 1.;
-			}
-		}
-	}
-	else
-	{
-		for (sim.num_lightcone = 0; sim.num_lightcone < MAX_OUTPUTS; sim.num_lightcone++)
-		{
-			sprintf(par_string, "lightcone %d vertex", sim.num_lightcone);
-			i = 3;
-			if (parseParameter(params, numparam, par_string, sim.lightcone[sim.num_lightcone].vertex, i))
-			{
-				if (i != 3 || sim.lightcone[sim.num_lightcone].vertex[0] < 0. || sim.lightcone[sim.num_lightcone].vertex[0] >= sim.boxsize || sim.lightcone[sim.num_lightcone].vertex[1] < 0. || sim.lightcone[sim.num_lightcone].vertex[1] >= sim.boxsize || sim.lightcone[sim.num_lightcone].vertex[2] < 0. || sim.lightcone[sim.num_lightcone].vertex[2] >= sim.boxsize)
-				{
-					COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": parsing of lightcone geometry failed, not all lightcones will be written!" << endl;
-					break;
-				}
-				else
-				{
-					for (i = 0; i < 3; i++) sim.lightcone[sim.num_lightcone].vertex[i] /= sim.boxsize;
-
-					sprintf(par_string, "lightcone %d outputs", sim.num_lightcone);
-					parseFieldSpecifiers(params, numparam, par_string, sim.out_lightcone[sim.num_lightcone]);
-
-					sprintf(par_string, "lightcone %d opening half-angle", sim.num_lightcone);
-					if (parseParameter(params, numparam, par_string, sim.lightcone[sim.num_lightcone].opening))
-					{
-						if (sim.lightcone[sim.num_lightcone].opening > 180. || sim.lightcone[sim.num_lightcone].opening <= 0.)
-						{
-							COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": lightcone opening half-angle out of bounds, assuming full sky" << endl;
-							sim.lightcone[sim.num_lightcone].opening = -1.;
-						}
-						else sim.lightcone[sim.num_lightcone].opening = cos(sim.lightcone[0].opening * M_PI / 180.);
-					}
-					else
-						sim.lightcone[sim.num_lightcone].opening = -1.;
-
-					sprintf(par_string, "lightcone %d distance", sim.num_lightcone);
-					i = 2;
-					if (parseParameter(params, numparam, par_string, sim.lightcone[sim.num_lightcone].distance, i))
-					{
-						sim.lightcone[sim.num_lightcone].distance[0] /= sim.boxsize;
-						if (i > 1)
-						{
-							sim.lightcone[sim.num_lightcone].distance[1] /= sim.boxsize;
-							qsort((void *) sim.lightcone[sim.num_lightcone].distance, 2, sizeof(double), sort_descending);
-						}
-						else
-							sim.lightcone[sim.num_lightcone].distance[1] = 0.;
-					}
-					else
-					{
-						sim.lightcone[sim.num_lightcone].distance[0] = 0.5;
-						sim.lightcone[sim.num_lightcone].distance[1] = 0.;
-					}
-
-					sprintf(par_string, "lightcone %d redshift", sim.num_lightcone);
-					if (!parseParameter(params, numparam, par_string, sim.lightcone[sim.num_lightcone].z))
-						sim.lightcone[sim.num_lightcone].z = 0.;
-
-					sprintf(par_string, "lightcone %d direction", sim.num_lightcone);
-					i = 3;
-					if(parseParameter(params, numparam, par_string, sim.lightcone[sim.num_lightcone].direction, i))
-					{
-						if (i == 2)
-						{
-							tmp = sin(sim.lightcone[sim.num_lightcone].direction[0] * M_PI / 180.);
-							sim.lightcone[sim.num_lightcone].direction[2] = cos(sim.lightcone[sim.num_lightcone].direction[0] * M_PI / 180.);
-							sim.lightcone[sim.num_lightcone].direction[0] = tmp * cos(sim.lightcone[sim.num_lightcone].direction[1] * M_PI / 180.);
-							sim.lightcone[sim.num_lightcone].direction[1] = tmp * sin(sim.lightcone[sim.num_lightcone].direction[1] * M_PI / 180.);
-						}
-						else if (i == 3)
-						{
-							tmp = sqrt(sim.lightcone[sim.num_lightcone].direction[0] * sim.lightcone[sim.num_lightcone].direction[0] + sim.lightcone[sim.num_lightcone].direction[1] * sim.lightcone[sim.num_lightcone].direction[1] + sim.lightcone[sim.num_lightcone].direction[2] * sim.lightcone[sim.num_lightcone].direction[2]);
-							sim.lightcone[sim.num_lightcone].direction[0] /= tmp;
-							sim.lightcone[sim.num_lightcone].direction[1] /= tmp;
-							sim.lightcone[sim.num_lightcone].direction[2] /= tmp;
-						}
-						else
-						{
-							COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": parsing of lightcone geometry failed, not all lightcones will be written!" << endl;
-							break;
-						}
-					}
-					else
-					{
-						sim.lightcone[sim.num_lightcone].direction[0] = 0.;
-						sim.lightcone[sim.num_lightcone].direction[1] = 0.;
-						sim.lightcone[sim.num_lightcone].direction[2] = 1.;
-					}
-					sprintf(par_string, "lightcone %d pixel factor", sim.num_lightcone);
-					parseParameter(params, numparam, par_string, sim.pixelfactor[sim.num_lightcone]);
-					sprintf(par_string, "lightcone %d shell factor", sim.num_lightcone);
-					parseParameter(params, numparam, par_string, sim.shellfactor[sim.num_lightcone]);
-					sprintf(par_string, "lightcone %d covering", sim.num_lightcone);
-					parseParameter(params, numparam, par_string, sim.covering[sim.num_lightcone]);
-					sprintf(par_string, "lightcone %d Nside", sim.num_lightcone);
-					i = 2;
-					if(parseParameter(params, numparam, par_string, sim.Nside[sim.num_lightcone], i))
-					{
-						if (i < 1)
-						{
-							COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": parsing of lightcone Nside parameter failed, assuming minimum value Nside=2" << endl;
-							sim.Nside[sim.num_lightcone][0] = 2;
-						}
-						if (i < 2) sim.Nside[sim.num_lightcone][1] = sim.Nside[sim.num_lightcone][0];
-						if (sim.Nside[sim.num_lightcone][0] < 2)
-						{
-							COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": lightcone Nside parameter out of bounds, assuming minimum value Nside=2" << endl;
-							sim.Nside[sim.num_lightcone][0] = 2;
-						}
-						else
-						{
-							for (i = 2; i < sim.Nside[sim.num_lightcone][0]; i *= 2);
-							if (i != sim.Nside[sim.num_lightcone][0])
-							{
-								COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": lightcone Nside parameter was found to be no power of two, assuming nearest value Nside=" << i << endl;
-								sim.Nside[sim.num_lightcone][0] = i;
-							}
-						}
-						if (sim.Nside[sim.num_lightcone][1] < sim.Nside[sim.num_lightcone][0])
-						{
-							COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": lightcone Nside parameter out of bounds, assuming minimum value Nside=" << sim.Nside[sim.num_lightcone][0] << endl;
-							sim.Nside[sim.num_lightcone][1] = sim.Nside[sim.num_lightcone][0];
-						}
-						else
-						{
-							for (i = 2; i < sim.Nside[sim.num_lightcone][1]; i *= 2);
-							if (i != sim.Nside[sim.num_lightcone][1])
-							{
-								COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": lightcone Nside parameter was found to be no power of two, assuming nearest value Nside=" << i << endl;
-								sim.Nside[sim.num_lightcone][1] = i;
-							}
-						}
-					}
-					else
-					{
-						sim.Nside[sim.num_lightcone][0] = 2;
-						for (sim.Nside[0][1] = 2; sim.Nside[sim.num_lightcone][1] < sim.numpts; sim.Nside[sim.num_lightcone][1] *= 2);
-					}
-				}
-			}
-			else break;
-		}
-	}
 
 	i = MAX_PCL_SPECIES;
 	parseParameter(params, numparam, "tracer factor", sim.tracer_factor, i);
@@ -1574,6 +1189,12 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": number of Pk bins not set properly; using default value (64)" << endl;
 		sim.numbins = 64;
 	}
+
+	parseParameter(params, numparam, "Courant factor", sim.Cf);
+
+	if (ic.Cf < 0.) ic.Cf = sim.Cf;
+
+	parseParameter(params, numparam, "time step limit", sim.steplimit);
 
 	if (parseParameter(params, numparam, "gravity theory", par_string))
 	{
@@ -1615,6 +1236,32 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	{
 		cosmo.h = P_HUBBLE;
 	}
+	// K-essence  paramteres
+	if (!parseParameter(params, numparam, "cs2_kessence",  cosmo.cs2_kessence))
+	{
+			cosmo.cs2_kessence=1;
+	}
+	if (!parseParameter(params, numparam, "Omega_kessence",  cosmo.Omega_kessence))
+	{
+			cosmo.Omega_kessence=0.7199;
+	}
+	if (!parseParameter(params, numparam, "w_kessence",  cosmo.w_kessence))
+	{
+			cosmo.w_kessence=-0.9;
+	}
+  if (!parseParameter(params, numparam, "nKe_numsteps",  sim.nKe_numsteps))
+  {
+    sim.nKe_numsteps = 1;
+  }
+  if (!parseParameter(params, numparam, "Kessence source gravity", sim.Kess_source_gravity))
+  {
+    sim.Kess_source_gravity = 0;
+  }
+  if (!parseParameter(params, numparam, "NL_kessence", sim.NL_kessence))
+  {
+    sim.NL_kessence = 0; //Default is linear kessence.
+  }
+  //kessence end
 
 	cosmo.num_ncdm = MAX_PCL_SPECIES-2;
 	if (!parseParameter(params, numparam, "m_ncdm", cosmo.m_ncdm, cosmo.num_ncdm))
@@ -1628,16 +1275,12 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		if (i < 0 || !isfinite(i))
 		{
 			COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": number of ncdm species not set properly!" << endl;
-#ifdef LATFIELD2_HPP
 			parallel.abortForce();
-#endif
 		}
 		if (i > cosmo.num_ncdm)
 		{
 			COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": N_ncdm = " << i << " is larger than the number of mass parameters specified (" << cosmo.num_ncdm << ")!" << endl;
-#ifdef LATFIELD2_HPP
 			parallel.abortForce();
-#endif
 		}
 		cosmo.num_ncdm = i;
 	}
@@ -1693,23 +1336,6 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 
 	cosmo.Omega_rad = cosmo.Omega_g + cosmo.Omega_ur;
 
-	if (parseParameter(params, numparam, "omega_fld", cosmo.Omega_fld))
-		cosmo.Omega_fld /= cosmo.h * cosmo.h;
-	else if (!parseParameter(params, numparam, "Omega_fld", cosmo.Omega_fld))
-		cosmo.Omega_fld = 0.;
-	if (!parseParameter(params, numparam, "w0_fld", cosmo.w0_fld))
-		cosmo.w0_fld = -1.;
-	if (!parseParameter(params, numparam, "wa_fld", cosmo.wa_fld))
-		cosmo.wa_fld = 0.;
-	if (!parseParameter(params, numparam, "cs2_fld", cosmo.cs2_fld))
-		cosmo.cs2_fld = 1.;
-
-	if (cosmo.Omega_fld > 0 && cosmo.w0_fld == -1.)
-	{
-		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": w0_fld = -1 is singular, setting Omega_fld = 0." << endl;
-		cosmo.Omega_fld = 0.;
-	}
-
 	if (parseParameter(params, numparam, "omega_b", cosmo.Omega_b))
 	{
 		cosmo.Omega_b /= cosmo.h * cosmo.h;
@@ -1736,21 +1362,19 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	if (cosmo.Omega_m <= 0. || cosmo.Omega_m > 1.)
 	{
 		COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": total matter density out of range!" << endl;
-#ifdef LATFIELD2_HPP
 		parallel.abortForce();
-#endif
 	}
 	else if (cosmo.Omega_rad < 0. || cosmo.Omega_rad > 1. - cosmo.Omega_m)
 	{
 		COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": total radiation energy density out of range!" << endl;
-#ifdef LATFIELD2_HPP
 		parallel.abortForce();
-#endif
 	}
 	else
 	{
-		COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad << ", h = " << cosmo.h << endl;
-		cosmo.Omega_Lambda = 1. - cosmo.Omega_m - cosmo.Omega_rad - cosmo.Omega_fld;
+		//Kessence part added
+    COUT << "Kessence source gravity = " << sim.Kess_source_gravity<< ", Non-linear kessence = " << sim.NL_kessence<< ", Number of kessence update = " <<sim.nKe_numsteps <<endl;
+		COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad << ", h = " << cosmo.h << ", Omega_kessence0= "<<cosmo.Omega_kessence<<", w_kessence= "<<cosmo.w_kessence<<", cs^2 (kessence)= "<<cosmo.cs2_kessence<<endl;
+		cosmo.Omega_Lambda = 1. - cosmo.Omega_m - cosmo.Omega_kessence - cosmo.Omega_rad;
 	}
 
 	if(!parseParameter(params, numparam, "switch delta_rad", sim.z_switch_deltarad))
@@ -1759,14 +1383,11 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	i = MAX_PCL_SPECIES-2;
 	if (!parseParameter(params, numparam, "switch delta_ncdm", sim.z_switch_deltancdm, i))
 	{
-		for (i = 0; i < MAX_PCL_SPECIES-2; i++)
-			sim.z_switch_deltancdm[0] = (ic.numtile[(sim.baryon_flag == 1) ? 2+i : 1+i] > 0) ? sim.z_in : 0.;
+		sim.z_switch_deltancdm[0] = sim.z_in;
+		i = 1;
 	}
-	else
-	{
-		for (; i < MAX_PCL_SPECIES-2; i++)
-			sim.z_switch_deltancdm[i] = sim.z_switch_deltancdm[i-1];
-	}
+	for (; i < MAX_PCL_SPECIES-2; i++)
+		sim.z_switch_deltancdm[i] = sim.z_switch_deltancdm[i-1];
 
 	if(!parseParameter(params, numparam, "switch linear chi", sim.z_switch_linearchi))
 	{
