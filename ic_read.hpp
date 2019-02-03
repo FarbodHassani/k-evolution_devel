@@ -4,9 +4,9 @@
 // 
 // read initial conditions from disk
 //
-// Author: Julian Adamek (Université de Genève & Observatoire de Paris)
+// Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
-// Last modified: December 2016
+// Last modified: November 2018
 //
 //////////////////////////
 
@@ -198,6 +198,11 @@ void readIC(metadata & sim, icsettings & ic, cosmology & cosmo, const double fou
 		
 	for (p = 0; p < cosmo.num_ncdm; p++)
 	{
+		if (ic.numtile[1+sim.baryon_flag+i] < 1)
+		{
+			maxvel[sim.baryon_flag+1+p] = 0;
+			continue;
+		}
 		strcpy(pcls_ncdm_info[p].type_name, "part_simple");
 		pcls_ncdm_info[p].mass = 0.;
 		pcls_ncdm_info[p].relativistic = true;
