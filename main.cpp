@@ -406,6 +406,15 @@ PlanFFT<Cplx> phi_prime_plan(&phi_prime, &phi_prime_scalarFT);
 
 	while (true)    // main loop
 	{
+
+    for (x.first(); x.test(); x.next())
+  		{
+        // cout<<"tau: "<<tau<<" z: "<<1./(a) -1.<<endl;
+        //\Phi(n-1) = \Phi(old) and \Phi(n) which will be updated in this loops
+        // Just note that in the first 2-3 steps it does not work since we
+  			phi_old(x) =phi(x);
+         // if(x.coord(0)==32 && x.coord(1)==12 && x.coord(2)==32) cout<<"zeta_half: "<<zeta_half(x)<<endl;
+  		}
 #ifdef BENCHMARK
 		cycle_start_time = MPI_Wtime();
 #endif
@@ -664,6 +673,10 @@ PlanFFT<Cplx> phi_prime_plan(&phi_prime, &phi_prime_scalarFT);
 		ref_time = MPI_Wtime();
 #endif
 
+for (x.first(); x.test(); x.next())
+{
+  phi_prime(x) =(phi(x)-phi_old(x))/(dtau);
+}
 		// snapshot output
 		if (snapcount < sim.num_snapshot && 1. / a < sim.z_snapshot[snapcount] + 1.)
 		{
@@ -935,10 +948,7 @@ PlanFFT<Cplx> phi_prime_plan(&phi_prime, &phi_prime_scalarFT);
 		}
 #endif
 #endif
-    for (x.first(); x.test(); x.next())
-    {
-      phi_prime(x) =(phi(x)-phi_old(x))/(dtau);
-    }
+
 		for (j = 0; j < numsteps; j++) // particle update
 		{
 #ifdef BENCHMARK

@@ -1,6 +1,8 @@
-COMPILER     := mpic++
-INCLUDE      := -I/home/farbod/Packages/packages/LATfield2 -I/home/farbod/Packages/packages/hdf5-1.8.17/hdf5/include -L/home/farbod/Packages/packages/hdf5-1.8.17/hdf5/lib -I./class_noppf/include
-LIB          := -L./class_noppf -lfftw3 -lm -lhdf5 -lgsl -lgslcblas -lclass -fopenmp
+# programming environment
+COMPILER     := CC
+INCLUDE      := -I../LATfield2 -I../class_public/include
+LIB          := -L../class_public -lfftw3 -lm -lhdf5 -lgsl -lgslcblas -lclass
+
 
 # target and source
 EXEC         := gevolution
@@ -12,12 +14,13 @@ DLATFIELD2   := -DFFT3D -DHDF5
 
 # optional compiler settings (LATfield2)
 #DLATFIELD2   += -DH5_HAVE_PARALLEL -DH5_HAVE_PIXIE
-DLATFIELD2   += -DEXTERNAL_IO
+#DLATFIELD2   += -DEXTERNAL_IO
 
 # optional compiler settings (gevolution)
 DGEVOLUTION  := -DPHINONLINEAR
 DGEVOLUTION  += -DBENCHMARK
 DGEVOLUTION  += -DEXACT_OUTPUT_REDSHIFTS
+DGEVOLUTION  += -DMAX_OUTPUTS=64
 #DGEVOLUTION  += -DCHECK_B
 DGEVOLUTION  += -DHAVE_CLASS # requires OPT -fopenmp and LIB -lclass
 
