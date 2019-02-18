@@ -1,7 +1,7 @@
 # programming environment
 COMPILER     := mpic++
-INCLUDE      := -I/usr/local/include/gsl  -I/Users/farbod/Dropbox/Projects/k-evolution/LATfield2-master/  -I /Users/farbod/Packages/hdf5-1.10.1/hdf5/include    # add the path to LATfield2 and other libraries (if necessary)
-LIB          :=-L/Users/farbod/Packages/hdf5-1.10.1/hdf5/lib -lfftw3 -lm -lhdf5 -lgsl -lgslcblas
+INCLUDE      := -I/usr/local/include/gsl  -I/home/farbod/Dropbox/Projects/k-evolution/LATfield2-master  -I/home/farbod/Packages/packages/hdf5-1.8.17/hdf5/include -L/home/farbod/Packages/packages/hdf5-1.8.17/hdf5/lib  -I/home/farbod/Dropbox/Projects/k-evolution/Analysis_21Jan2019/Tests/class_public-2.6.3_IC_Gev/include
+LIB          := -L/home/farbod/Dropbox/Projects/k-evolution/Analysis_21Jan2019/Tests/class_public-2.6.3_IC_Gev -L/home/farbod/Packages/packages/hdf5-1.8.17/hdf5/lib  -lfftw3 -lm -lhdf5 -lgsl -lgslcblas
 
 # target and source
 EXEC         := gevolution
@@ -18,11 +18,9 @@ DLATFIELD2   := -DFFT3D -DHDF5
 # optional compiler settings (gevolution)
 DGEVOLUTION  := -DPHINONLINEAR
 DGEVOLUTION  += -DBENCHMARK
-DGEVOLUTION  += -DBACKREACTION_TEST
 DGEVOLUTION  += -DEXACT_OUTPUT_REDSHIFTS
-DGEVOLUTION  += -DMAX_OUTPUTS=64
-#DGEVOLUTION += -DCHECK_B
-#DGEVOLUTION += -DHAVE_CLASS # requires OPT -fopenmp and LIB -lclass
+#DGEVOLUTION  += -DCHECK_B
+DGEVOLUTION  += -DHAVE_CLASS # requires OPT -fopenmp and LIB -lclass
 
 # further compiler options
 OPT          := -O3 -std=c++11
