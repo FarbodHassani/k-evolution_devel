@@ -327,7 +327,7 @@ int main(int argc, char **argv)
 	}
 	parallel.min(sim.movelimit);
 
-	fourpiG = 1.5 * sim.boxsize * sim.boxsize / C_SPEED_OF_LIGHT / C_SPEED_OF_LIGHT; // Just a definition to make Friedmann equation simplofied! and working with normak numbers
+	fourpiG = 1.5 * sim.boxsize * sim.boxsize / C_SPEED_OF_LIGHT / C_SPEED_OF_LIGHT; // Just a definition to make Friedmann equation simplified! and working with normal numbers
 	a = 1. / (1. + sim.z_in);
 	tau = particleHorizon(a, fourpiG, cosmo);
 	tau_Lambda = -1.0;
@@ -843,7 +843,10 @@ if (sim.Kess_source_gravity==1)
 #endif
 
 
-
+for (x.first(); x.test(); x.next())
+{
+  phi_prime(x) =(phi(x)-phi_old(x))/(dtau);
+}
 
 		// snapshot output
 		if (snapcount < sim.num_snapshot && 1. / a < sim.z_snapshot[snapcount] + 1.)
@@ -965,10 +968,7 @@ if (sim.Kess_source_gravity==1)
 #ifdef BENCHMARK
 		ref_time = MPI_Wtime();
 #endif
-        for (x.first(); x.test(); x.next())
-    		{
-    			phi_prime(x) =(phi(x)-phi_old(x))/(dtau);
-    		}
+
         // We just need to update halo when we want to calculate spatial derivative or use some neibours at the same time! So here wo do not nee to update halo for phi_prime!
 //**********************
 //Kessence - LeapFrog:START
@@ -989,7 +989,6 @@ if (sim.Kess_source_gravity==1)
  //Then fwe start the main loop zeta is updated to get zeta(n+1/2) from pi(n) and zeta(n-1/2)
 	for (i=0;i<sim.nKe_numsteps;i++)
 	{
-
     //********************************************************************************
     //Updating zeta_integer to get zeta_integer(n+1/2) and zeta_integer(n+1), in the first loop is getting zeta_integer(1/2) and zeta_integer(1)
     // In sum: zeta_integer(n+1/2) = zeta_integer(n-1/2)+ zeta_integer'(n)dtau which needs background to be at n with then
@@ -1025,6 +1024,7 @@ if (sim.Kess_source_gravity==1)
 //**********************
 //Kessence - LeapFrog: End
 //**********************
+
 
 		for (j = 0; j < numsteps; j++) // particle update
 		{
