@@ -2041,7 +2041,7 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 		gsl_spline_free(tk_d_kess);
 		tk_d_kess = gsl_spline_alloc(gsl_interp_cspline, npts);
 		gsl_spline_init(tk_d_kess, k_ess, kess_field, npts);
-		generateRealization(*scalarFT_pi, 0., tk_d_kess, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE,0);
+		generateRealization(*scalarFT_pi, 0., tk_d_kess, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE,1);
 		plan_pi_k->execute(FFT_BACKWARD);
 		pi_k->updateHalo();	// pi_k now is realized in real space
 		gsl_spline_free(tk_d_kess);
@@ -2050,7 +2050,7 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 		gsl_spline_free(tk_t_kess);
 		tk_t_kess = gsl_spline_alloc(gsl_interp_cspline, npts);
 		gsl_spline_init(tk_t_kess, k_ess, kess_field_prime, npts);
-		generateRealization(*scalarFT_zeta, 0., tk_t_kess, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE,0);
+		generateRealization(*scalarFT_zeta, 0., tk_t_kess, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE,1);
 		plan_zeta->execute(FFT_BACKWARD);
 		zeta->updateHalo();	// zeta now is realized in real space
 		gsl_spline_free(tk_t_kess);

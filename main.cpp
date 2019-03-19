@@ -678,6 +678,7 @@ if (sim.Kess_source_gravity==1)
 
 		for (x.first(); x.test(); x.next())
 		{
+       // if(x.coord(0)==32 && x.coord(1)==12 && x.coord(2)==32)cout<<"T00: "<< T00_Kess(x)<<" Phi:"<<phi(x)<<endl;
 			// The coefficient is because it wanted to to be source according to eq C.2 of Gevolution paper
 			// Note that it is multiplied to dx^2 and is divived by -a^3 because of definition of T00 which is scaled by a^3
 			// We have T00 and Tij according to code's units, but source is important to calculate potentials and moving particles.
