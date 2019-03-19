@@ -580,7 +580,7 @@ int main(int argc, char **argv)
 			{
 				for (Nside = Nside_min; Nside < Nside_max; Nside *= 2)
 				{
-					if (12 * Nside * Nside > 4 * M_PI * dist * dist) break;
+					if (12. * (double) Nside * (double) Nside > 4. * M_PI * (double) dist * (double) dist) break;
 				}
 
 				Npix = 4;

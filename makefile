@@ -1,7 +1,7 @@
 # programming environment
 COMPILER     := mpic++
-INCLUDE      := -I/usr/local/include/gsl  -I/home/farbod/Dropbox/Projects/k-evolution/LATfield2-master  -I/home/farbod/Packages/packages/hdf5-1.8.17/hdf5/include -L/home/farbod/Packages/packages/hdf5-1.8.17/hdf5/lib  -I/home/farbod/Dropbox/Projects/k-evolution/Analysis_21Jan2019/Tests/class_public-2.6.3_IC_Gev/include
-LIB          := -L/home/farbod/Dropbox/Projects/k-evolution/Analysis_21Jan2019/Tests/class_public-2.6.3_IC_Gev -L/home/farbod/Packages/packages/hdf5-1.8.17/hdf5/lib  -lfftw3 -lm -lhdf5 -lgsl -lgslcblas
+INCLUDE      := -I/usr/local/include/gsl  -I./../../LATfield2-master  -I /Users/farbod/Packages/hdf5-1.10.1/hdf5/include -I./../../class_public-2.7.1/include/
+LIB          := -L./../../class_public-2.7.1/ -L/Users/farbod/Packages/hdf5-1.10.1/hdf5/lib  -lclass -lfftw3 -lm -lhdf5 -lgsl -lgslcblas
 
 # target and source
 EXEC         := gevolution
@@ -23,7 +23,7 @@ DGEVOLUTION  += -DEXACT_OUTPUT_REDSHIFTS
 DGEVOLUTION  += -DHAVE_CLASS # requires OPT -fopenmp and LIB -lclass
 
 # further compiler options
-OPT          := -O3 -std=c++11
+OPT          := -O3 -std=c++11 -fopenmp
 
 $(EXEC): $(SOURCE) $(HEADERS) makefile
 	$(COMPILER) $< -o $@ $(OPT) $(DLATFIELD2) $(DGEVOLUTION) $(INCLUDE) $(LIB)

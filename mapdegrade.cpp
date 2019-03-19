@@ -90,7 +90,7 @@ int main(int argc, char **argv)
 			outhdr.direction[0] = inhdr.direction[0];
 			outhdr.direction[1] = inhdr.direction[1];
 			outhdr.direction[2] = inhdr.direction[2];
-			if (inhdr.Npix >= 12 * inhdr.Nside * inhdr.Nside) outhdr.Npix = 12 * outhdr.Nside * outhdr.Nside;
+			if ((int64_t) inhdr.Npix >= 12l * (int64_t) inhdr.Nside * (int64_t) inhdr.Nside) outhdr.Npix = 12 * outhdr.Nside * outhdr.Nside;
 			else if (outhdr.Nside == inhdr.Nside) outhdr.Npix = inhdr.Npix;
 			else
 			{

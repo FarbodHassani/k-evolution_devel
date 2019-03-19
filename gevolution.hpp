@@ -1011,6 +1011,113 @@ void projection_T00_project(Particles<part, part_info, part_dataType> * pcls, Fi
 	}  
 }
 
+#ifdef UNITY_HACK
+template<typename part, typename part_info, typename part_dataType>
+void projection_RSD_project(Particles<part, part_info, part_dataType> * pcls, Field<Real> * rsd, double a, lightcone_geometry & lightcone, double inner, double outer)
+{	
+	Site xPart(pcls->lattice());
+	Site xField(rsd->lattice());
+	
+	typename std::list<part>::iterator it;
+	
+	Real referPos[3];
+	Real weightScalarGridUp[3];
+	Real weightScalarGridDown[3];
+	Real dx = pcls->res();
+	
+	double mass = 1. / (dx*dx*dx);
+	mass *= *(double*)((char*)pcls->parts_info() + pcls->mass_offset());
+	mass /= a;
+	
+	double vertices[MAX_INTERSECTS][3];
+	double nvertex = 0;
+	double domain[6];
+	int i;
+	
+	domain[0] = -0.5;
+	domain[1] = rsd->lattice().coordSkip()[1] - 0.5;
+	domain[2] = rsd->lattice().coordSkip()[0] - 0.5;
+	for (i = 0; i < 3; i++)
+		domain[i+3] = domain[i] + rsd->lattice().sizeLocal(i) + 1.;
+
+	for (i = 0; i < 6; i++)
+		domain[i] *= dx;
+	
+	nvertex = findIntersectingLightcones(lightcone, outer, inner, domain, vertices);
+	
+	Real vp;
+	Real * q;
+	double * vertex;
+	double nearest[3];
+	size_t offset_q = offsetof(part,vel);
+	
+	Real localCube[8]; // XYZ = 000 | 001 | 010 | 011 | 100 | 101 | 110 | 111
+	   
+	for (xPart.first(),xField.first(); xPart.test(); xPart.next(),xField.next())
+	{			  
+		if (pcls->field()(xPart).size != 0)
+		{
+			for(i=0; i<3; i++) referPos[i] = xPart.coord(i)*dx;
+			for(i=0; i<8; i++) localCube[i] = 0.0;
+			
+			nearest[0] = (referPos[0] > 0.5) ? 1. : 0.;
+			nearest[1] = (referPos[1] > 0.5) ? 1. : 0.;
+			nearest[2] = (referPos[2] > 0.5) ? 1. : 0.;
+			
+			for (it=(pcls->field())(xPart).parts.begin(); it != (pcls->field())(xPart).parts.end(); ++it)
+			{
+				for (i=0; i<3; i++)
+				{
+					weightScalarGridUp[i] = ((*it).pos[i] - referPos[i]) / dx;
+					weightScalarGridDown[i] = 1.0l - weightScalarGridUp[i];
+				}
+
+				vertex = nearest;
+
+				for (i = 0; i < nvertex; i++)
+				{
+					if (pointInShell((*it).pos, lightcone, outer, inner, vertices[i]))
+					{
+						vertex = vertices[i];
+						break;
+					}
+				}
+				
+				q = (Real*)((char*)&(*it)+offset_q);
+				
+				vp = (q[0] * ((*it).pos[0]-vertex[0]) + q[1] * ((*it).pos[1]-vertex[1]) + q[2] * ((*it).pos[2]-vertex[2])) / sqrt(((*it).pos[0]-vertex[0]) * ((*it).pos[0]-vertex[0]) + ((*it).pos[1]-vertex[1]) * ((*it).pos[1]-vertex[1]) + ((*it).pos[2]-vertex[2]) * ((*it).pos[2]-vertex[2]));
+				
+				//000
+				localCube[0] += weightScalarGridDown[0]*weightScalarGridDown[1]*weightScalarGridDown[2]*vp;
+				//001
+				localCube[1] += weightScalarGridDown[0]*weightScalarGridDown[1]*weightScalarGridUp[2]*vp;
+				//010
+				localCube[2] += weightScalarGridDown[0]*weightScalarGridUp[1]*weightScalarGridDown[2]*vp;
+				//011
+				localCube[3] += weightScalarGridDown[0]*weightScalarGridUp[1]*weightScalarGridUp[2]*vp;
+				//100
+				localCube[4] += weightScalarGridUp[0]*weightScalarGridDown[1]*weightScalarGridDown[2]*vp;
+				//101
+				localCube[5] += weightScalarGridUp[0]*weightScalarGridDown[1]*weightScalarGridUp[2]*vp;
+				//110
+				localCube[6] += weightScalarGridUp[0]*weightScalarGridUp[1]*weightScalarGridDown[2]*vp;
+				//111
+				localCube[7] += weightScalarGridUp[0]*weightScalarGridUp[1]*weightScalarGridUp[2]*vp;
+			}
+			
+			(*rsd)(xField)	   += localCube[0] * mass;
+			(*rsd)(xField+2)	 += localCube[1] * mass;
+			(*rsd)(xField+1)	 += localCube[2] * mass;
+			(*rsd)(xField+1+2)   += localCube[3] * mass;
+			(*rsd)(xField+0)	 += localCube[4] * mass;
+			(*rsd)(xField+0+2)   += localCube[5] * mass;
+			(*rsd)(xField+0+1)   += localCube[6] * mass;
+			(*rsd)(xField+0+1+2) += localCube[7] * mass;
+		}
+	}  
+}
+#endif // UNITY_HACK
+
 #define projection_T00_comm scalarProjectionCIC_comm
 
 

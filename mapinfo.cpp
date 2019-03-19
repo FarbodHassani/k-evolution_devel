@@ -14,7 +14,8 @@ struct healpix_header
 	double direction[3];
 	double distance;
 	double boxsize;
-	char fill[256 - 4 * 4 - 5 * 8]; /* fills to 256 Bytes */
+	uint32_t Nside_ring;
+	char fill[256 - 5 * 4 - 5 * 8]; /* fills to 256 Bytes */
 	uint32_t header_blocksize;
 	uint32_t data_blocksize; /* to get rid of two fread commands per header/data pair */
 };
@@ -89,6 +90,7 @@ int main(int argc, char **argv)
 
 		cout << " shell number " << count << ":" << endl;
 		cout << "  Nside     = " << hdr->Nside << endl;
+		cout << "  Nside_ring= " << hdr->Nside_ring << endl;
 		cout << "  Npix      = " << hdr->Npix << endl;
 		cout << "  distance  = " << hdr->distance * hdr->boxsize << " Mpc/h" << endl;
 		cout << "  direction = (" << hdr->direction[0] << ", " << hdr->direction[1] << ", " << hdr->direction[2] << ")" << endl << endl;

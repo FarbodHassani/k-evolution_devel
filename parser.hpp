@@ -6,7 +6,7 @@
 //
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
-// Last modified: November 2018
+// Last modified: February 2019
 //
 //////////////////////////
 
@@ -657,8 +657,8 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 
 				if (strcmp(item, "Phi") == 0 || strcmp(item, "phi") == 0)
 					pvalue |= MASK_PHI;
-        else if (strcmp(item, "phi_prime") == 0 || strcmp(item, "Phi_prime") == 0)
-  					pvalue |= MASK_PHI_PRIME;
+          else if (strcmp(item, "phi_prime") == 0 || strcmp(item, "Phi_prime") == 0)
+              pvalue |= MASK_PHI_PRIME;
 				else if (strcmp(item, "Chi") == 0 || strcmp(item, "chi") == 0)
 					pvalue |= MASK_CHI;
 				else if (strcmp(item, "Pot") == 0 || strcmp(item, "pot") == 0 || strcmp(item, "Psi_N") == 0 || strcmp(item, "psi_N") == 0 || strcmp(item, "PsiN") == 0 || strcmp(item, "psiN") == 0)
@@ -695,7 +695,7 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 			if (strcmp(start, "Phi") == 0 || strcmp(start, "phi") == 0)
 				pvalue |= MASK_PHI;
       else if (strcmp(start, "Phi_prime") == 0 || strcmp(start, "phi_prime") == 0)
-  				pvalue |= MASK_PHI_PRIME;
+            pvalue |= MASK_PHI_PRIME;
 			else if (strcmp(start, "Chi") == 0 || strcmp(start, "chi") == 0)
 				pvalue |= MASK_CHI;
 			else if (strcmp(start, "Pot") == 0 || strcmp(start, "pot") == 0 || strcmp(start, "Psi_N") == 0 || strcmp(start, "psi_N") == 0 || strcmp(start, "PsiN") == 0 || strcmp(start, "psiN") == 0)
@@ -1439,7 +1439,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 							COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": lightcone opening half-angle out of bounds, assuming full sky" << endl;
 							sim.lightcone[sim.num_lightcone].opening = -1.;
 						}
-						else sim.lightcone[sim.num_lightcone].opening = cos(sim.lightcone[0].opening * M_PI / 180.);
+						else sim.lightcone[sim.num_lightcone].opening = cos(sim.lightcone[sim.num_lightcone].opening * M_PI / 180.);
 					}
 					else
 						sim.lightcone[sim.num_lightcone].opening = -1.;
@@ -1542,11 +1542,6 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 							}
 						}
 					}
-					else
-					{
-						sim.Nside[sim.num_lightcone][0] = 2;
-						for (sim.Nside[0][1] = 2; sim.Nside[sim.num_lightcone][1] < sim.numpts; sim.Nside[sim.num_lightcone][1] *= 2);
-					}
 				}
 			}
 			else break;
@@ -1557,7 +1552,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	parseParameter(params, numparam, "tracer factor", sim.tracer_factor, i);
 	for (; i > 0; i--)
 	{
-		if (sim.tracer_factor[i-1] < 1)
+		if (sim.tracer_factor[i-1] < 0)
 		{
 			COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": tracer factor not set properly; using default value (1)" << endl;
 			sim.tracer_factor[i-1] = 1;

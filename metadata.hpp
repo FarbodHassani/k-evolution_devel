@@ -6,7 +6,7 @@
 //
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
-// Last modified: October 2018
+// Last modified: November 2018
 //
 //////////////////////////
 
@@ -35,11 +35,18 @@
 #define LIGHTCONE_THICKNESS 1
 #endif
 
+#ifndef LIGHTCONE_IDCHECK_ZONE
+#define LIGHTCONE_IDCHECK_ZONE 0.05
+#endif
+
 #define LIGHTCONE_PHI_OFFSET 0
 #define LIGHTCONE_CHI_OFFSET 1
 #define LIGHTCONE_B_OFFSET   2
 #define LIGHTCONE_HIJ_OFFSET 5
 #define LIGHTCONE_MAX_FIELDS 10
+#define LIGHTCONE_CDM_OFFSET 5
+#define LIGHTCONE_NCDM_OFFSET 6
+#define LIGHTCONE_RSD_OFFSET 7
 
 #ifndef MAX_PCL_SPECIES
 #define MAX_PCL_SPECIES 6
@@ -182,7 +189,8 @@ struct healpix_header
 	double direction[3];
 	double distance;
 	double boxsize;
-	char fill[256 - 4 * 4 - 5 * 8]; /* fills to 256 Bytes */
+	uint32_t Nside_ring;
+	char fill[256 - 5 * 4 - 5 * 8]; /* fills to 256 Bytes */
 };
 #endif
 

@@ -6,7 +6,7 @@
 //
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
-// Last modified: June 2018
+// Last modified: November 2018
 //
 //////////////////////////
 
@@ -165,24 +165,49 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 	
 	free(typek2);
 	free(sinc);
-	
-	parallel.sum<Real>(kbin, numbins);
-	parallel.sum<Real>(kscatter, numbins);
-	parallel.sum<Real>(power, numbins);
-	parallel.sum<Real>(pscatter, numbins);
-	parallel.sum<int>(occupation, numbins);
-	
-	for (i = 0; i < numbins; i++)
+
+	if (parallel.isRoot())
 	{
-		if (occupation[i] > 0)
+#ifdef SINGLE
+		MPI_Reduce(MPI_IN_PLACE, (void *) kbin, numbins, MPI_FLOAT, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce(MPI_IN_PLACE, (void *) kscatter, numbins, MPI_FLOAT, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce(MPI_IN_PLACE, (void *) power, numbins, MPI_FLOAT, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce(MPI_IN_PLACE, (void *) pscatter, numbins, MPI_FLOAT, MPI_SUM, 0, parallel.lat_world_comm());
+#else
+		MPI_Reduce(MPI_IN_PLACE, (void *) kbin, numbins, MPI_DOUBLE, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce(MPI_IN_PLACE, (void *) kscatter, numbins, MPI_DOUBLE, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce(MPI_IN_PLACE, (void *) power, numbins, MPI_DOUBLE, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce(MPI_IN_PLACE, (void *) pscatter, numbins, MPI_DOUBLE, MPI_SUM, 0, parallel.lat_world_comm());
+#endif
+		MPI_Reduce(MPI_IN_PLACE, (void *) occupation, numbins, MPI_INT, MPI_SUM, 0, parallel.lat_world_comm());
+
+		for (i = 0; i < numbins; i++)
 		{
-			kscatter[i] = sqrt(kscatter[i] * occupation[i] - kbin[i] * kbin[i]) / occupation[i];
-			if (!isfinite(kscatter[i])) kscatter[i] = 0.;
-			kbin[i] = kbin[i] / occupation[i];
-			power[i] /= occupation[i];
-			pscatter[i] = sqrt(pscatter[i] / occupation[i] - power[i] * power[i]);
-			if (!isfinite(pscatter[i])) pscatter[i] = 0.;
+			if (occupation[i] > 0)
+			{
+				kscatter[i] = sqrt(kscatter[i] * occupation[i] - kbin[i] * kbin[i]) / occupation[i];
+				if (!isfinite(kscatter[i])) kscatter[i] = 0.;
+				kbin[i] = kbin[i] / occupation[i];
+				power[i] /= occupation[i];
+				pscatter[i] = sqrt(pscatter[i] / occupation[i] - power[i] * power[i]);
+				if (!isfinite(pscatter[i])) pscatter[i] = 0.;
+			}
 		}
+	}
+	else
+	{
+#ifdef SINGLE
+		MPI_Reduce((void *) kbin, NULL, numbins, MPI_FLOAT, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce((void *) kscatter, NULL, numbins, MPI_FLOAT, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce((void *) power, NULL, numbins, MPI_FLOAT, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce((void *) pscatter, NULL, numbins, MPI_FLOAT, MPI_SUM, 0, parallel.lat_world_comm());
+#else
+		MPI_Reduce((void *) kbin, NULL, numbins, MPI_DOUBLE, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce((void *) kscatter, NULL, numbins, MPI_DOUBLE, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce((void *) power, NULL, numbins, MPI_DOUBLE, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce((void *) pscatter, NULL, numbins, MPI_DOUBLE, MPI_SUM, 0, parallel.lat_world_comm());
+#endif
+		MPI_Reduce((void *) occupation, NULL, numbins, MPI_INT, MPI_SUM, 0, parallel.lat_world_comm());
 	}
 }
 

@@ -6,7 +6,7 @@
 //
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
-// Last modified: November 2018
+// Last modified: February 2019
 //
 //////////////////////////
 
@@ -247,20 +247,29 @@ void writeRestartSettings(metadata & sim, icsettings & ic, cosmology & cosmo, co
 			}
 			if(sim.out_snapshot & MASK_GADGET)
 			{
-				fprintf(outfile, "Gadget2");
-				if (sim.out_snapshot > MASK_PCLS)
-					fprintf(outfile, ", ");
+				if (sim.out_snapshot & MASK_MULTI)
+				{
+					fprintf(outfile, "multi-Gadget2");
+					if (sim.out_snapshot - MASK_MULTI > MASK_PCLS)
+						fprintf(outfile, ", ");
+				}
+				else
+				{
+					fprintf(outfile, "Gadget2");
+					if (sim.out_snapshot > MASK_PCLS)
+						fprintf(outfile, ", ");
+				}
 			}
 			if(sim.out_snapshot & MASK_PCLS)
 			{
 				fprintf(outfile, "particles");
-				if (sim.out_snapshot > MASK_DELTA)
+				if ((sim.out_snapshot & MASK_MULTI == 0 && sim.out_snapshot > MASK_DELTA) || sim.out_snapshot - MASK_MULTI > MASK_DELTA)
 					fprintf(outfile, ", ");
 			}
 			if(sim.out_snapshot & MASK_DELTA)
 			{
 				fprintf(outfile, "delta");
-				if (sim.out_snapshot > MASK_DBARE)
+				if ((sim.out_snapshot & MASK_MULTI == 0 && sim.out_snapshot > MASK_DBARE) || sim.out_snapshot - MASK_MULTI > MASK_DBARE)
 					fprintf(outfile, ", ");
 			}
 			if(sim.out_snapshot & MASK_DBARE)

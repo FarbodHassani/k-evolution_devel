@@ -602,7 +602,7 @@ int main(int argc, char **argv)
 		source_pos[3*n+2] = sourcedata[index_z] / sim.boxsize;
 		source_vel[3*n] = sourcedata[index_vx] / (100.0 * C_SPEED_OF_LIGHT); // assuming km/s
 		source_vel[3*n+1] = sourcedata[index_vy] / (100.0 * C_SPEED_OF_LIGHT);
-		source_vel[3*n+2] = sourcedata[index_vx] / (100.0 * C_SPEED_OF_LIGHT);
+		source_vel[3*n+2] = sourcedata[index_vz] / (100.0 * C_SPEED_OF_LIGHT);
 	}
 
 	fclose(infile);
@@ -1051,10 +1051,13 @@ int main(int argc, char **argv)
 					gradB1[0] = 0.; gradB1[1] = 0.; gradB1[2] = 0.;
 					gradB2[0] = 0.; gradB2[1] = 0.; gradB2[2] = 0.;
 					gradB3[0] = 0.; gradB3[1] = 0.; gradB3[2] = 0.;
+					grade1B[0]    = 0.; grade1B[1]    = 0.; grade1B[2]    = 0.;
+					grade2B[0]    = 0.; grade2B[1]    = 0.; grade2B[2]    = 0.;
 					gradBprime[0] = 0.; gradBprime[1] = 0.; gradBprime[2] = 0.;
 					tidalB[0] = 0.; tidalB[1] = 0.; tidalB[2] = 0.;
 					tidalB[3] = 0.; tidalB[4] = 0.; tidalB[5] = 0.;
 					tidalBterm = 0.; eetidalBterm[0] = 0.; eetidalBterm[1] = 0.;
+					gradnB[0] = 0.; gradnB[1] = 0.; gradnB[2] = 0.;
 				}
 				
 				exp2phi = exp(2 * phi);
@@ -1221,19 +1224,6 @@ int main(int argc, char **argv)
 
 				photon[n].lnk0 += integration_step * dlnk0_dtau;
 
-				if (stepcount % 1000 == 0)
-				{
-					tmp[0] = sqrt(photon[n].n[0] * photon[n].n[0] + photon[n].n[1] * photon[n].n[1] + photon[n].n[2] * photon[n].n[2]);
-					tmp[1] = sqrt(photon[n].e1[0] * photon[n].e1[0] + photon[n].e1[1] * photon[n].e1[1] + photon[n].e1[2] * photon[n].e1[2]);
-					tmp[2] = sqrt(photon[n].e2[0] * photon[n].e2[0] + photon[n].e2[1] * photon[n].e2[1] + photon[n].e2[2] * photon[n].e2[2]);
-					for (int i = 0; i < 3; i++)
-					{
-						photon[n].n[i] /= tmp[0];
-						photon[n].e1[i] /= tmp[1];
-						photon[n].e2[i] /= tmp[2];
-					}
-				}
-
 				dist = sqrt(photon[n].pos[0]*photon[n].pos[0] + photon[n].pos[1]*photon[n].pos[1] + photon[n].pos[2]*photon[n].pos[2]);
 				source_dist = sqrt(source_pos[3*n]*source_pos[3*n] + source_pos[1+3*n]*source_pos[1+3*n] + source_pos[2+3*n]*source_pos[2+3*n]);
 
@@ -1263,7 +1253,9 @@ int main(int argc, char **argv)
 
 					if ((n+Nsource_skip) % 500000 == 0)
 					{
-						cout << " photon " << n+Nsource_skip << " reaching source position at (" << photon[n].pos[0] << ", " << photon[n].pos[1] << ", " << photon[n].pos[2] << ") with n = (" << photon[n].n[0] << ", " << photon[n].n[1] << ", " << photon[n].n[2] << ")" << endl;
+						cout << " photon " << n+Nsource_skip << " reaching source position at (" << photon[n].pos[0] << ", " << photon[n].pos[1] << ", " << photon[n].pos[2] << ") with n = (" << photon[n].n[0] << ", " << photon[n].n[1] << ", " << photon[n].n[2] << ") and delay of " << photon[n].delay * sim.boxsize << " Mpc/h";
+						if (pass == 1) cout << "; the source position is adjusted by (" << source_vel[3*n] * photon[n].delay * sim.boxsize << ", " << source_vel[1+3*n] * photon[n].delay * sim.boxsize << ", " << source_vel[2+3*n] * photon[n].delay * sim.boxsize << ") Mpc/h";
+						cout << endl;
 					}
 
 					dist = get_direction(photon[n].pos, v, coordsys);
@@ -1280,6 +1272,19 @@ int main(int argc, char **argv)
 				{
 					if (dist < min_dist) min_dist = dist;
 					if (dist > max_dist) max_dist = dist;
+				}
+
+				if (stepcount % 1000 == 0)
+				{
+					tmp[0] = sqrt(photon[n].n[0] * photon[n].n[0] + photon[n].n[1] * photon[n].n[1] + photon[n].n[2] * photon[n].n[2]);
+					tmp[1] = sqrt(photon[n].e1[0] * photon[n].e1[0] + photon[n].e1[1] * photon[n].e1[1] + photon[n].e1[2] * photon[n].e1[2]);
+					tmp[2] = sqrt(photon[n].e2[0] * photon[n].e2[0] + photon[n].e2[1] * photon[n].e2[1] + photon[n].e2[2] * photon[n].e2[2]);
+					for (int i = 0; i < 3; i++)
+					{
+						photon[n].n[i] /= tmp[0];
+						photon[n].e1[i] /= tmp[1];
+						photon[n].e2[i] /= tmp[2];
+					}
 				}
 
 				num_live++;

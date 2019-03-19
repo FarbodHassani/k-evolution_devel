@@ -41,9 +41,9 @@ int main(int argc, char **argv)
 		if (fabs(pos[0]/direction[0] - pos[1]/direction[1]) < 1e-8 && fabs(pos[1]/direction[1] - pos[2]/direction[2]) < 1e-8)
 		{
 			cout << " trying " << pos[0] << ", " << pos[1] << ", " << pos[2] << ": ";
-			x[0] = (double) pos[0] / 7680.;
-			x[1] = (double) pos[1] / 7680.;
-			x[2] = (double) pos[2] / 7680.;
+			x[0] = (double) pos[0] / 3840.; //7680.;
+			x[1] = (double) pos[1] / 3840.; //7680.;
+			x[2] = (double) pos[2] / 3840.; //7680.;
 			
 			temp = sqrt((x[0]-(vertex[0]-wrap[0]))*(x[0]-(vertex[0]-wrap[0])) + (x[1]-(vertex[1]-wrap[1]))*(x[1]-(vertex[1]-wrap[1])) + (x[2]-(vertex[2]-wrap[2]))*(x[2]-(vertex[2]-wrap[2])));
 			

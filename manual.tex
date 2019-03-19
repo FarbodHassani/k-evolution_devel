@@ -8,6 +8,7 @@
 \usepackage{multirow}
 \usepackage{graphicx}
 \usepackage{sidecap}
+\usepackage{textcomp}
 \usepackage[dvipsnames]{xcolor}
 \usepackage[colorlinks=true,linkcolor=NavyBlue,citecolor=ForestGreen,urlcolor=NavyBlue]{hyperref}
 
@@ -26,7 +27,7 @@
 
 \begin{document}
 
-\centerline{\textbf{\huge User Manual for \textit{gevolution} v1.1}}
+\centerline{\textbf{\huge User Manual for \textit{gevolution} v1.2}}
 \vspace{1cm}
 \centerline{\large Julian Adamek}
 \medskip
@@ -38,7 +39,7 @@
 
 \paragraph{What \textit{gevolution} is and what it isn't.} \textit{gevolution} is a particle-mesh (PM) N-body code which is
 specifically designed to provide a general relativistic (GR) treatment of gravity. In order to allow for large simulations, the code uses
-massive parallelization based on the MPI protocol. However, very little knowledge about parallel computing is required for the user, as the
+massive parallelisation based on the MPI protocol. However, very little knowledge about parallel computing is required for the user, as the
 entire overhead is hidden inside the \textit{LATfield2} library \cite{David:2015eya}. \textit{LATfield2} provides a framework for managing
 data, in particular
 \textit{Fields} on a three dimensional regular \textit{Lattice}. The data is automatically distributed over MPI processes using a
@@ -46,7 +47,7 @@ rod-decomposition of the three-dimensional domain, i.e.\ two of the three dimens
 \textit{LATfield2} also has a highly scalable implementation of the three-dimensional Fast Fourier Transform (FFT). In addition, a
 versatile \textit{Particle} handler is also provided.
 
-As a consequence of relying on \textit{LATfield2} for all the parallelization and data handling, \textit{gevolution} is a relatively
+As a consequence of relying on \textit{LATfield2} for all the parallelisation and data handling, \textit{gevolution} is a relatively
 lightweight code which should be easy to read, understand, and eventually modify. The relativistic formulation and treatment of the laws
 of physics allows for the consistent implementation of many theoretical models beyond the baseline $\mathsf{\Lambda}$CDM cosmological
 model which comes with this release version of the code. \textit{gevolution} is intended to be a versatile tool for cosmologists who want
@@ -66,11 +67,12 @@ known origin.
 
 \paragraph{Additional information.} This user manual provides essential information about the usage of the code (user interface) and its
 internal structure. More information about the \textit{LATfield2} framework can be found in \cite{David:2015eya} or on the
-\textit{LATfield2} web site, \url{http://latfield.org}. More information about the theoretical underpinning of \textit{gevolution} can
-be found in the main code paper \cite{Adamek:2016zes}. If you use \textit{gevolution} for scientific work, we kindly ask you to cite
+\textit{LATfield2} web site, \url{http://latfield.org}. More information about the theoretical underpinnings of \textit{gevolution} can
+be found in the main code paper \cite{Adamek:2016zes}, while certain aspects related to relativistic species are discussed in \cite{Adamek:2017grt,Adamek:2017uiq}.
+If you use \textit{gevolution} for scientific work, we kindly ask you to cite
 \cite{Adamek:2015eda} in your publications.
 
-\paragraph{Copyright} \textcopyright~2015--2016~ Julian Adamek (Universit\'e de Gen\`eve \& Observatoire de Paris)
+\paragraph{Copyright} \textcopyright~2015--2019~ Julian Adamek (Universit\'e de Gen\`eve \& Observatoire de Paris \& Queen Mary University of London)
 
 \paragraph{License.} Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the ``Software''), to deal
@@ -90,26 +92,14 @@ liability, whether in an action of contact, tort or otherwise, arising from,
 out of or in connection with the Software or the use or other dealings in
 the Software.}
 
-\subsection{Development since v1.0}
+\subsection{Development since v1.1}
 
-The most important changes to the code are a greatly improved generator for initial conditions (still called
-``\texttt{basic}'') which can now generate initial data based on linear transfer functions for each particle
-species. It is even possible to link \textit{CLASS} as a library, so that the required transfer functions
-can be computed at runtime. Furthermore, several options to treat the baryonic component have been implemented, including
-the possibility to treat it as separate N-body ensemble, however without self-interaction.
-
-This release of the code also contains an additional generator for initial conditions
-which can be used to set up the initial phase space of non-cold species according to a procedure proposed in \cite{Ma:1993xs}, see
-section 5.4.2 of \cite{Adamek:2016zes} for some details. The linear mode functions for $\mathsf{\Phi}$ and $\mathsf{\Psi}$
-required for this procedure are obtained directly from \textit{CLASS}.
-
-The main control sequence has been reorganized and the code sections handling output have been moved into
-a separate header file in order to make the code easier to navigate. It is now possible to restart a run from hibernation points.
-
-A linear radiation module based on \textit{CLASS} is now available if \textit{CLASS} is linked as a library. It uses the linear transfer
-functions from the Boltzmann code to generate a realization of the perturbed radiation field \cite{Adamek:2017xxx}. This method can also
-be used to obtain a linear approximation to the effect of massive neutrinos similar to how it is done in \cite{Brandbyge:2008js}, and
-the module allows one to prescribe redshift values at which the treatment for a species switches from linear to N-body. 
+The major addition in this code release is the new light-cone feature of \textit{gevolution}. In addition to producing output for equal-time
+hypersurfaces one can now also specify any number of observers and survey geometries for which data can be recorded directly on the past light cone.
+Particle data is stored in a standard format similar to particle snapshots while metric data is pixelised using the \textit{HEALPix}
+method \cite{Gorski:2004by}.
+There are also minor improvements to the \textit{CLASS} interface, in particular a new option to include linear fluids. This can be useful, for instance,
+for studying the \textit{w}$_\mathsf{0}$-\textit{w}$_\mathsf{a}$-\textit{c}$_\mathsf{s}^\mathsf{2}$ parametrisation of dark energy.
 
 
 \section{Compilation}
@@ -118,7 +108,7 @@ the module allows one to prescribe redshift values at which the treatment for a 
 
 A copy of the \textit{gevolution} code can be cloned from a public \textit{Git} repository:
 
-\url{https://github.com/gevolution-code/gevolution-1.1.git}
+\url{https://github.com/gevolution-code/gevolution-1.2.git}
 
 \noindent The code is written in C++ and requires the following additional libraries to be installed.
 
@@ -140,15 +130,22 @@ Some features of the code are toggled using compiler options.
 \begin{itemize}
  \item[] \hspace{-25pt}\texttt{-DBENCHMARK} ~ With this option set, the code will output some benchmarking information (CPU time spent on various code components).
  \item[] \hspace{-25pt}\texttt{-DPHINONLINEAR} ~ With this option set, the equations will be solved taking into account shortwave corrections. In fact, this option should always be used unless you have a model which sources relativistic corrections at linear order and you know what you are doing.
+ \item[] \hspace{-25pt}\texttt{-DORIGINALMETRIC} ~ In v1.1 of \textit{gevolution} the convention for the scalar potentials $\mathsf{\phi}$ and $\mathsf{\psi}$ \textbf{has changed at second order} compared to the original code release. The new convention is the one of \cite{Adamek:2017grt}. With the option \texttt{-DORIGINALMETRIC} the original convention of \cite{Adamek:2016zes} is restored.
  \item[] \hspace{-25pt}\texttt{-DCHECK\_B} ~ With this option set, the code will compute a separate copy of the spin-1 component of the
  metric, B$_\mathsf{i}$. This copy is computed using the alternative of the method chosen for the simulation, e.g.\ it will use the
  momentum constraint if that equation is \textit{not} used in the simulation. This can be useful to check consistency but it requires
  additional memory and computations. The option should therefore primarily be used for diagnostic purposes, especially if one is memory limited.
+ \item[] \hspace{-25pt}\texttt{-DEXACT\_OUTPUT\_REDSHIFTS} ~ While output can only be written at discrete time steps, this option employs a linear interpolation
+ between the two nearest time steps in order to produce output at exactly the redshift that was requested. This only applies to power spectra and to \textit{Gadget-2} binary particle snapshots -- metric snapshots are still taken at approximate redshifts.
  \item[] \hspace{-25pt}\texttt{-DHAVE\_CLASS} ~ Use this option to link \textit{CLASS} as a library. This allows computing linear transfer functions ``on the fly'' without having to pass them as input files to the IC generator.
+ \item[] \hspace{-25pt}\texttt{-DHAVE\_HEALPIX} ~ Use this option to link the \textit{HEALPix} C-library required for the production of
+ pixelised light-cone output.
  \item[] \hspace{-25pt}\texttt{-DICGEN\_PREVOLUTION} ~ This option enables an additional IC generator called \texttt{prevolution} which can 
- be used to set up -- or ``pre-evolve'' -- the phase space of non-cold species, e.g.\ massive neutrinos. Note that this generator needs to call \textit{CLASS}.
+ be used to set up -- or ``pre-evolve'' -- the phase space of non-cold species, e.g.\ massive neutrinos, according to a procedure proposed in \cite{Ma:1993xs}, see
+section 2.4 of \cite{Adamek:2017uiq} for some details. Note that this generator needs to call \textit{CLASS}.
  \item[] \hspace{-25pt}\texttt{-DH5\_HAVE\_PARALLEL} ~ This option enables the parallel output of HDF5 files in the \textit{LATfield2} 
  library. It requires the parallel version of the HDF5 library to be installed on the system. The parallel output mode should always be used if available, especially for production runs.
+ \item[] \hspace{-25pt}\texttt{-DCOLORTERMINAL} ~ This option toggles colour highlighting for the terminal output. The ANSI escape codes are not properly interpreted by many text editors, however.
  \item[] \hspace{-25pt}\texttt{-DEXTERNAL\_IO} ~ This option enables the I/O server of the \textit{LATfield2} library. Use this capability if you have to write large amounts of data (many snapshots) and only if you know what it means.
 \end{itemize}
 
@@ -169,6 +166,9 @@ A typical command to run a simulation looks like this:
 \textit{LATfield2} library for the decomposition of the three-dimensional domain. The product of the two numbers gives the total number of 
 processes. Note that each number has to be $\geq$ 2, such that the minimum number of MPI processes is 4. Finally, a settings file has to be 
 passed with the command-line parameter \texttt{-s}.
+
+If the code is compiled with the \texttt{HAVE\_CLASS} flag, the user can pass a \textit{CLASS} precision parameter file with the optional
+command-line parameter \texttt{-p}. If omitted, the code will work with default parameters when calling \textit{CLASS}.
 
 If the code is compiled with the \texttt{EXTERNAL\_IO} flag, two additional command-line options, \texttt{-i} and \texttt{-g}, specify the 
 number of I/O processes and the mapping of compute processes onto I/O processes (grouping), respectively.
@@ -210,6 +210,8 @@ non-whitespace character before the equal sign. In fact, the parser is written a
  in order to fill the entire simulation volume. Note that this parameter thereby sets the total particle number, as
  \textit{N}$_\mathsf{part}$ = \textit{N}$_\mathsf{template} \times ($\texttt{tiling factor}$)^\mathsf{3}$. If more than one particle species
  is present a comma-separated list specifies a separate number for each N-body ensemble. The assignment is as in \texttt{template file}.
+ Note that a value of zero is allowed for any non-CDM species (e.g.\ massive neutrinos), and no N-body ensemble is created in this case.
+ Such species can then still be treated with the linear radiation module (see below).
  \item[] \hspace{-25pt}\texttt{PSD samples} ~ Since \textit{gevolution} v1.1 this parameter is \textbf{obsolete}. The size of each N-body
  ensemble is entirely controlled with \texttt{tiling factor}.
  \item[] \hspace{-25pt}\texttt{particle file = ic\_cdm.h5} ~ If initial data is to be read from disk instead of being generated on the fly (i.e.\ if \texttt{IC~generator~=~read~from~disk}) a file containing the initial particle configuration has to be specified. If more than
@@ -220,8 +222,8 @@ non-whitespace character before the equal sign. In fact, the parser is written a
  coordinates should be in N-body gauge instead \cite{Fidler:2015npa}.
  \item[] \hspace{-25pt}\texttt{metric file = ic\_phi.h5} ~ If initial data is to be read from disk instead of being generated on the fly
  (i.e.\ if \texttt{IC~generator~=~read~from~disk}) and when running a relativistic simulation (i.e.\ \texttt{gravity theory = GR}) a file
- containing the initial potential $\mathsf{\Phi}$ can be provided. The format is assumed to be \textit{gevolution}'s HDF5 output format
- at the correct resolution. If left unspecified the code will derive the initial $\mathsf{\Phi}$ from the particle distribution assuming
+ containing the initial potential $\mathsf{\phi}$ can be provided. The format is assumed to be \textit{gevolution}'s HDF5 output format
+ at the correct resolution. If left unspecified the code will derive the initial $\mathsf{\phi}$ from the particle distribution assuming
  a linear approximation.
  \item[] \hspace{-25pt}\texttt{baryon treatment = blend} ~ Specifies the treatment of the baryonic component. Possible choices are
  \texttt{ignore}, \texttt{sample}, \texttt{blend} and \texttt{hybrid}. Choosing \texttt{ignore} means that the IC generator will simply
@@ -232,9 +234,6 @@ non-whitespace character before the equal sign. In fact, the parser is written a
  mixture of \texttt{sample} and \texttt{blend}. No separate N-body ensemble is created. The weighted average depends on particle IDs such
  that one out of eight particles behaves maximally as if it were a baryon particle while the remaining particles have an appropriately
  increased weight of the CDM behaviour.
- \item[] \hspace{-25pt}\texttt{N\_ncdm = 2} ~ Specifies the number of distinct non-CDM species to be included in the simulation. An
- additional N-body ensemble is created for each species. If left unspecified, the number of species is inferred from the number of mass
- parameters (see \texttt{m\_ncdm}).
  \item[] \hspace{-25pt}\texttt{Tk file = class\_tk.dat} ~ Specifies a file (ASCII format) containing the tabulated linear transfer functions
  (for $\mathsf{\delta}$ and $\mathsf{\theta}$) at initial redshift. The IC generator assumes that the table is in the format produced by
  \textit{CLASS}. Make sure that the table covers all the scales present in the simulation, otherwise the IC generator will crash.
@@ -257,10 +256,12 @@ functions ``on the fly.''
  \item[] \hspace{-25pt}\texttt{seed = 12345} ~ Seed for random number generator. The IC generator will generate the Fourier modes starting
  from the lowest \textit{k} value and then moving systematically towards higher \textit{k}. This guarantees that two simulations with
  identical \texttt{seed} and \texttt{boxsize}, but with different resolution (i.e.\ different \texttt{Ngrid}), will contain the same
- realization for all modes which they have in common, allowing for resolution studies which are minimally affected by cosmic variance.
+ realisation for all modes which they have in common, allowing for resolution studies which are minimally affected by cosmic variance.
  \item[] \hspace{-25pt}\texttt{correct displacement = yes} ~ With this option set, the IC generator will try to fold the template pattern
  into the convolution kernel used for the displacement field (for CDM and baryons only). Usually this will produce a more accurate density
- field at small scales. However, this option should only be used with regular templates (crystals).
+ field at small scales. However, this option \textit{requires} that the discrete symmetry group of the lattice is a symmetry subgroup of
+ the homogeneous particle template (crystal), i.e.\ the template is invariant under lattice translations, rotations or reflections. If this
+ requirement is not met the IC generator may crash or misbehave.
  \item[] \hspace{-25pt}\texttt{k-domain = sphere} ~ Possible choices are \texttt{sphere} or \texttt{cube}. With the former option, the IC
  generator will only generate modes within the largest \textit{k}-sphere which fits into the Fourier cube -- the remaining modes will be
  zero.
@@ -273,19 +274,22 @@ functions ``on the fly.''
 
 If one uses \texttt{prevolution} to generate initial data, the relaxation redshift should be taken somewhat \textit{larger} than the initial
 redshift. This IC generator initializes the particle ensembles for non-cold species at a very high redshift (specified with a parameter
-called \texttt{prevolution redshift}) and evolves them in the linear realization of the potentials (obtained from transfer functions
+called \texttt{prevolution redshift}) and evolves them in the linear realisation of the potentials (obtained from transfer functions
 that are computed at runtime using \textit{CLASS}). When the redshift reaches the value specified by \texttt{relaxation redshift}, the
-IC generator will initialize all remaining particle species and evolves everything down to the ``initial'' redshift of the (nonlinear)
+IC generator will initialize all remaining particle species and evolves everything down to the ``initial'' redshift of the (non-linear)
 simulation. Between the relaxation redshift and the initial redshift, the potentials are interpolations between the linear solutions
 (obtained from
-\textit{CLASS}) and the nonlinear ones (obtained from \textit{gevolution}), and the frame dragging is still neglected.
+\textit{CLASS}) and the non-linear ones (obtained from \textit{gevolution}), and the frame dragging is still neglected.
  \item[] \hspace{-25pt}\texttt{prevolution redshift = 5000} ~ This parameter is only relevant for the \texttt{prevolution} IC generator and
  sets the redshift at which the particle ensembles for non-cold species (e.g.\ massive neutrinos) are initialized. It is assumed that all
  non-cold species are ultra-relativistic at this redshift, and that their perturbations can be described by the first two moments of their
  phase space distributions.
  \item[] \hspace{-25pt}\texttt{boxsize = 320.0} ~ Specifies the comoving size of the simulation box (in units of Mpc/\textit{h}).
  \item[] \hspace{-25pt}\texttt{Ngrid = 64} ~ Specifies the number of lattice points in each dimension. Therefore the (comoving) spatial 
- resolution is given by  $\mathsf{\Delta}$\textit{x} = \texttt{boxsize} / \texttt{Ngrid}.
+ resolution is given by  $\mathsf{\Delta}$\textit{x} = \texttt{boxsize} / \texttt{Ngrid}. Due to the way the distributed FFT is implemented in
+ \textit{LATfield2}, \texttt{Ngrid} has to fulfill certain constraints with respect to the process layout that is given by the two command-line
+ parameters \texttt{n} and \texttt{m}. These are \texttt{Ngrid} / \texttt{n} = \textit{integer}, and
+ \texttt{Ngrid} / \texttt{m} = \textit{even integer}.
  \item[] \hspace{-25pt}\texttt{Courant factor = 48.0} ~ This is the Courant factor for the gravity solver and sets the global time
  resolution of the simulation. If $\mathsf{\Delta}$\textit{x} is the (comoving) spatial resolution and $\mathsf{\Delta\tau}$ is the
  (conformal) time step, the \texttt{Courant factor} is given by $\mathsf{\Delta\tau} / \mathsf{\Delta}$\textit{x}. In other words, it is the
@@ -312,8 +316,15 @@ simulation. Between the relaxation redshift and the initial redshift, the potent
  \texttt{-DCHECK\_B} will ensure that an additional copy of B$_\mathsf{i}$ is computed using the alternative method (this copy is computed
  for diagnostic purposes and is never used in the dynamics).
  \item[] \hspace{-25pt}\texttt{radiation treatment = CLASS} ~ Use this option to enable the linear radiation module based on \textit{CLASS}.
- Note that the linear realization of the perturbed radiation field is going to be based on the random number sequence given
+ It uses the linear transfer functions from the Boltzmann code to generate a realisation of the perturbed radiation field \cite{Adamek:2017grt}.
+ This method can also be used to obtain a linear approximation to the effect of massive neutrinos similar to how it is done in \cite{Brandbyge:2008js}.
+ Note that the linear realisation is going to be based on the random number sequence given
  by \texttt{seed}. It is therefore consistent with the initial data if it was prepared by one of the IC generators of \textit{gevolution}.
+ \item[] \hspace{-25pt}\texttt{fluid treatment = CLASS} ~ When running simulations with an additional cosmological fluid ($\mathsf{\Omega}_\mathsf{fld}$ > 0),
+ use this option to enable a linear treatment of the fluid perturbations based on \textit{CLASS}. This method works exactly like the linear radiation module, see
+ \cite{Hassani:2019xxx} for more details. Note that \textit{CLASS} is not designed to compute transfer functions beyond redshift zero, and
+ \textit{gevolution} therefore has to turn off the fluid perturbations at that point.\footnote{This can also cause spurious effects in power spectra
+ when the code is compiled with \texttt{-DEXACT\_OUTPUT\_REDSHIFTS} and the interpolation uses values beyond redshift zero.}
  \item[] \hspace{-25pt}\texttt{switch delta\_rad = 15} ~ If the linear radiation module is enabled, this parameter specifies a
  redshift below which the linear density perturbation of radiation (photons and other ultra-relativistic species) can safely be ignored.
  \item[] \hspace{-25pt}\texttt{switch delta\_ncdm = 15, 10} ~ If the linear radiation module is enabled, a redshift value can be specified
@@ -328,7 +339,7 @@ simulation. Between the relaxation redshift and the initial redshift, the potent
  \item[] \hspace{-25pt}\texttt{switch linear chi = 15} ~ If the linear radiation module is enabled, this parameter specifies a
  redshift above which the linear approximation should be used for the contributions to $\mathsf{\chi}$ of all ultra-relativistic
  and non-CDM species. At lower redshift the contributions of non-CDM species will be obtained by appropriate particle-mesh projections,
- whereas the contributions of ultrarelativistic species will be ignored. If left unspecified, it will be set to the highest value given
+ whereas the contributions of ultra-relativistic species will be ignored. If left unspecified, it will be set to the highest value given
  in \texttt{switch delta\_ncdm}.
  \item[] \hspace{-25pt}\texttt{output path = output/} ~ Specifies the path where the output should be written. Note that the directory has
  to be created before running the code, as the code can not create directories and will crash at output if the directories do not exist!
@@ -336,23 +347,24 @@ simulation. Between the relaxation redshift and the initial redshift, the potent
  nor hibernation points (e.g.\ diagnostic files, background data etc.).
  \item[] \hspace{-25pt}\texttt{snapshot file base = lcdm\_snap} ~ Specifies a file base for snapshot files.
  \item[] \hspace{-25pt}\texttt{Pk file base = lcdm\_pk} ~ Specifies a file base for power spectra files.
- \item[] \hspace{-25pt}\texttt{Pk bins = 1024} ~ Specifies the number of \textit{k}-bins for the spectra. Note that empty bins will not be
- written, therefore the final number of entries in the file may be less than this number.
+ \item[] \hspace{-25pt}\texttt{lightcone file base = lcdm\_pk} ~ Specifies a file base for light-cone files.
  \item[] \hspace{-25pt}\texttt{snapshot redshifts  = 30, 10, 3, 0} ~ Specifies the (approximate) redshifts at which a snapshot should be
  saved. Note that the code does not adapt the time step to reach these redshifts precisely -- it will rather write the snapshots each time a
  given redshift has been passed.
  \item[] \hspace{-25pt}\texttt{snapshot outputs = phi, B, chi, Gadget2} ~ Specifies the datasets to be written at snapshot output. Possible
- choices are $\mathsf{\Phi}$ (\texttt{phi}), $\mathsf{\chi}$ = $\mathsf{\Phi}$-$\mathsf{\Psi}$ (\texttt{chi}), B$_\mathsf{i}$ (\texttt{B}),
+ choices are $\mathsf{\phi}$ (\texttt{phi}), $\mathsf{\chi}$ = $\mathsf{\phi}$-$\mathsf{\psi}$ (\texttt{chi}), B$_\mathsf{i}$ (\texttt{B}),
  h$_\mathsf{ij}$ (\texttt{hij}), T$^\mathsf{0}_\mathsf{0}$ (\texttt{T00}), T$^\mathsf{i}_\mathsf{j}$ (\texttt{Tij}), momentum density
  (\texttt{p}) and particles (\texttt{pcls}). Furthermore, some Newtonian quantities can also be computed separately from the particle
  ensemble, namely $\mathsf{\rho}_\mathsf{N}$ (\texttt{rhoN})\footnote{With \textit{gevolution} v1.1 the option  $\mathsf{\delta}_\mathsf{N}$
  (\texttt{deltaN}) is \textbf{obsolete} and has been replaced by $\mathsf{\rho}_\mathsf{N}$ (\texttt{rhoN}). See, however, \texttt{Pk
  outputs}.} and $\mathsf{\psi}_\mathsf{N}$ (\texttt{psiN}). All files will be in HDF5 format. However, the code can also output the particle
- snapshot using the binary format of \textit{Gadget-2} (\texttt{Gadget2}). This can be useful if one 
+ snapshot using the binary format of \textit{Gadget-2} (\texttt{Gadget2}, or \texttt{multi-Gadget2} if the snapshots should be split into multiple
+ files -- the number of files in this case will be equal to the command-line parameter \texttt{m} from the process layout). This can be useful if one 
 wants to process the data with tools that where designed for \textit{Gadget}.
  
  Note that the code will only write snapshots for the total T$^\mathsf{0}_\mathsf{0}$, T$^\mathsf{i}_\mathsf{j}$ and momentum density. However, it should be easy to modify the output routine in order to write these quantities for individual constituents separately, as is done e.g.\ for the power spectra.
- \item[] \hspace{-25pt}\texttt{tracer factor = 1, 1, 1} ~ For each particle species (the first number is for CDM particles, the second one for baryon particles if they are present, the following ones for non-CDM species if appropriate) only particles having IDs which are integer multiples of this number will be saved into the \textit{Gadget} file. For instance, with \texttt{tracer factor = 8} only one out of 8 CDM particles will be written. This allows for writing low-resolution snapshots of high-resolution runs. Of course, this type of data compression is lossy! The default is 1, meaning that all particles are saved.
+ \item[] \hspace{-25pt}\texttt{tracer factor = 1, 1, 1} ~ For each particle species (the first number is for CDM particles, the second one for baryon particles if they are present, the following ones for non-CDM species if appropriate) only particles having IDs which are integer multiples of this number will be saved into the \textit{Gadget} files (including light-cone outputs). For instance, with \texttt{tracer factor = 8} only one out of 8 CDM particles will be written. This allows for writing low-resolution snapshots of high-resolution runs. Of course, this type of data compression is lossy! The default is 1, meaning that all particles are saved. A value of 0 indicates that
+ the corresponding particle species should be omitted from the output entirely.
  
  If the particle template is a crystal only certain choices of \texttt{tracer factor} will result in a crystal structure for the
  \textit{tracer particles}. These are 1, 2, 8, 16, 64 for the simple cubic templates, 1, 4, 8, 32 for the face-centered cubic one,
@@ -374,6 +386,51 @@ wants to process the data with tools that where designed for \textit{Gadget}.
 also compute some cross-spectra if the dataset \texttt{X-spectra} is specified\footnote{Even without this option the code automatically
 computes the cross-spectra between following non-CDM species (if present): 0$\times$1, 2$\times$3 and 4$\times$5. This default behaviour
 facilitates the implementation of shot noise suppression, see \cite{Adamek:2016zes} for more details.}.
+ \item[] \hspace{-25pt}\texttt{Pk bins = 1024} ~ Specifies the number of \textit{k}-bins for the spectra. Note that empty bins will not be
+ written, therefore the final number of entries in the file may be less than this number.
+ \item[] \hspace{-25pt}\texttt{lightcone outputs = phi, Gadget2} ~ Specifies the datasets to be written for light-cone output. Possible
+ choices are \textit{Gadget-2} (\texttt{Gadget2}) for particle data and $\mathsf{\phi}$ (\texttt{phi}),
+ $\mathsf{\chi}$ = $\mathsf{\phi}$-$\mathsf{\psi}$ (\texttt{chi}), B$_\mathsf{i}$ (\texttt{B}) and h$_\mathsf{ij}$ (\texttt{hij}) for metric data.
+ The latter require the \textit{HEALPix} C-library to be linked (\texttt{-DHAVE\_HEALPIX}).
+ \end{itemize}
+\noindent\textbf{Writing multiple light cones:} In some cases it can be useful to define more than one light cone geometry, e.g.\ to gather statistics for
+multiple observers or to mimic complicated survey footprints that consist of fields with different areas and depths. To specify parameters for individual
+light-cone geometries, the light cones can be enumerated by inserting a numeral after the word \texttt{lightcone}, e.g.\ \texttt{lightcone 0 outputs =} \ldots,
+\texttt{lightcone 1 outputs =} \ldots. Default settings for all light cones are set if the numeral is omitted.
+\begin{itemize}
+ \item[] \hspace{-25pt}\texttt{lightcone vertex = 0, 0, 0} ~ Specifies the location of the observer in comoving coordinates (in units of Mpc/\textit{h}).
+ \item[] \hspace{-25pt}\texttt{lightcone redshift = 0} ~ Specifies the time of observation. If left unspecified, the default \textit{z} = 0 is assumed,
+ corresponding to observations taken today.
+ \item[] \hspace{-25pt}\texttt{lightcone distance = 20, 500} ~ Specifies the minimum and maximum comoving look-back distance (in units of Mpc/\textit{h})
+ for which light-cone data is to be recorded.
+ \item[] \hspace{-25pt}\texttt{lightcone opening half-angle = 20} ~ Specifies the field of view in terms of a maximal angle (in degrees) with respect to
+ a polar axis. If left unspecified, 180\textdegree\, (full sky) is assumed.
+ \item[] \hspace{-25pt}\texttt{lightcone direction = 0, 0, 1} ~ Specifies the direction vector of the polar axis with respect to which the field of view is
+ defined. Cartesian (\textit{x}$^\mathsf{1}$, \textit{x}$^\mathsf{2}$, \textit{x}$^\mathsf{3}$) or polar coordinates ($\mathsf{\vartheta}$, $\mathsf{\varphi}$)
+ are both acceptable, and in the latter case the two angles are given in degrees.  If left unspecified, the direction vector is aligned with the
+ \textit{x}$^\mathsf{3}$-axis. Angular coordinates in the \textit{HEALPix} basis are related to the Cartesian basis of the simulation box by an Euler
+ rotation of type \textit{x}$^\mathsf{3}$-\textit{x}$^\mathsf{2}$-\textit{x}$^\mathsf{3}$, where the last Euler angle is assumed to be zero.
+ \item[] \hspace{-25pt}\texttt{lightcone Nside = 4, 1024} ~ Specifies the minimum and maximum values of \textit{N}$_\mathsf{side}$ that determine the
+ angular resolution of pixelised data. If only one value is given, \textit{N}$_\mathsf{side}$ is fixed to that value. Otherwise an appropriate value
+ within the available range is chosen for each map, depending on the setting of the \texttt{pixel factor}.
+ \item[] \hspace{-25pt}\texttt{lightcone pixel factor = 0.5} ~ Specifies the minimum inverse area of a pixel in terms of the comoving spatial resolution
+ of the simulation. Explicitly, \textit{N}$_\mathsf{side}$ is chosen as the smallest allowed value that satisfies (\texttt{pixel factor}) $\times$
+ \textit{A}$_\mathsf{pix}$ < $\mathsf{\Delta}$\textit{x}$^\mathsf{2}$, where \textit{A}$_\mathsf{pix}$ is the area of a pixel for the given radius of a shell.
+ I left unspecified, the value 0.5 is assumed which means that the ratio \textit{A}$_\mathsf{pix}$ / $\mathsf{\Delta}$\textit{x}$^\mathsf{2}$ lies between
+ 0.5 and 2.
+ \item[] \hspace{-25pt}\texttt{lightcone shell factor = 1.0} ~ Specifies the sampling rate of pixelised data along the radial direction, i.e.\ the number of
+ shells per look-back distance interval $\mathsf{\Delta}$\textit{x}. If left unspecified, the value 1.0 is assumed such that the sampling rate matches the spatial resolution of the simulation.
+ \item[] \hspace{-25pt}\texttt{lightcone covering = 2.0} ~ This parameter controls the amount of \textit{spatial} overlap between consecutive outputs of pixelised
+ light-cone data, see figure \ref{fig:covering} for illustration. A value of 1 corresponds to no overlap (each shell is written only once). If left unspecified
+ a value slightly larger than 2 is used, which ensures that each shell is written (at least) for two consecutive time steps. The parameter has no implications for
+ particle data.
+ \begin{SCfigure}[3.0][b]
+\label{fig:covering}
+ \includegraphics[width=0.5\textwidth]{covering2.pdf}
+ \caption{\small The sketch illustrates which shells (thick black) are used for pixelised light-cone data in consecutive time steps (cycles) of the simulation. In the
+ present example, the \texttt{lightcone covering} is 2, which means that a shell will appear in two consecutive outputs -- enough to compute first time-derivatives
+ of the data.}
+\end{SCfigure}
  \item[] \hspace{-25pt}\texttt{hibernation file base = lcdm\_restart} ~ Specifies a file base for hibernation files.
  \item[] \hspace{-25pt}\texttt{hibernation redshifts = 10, 1} ~ Specifies the (approximate) redshifts at which hibernation points should be
  written to disk (in the same fashion as \texttt{snapshot redshifts} works for snapshots).
@@ -381,6 +438,7 @@ facilitates the implementation of shot noise suppression, see \cite{Adamek:2016z
  a hibernation point and quit. This limit should be somewhat below the time limit of the job to allow for the hibernation to complete.
  If left unspecified, no time limit is assumed.
 \end{itemize}
+
 
 \paragraph{Cosmological parameters.} We adopt the convention that all physical parameters which have a meaning in both \textit{gevolution} and \textit{CLASS} should be specified in the same way, using even the same parameter name in the respective settings files. Ideally it should therefore be possible to run both codes with a single settings file as each code will ignore any unknown parameters. This can facilitate the generation of initial conditions for \textit{gevolution} using \textit{CLASS}.
 \begin{itemize}
@@ -396,6 +454,16 @@ facilitates the implementation of shot noise suppression, see \cite{Adamek:2016z
  using the given (or default) value of \textit{h}. Note that unless one sets \texttt{baryon treatment = sample} the baryons will not be
  present as separate N-body ensemble and will be lumped together with CDM, i.e.\ the density parameter for the ``cold'' particle species in
  the code is given by $\mathsf{\Omega}_\mathsf{cdm}$ + $\mathsf{\Omega}_\mathsf{b}$.
+ \item[] \hspace{-25pt}\texttt{omega\_fld = 0} ~ A cosmological fluid with parametrised equation of state can be added to the background equations
+ by setting a non-zero value for its density parameter $\mathsf{\Omega}_\mathsf{fld}$ (\texttt{Omega\_fld}) or $\mathsf{\omega}_\mathsf{fld}$ (\texttt{omega\_fld}).
+ \item[] \hspace{-25pt}\texttt{w0\_fld = -1.0} ~ The equation of state of the additional cosmological fluid (if present) is parametrised as
+ \textit{w}$(\mathsf{a})$ = \textit{w}$_\mathsf{0}$ + \textit{w}$_\mathsf{a}$ (1 - $\mathsf{a}$), where \textit{w}$_\mathsf{0}$ (\texttt{w0\_fld}) is the present-day
+ value.
+ \item[] \hspace{-25pt}\texttt{wa\_fld = 0} ~ A time-dependence can be given to the equation of state of the additional cosmological fluid (if present) by
+ setting a non-zero value of \textit{w}$_\mathsf{a}$ (\texttt{wa\_fld}) as indicated above.
+ \item[] \hspace{-25pt}\texttt{cs2\_fld = 1} ~ The (square of the) effective speed of sound of perturbations in the additional cosmological fluid (if present)
+ can be specified. This parameter appears in the evolution equations of the fluid perturbations for which a linear solution can be obtained with \textit{CLASS}.
+ If the appropriate flag is set (\texttt{fluid treatment = CLASS}) such a linear contribution is included in the stress-energy used in the simulation.
  \item[] \hspace{-25pt}\texttt{A\_s = 2.215e-9} ~ Initial amplitude of the primordial power spectrum of the gauge invariant curvature
  perturbation at pivot scale \textit{k}$_\mathsf{p}$ (\texttt{k\_pivot}). If left unspecified, the code will assume the standard value
  \textit{A}$_\mathsf{s}$ = 2.215$\times$10$^\mathsf{-9}$.
@@ -415,6 +483,9 @@ facilitates the implementation of shot noise suppression, see \cite{Adamek:2016z
  \times \mathsf{\Omega}_\mathsf{\gamma}$. Alternatively, $\mathsf{\Omega}_\mathsf{ur}$ (\texttt{Omega\_ur}) or $\mathsf{\omega}_\mathsf{ur}$
  (\texttt{omega\_ur}) can be specified (the latter is converted to $\mathsf{\Omega}_\mathsf{ur}$ using \textit{h}). If left unspecified, the
  code will assume the standard value \textit{N}$_\mathsf{ur}$ = 3.046.
+ \item[] \hspace{-25pt}\texttt{N\_ncdm = 2} ~ Specifies the number of distinct non-CDM species to be included in the simulation. An
+ additional N-body ensemble is created for each species unless the respective \texttt{tiling factor} is set to zero. If left unspecified,
+ the number of species is inferred from the number of mass parameters (see \texttt{m\_ncdm}).
  \item[] \hspace{-25pt}\texttt{m\_ncdm = 0.04, 0.04} ~ This parameter specifies the fundamental masses (in units of eV) of additional
  non-CDM species. The code will create a full N-body ensemble for each massive non-CDM species. By default the initial phase-space
  distribution is assumed to be the relativistic Fermi-Dirac distribution of a standard neutrino species at the given mass. The sampling
@@ -429,7 +500,7 @@ facilitates the implementation of shot noise suppression, see \cite{Adamek:2016z
 \noindent Note that neither $\mathsf{\Omega}_\mathsf{K}$ nor $\mathsf{\Omega}_\mathsf{\Lambda}$ can be specified. Instead,
 $\mathsf{\Omega}_\mathsf{K}$ = 0 is always assumed and $\mathsf{\Omega}_\mathsf{\Lambda}$ is then determined from all the other density
 parameters, $\mathsf{\Omega}_\mathsf{\Lambda}$ = 1 - $\mathsf{\Omega}_\mathsf{cdm}$ - $\mathsf{\Omega}_\mathsf{b}$ -
-$\mathsf{\Omega}_\mathsf{\gamma}$ - $\mathsf{\Omega}_\mathsf{ur}$ - $\mathsf{\Omega}_\mathsf{ncdm}$.
+$\mathsf{\Omega}_\mathsf{\gamma}$ - $\mathsf{\Omega}_\mathsf{ur}$ - $\mathsf{\Omega}_\mathsf{ncdm}$ - $\mathsf{\Omega}_\mathsf{fld}$.
 
 \subsection{Initial data}
 \label{sec:IC}
@@ -438,7 +509,7 @@ The initial data required to set up a simulation ultimately depends upon the mod
 this version (\texttt{basic}) one has the option to simulate $\mathsf{\Lambda}$CDM standard cosmology and its extension including massive
 neutrinos. The \texttt{basic} generator will assume that the initial conditions (ICs) are linear, adiabatic, and Gaussian. Therefore it is
 enough to specify the primordial power spectrum and the linear transfer functions (at initial redshift) in order to generate a random
-realization of initial data.
+realisation of initial data.
 \textit{gevolution} accepts tabulated transfer functions in the format provided by \textit{CLASS} (the respective parameter file entry in
 \textit{CLASS} is \texttt{output = mTk, vTk}; you should also set \texttt{z\_pk} to generate a power spectrum at the desired initial
 redshift for the N-body simulation, and make sure that \texttt{P\_k\_max\_h/Mpc} is set to a value large enough to cover the full range of
@@ -463,15 +534,15 @@ which are both measured in units of the comoving box size (i.e.\ we set \textit{
 \subsection{Output formats}
 \label{sec:output}
 
-There are essentially three types of output generated by the code: background data, power spectra and snapshots.
+There are essentially four types of output generated by the code: background data, power spectra, snapshots and light cones.
 
 \paragraph{Background data} is a table of time-dependent quantities stored in ASCII format. One line is written in each cycle of the time
-integration scheme. By default, the colums are \textit{cycle number}, \textit{conformal age of the Universe} (in units of the boxsize),
-\textit{scale factor} (normalized to 1 today), \textit{conformal Hubble rate} (in units of \textit{H}${}_\mathsf{0}$), $\bar{\mathsf{\Phi}}$
-(the homogeneous mode of the metric perturbation $\mathsf{\Phi}$), and -3\textit{H}${}_\mathsf{0}^\mathsf{2}$\textit{a}$^\mathsf{3}
+integration scheme. By default, the columns are \textit{cycle number}, \textit{conformal age of the Universe} (in units of the boxsize),
+\textit{scale factor} (normalized to 1 today), \textit{conformal Hubble rate} (in units of \textit{H}${}_\mathsf{0}$), $\bar{\mathsf{\phi}}$
+(the homogeneous mode of the metric perturbation $\mathsf{\phi}$), and -3\textit{H}${}_\mathsf{0}^\mathsf{2}$\textit{a}$^\mathsf{3}
 [\mathsf{\bar{T}^0_0}]_\mathsf{N\text{-}body}$/8$\mathsf{\pi}$\textit{G} (the homogeneous mode of $\mathsf{T^0_0}$ of the entire particle
 ensemble, scaled to today's value and in units of the critical density today). The latter two quantities are useful for checking that the
-assumed background model is accurate. In particular, $|\bar{\mathsf{\Phi}}|~ \mathsf{\ll 1}$ is required for internal consistency.
+assumed background model is accurate. In particular, $|\bar{\mathsf{\phi}}|~ \mathsf{\ll 1}$ is required for internal consistency.
 
 \paragraph{Power spectra} are saved as tables of binned data in ASCII format. A separate file is written for each spectrum at each requested
 output redshift (parameter \texttt{Pk redshifts}). The first two columns contain the central values of \textit{k} (in units of
@@ -480,13 +551,55 @@ convention, such that our dimensionless \textit{P(k)} corresponds to the $\maths
 each bin, the next two columns give the sample standard deviation for those, and the final column gives the number of samples which
 contributed to the bin.
 One should be aware that the spectra are estimated simply by averaging the amplitude of \textit{k}-modes within a certain finite shell on
-the discrete Fourier lattice, without any measures to control discretization effects. The spectra therefore become distorted near the
+the discrete Fourier lattice, without any measures to control discretisation effects. The spectra therefore become distorted near the
 Nyqvist frequency. For $\mathsf{\rho}_\mathsf{N}$ and T$^\mathsf{0}_\mathsf{0}$ the spectra are deconvolved with the cloud-in-cell kernel
 used for the particle-mesh projection.
 
 \paragraph{Snapshots} are representations of the full 3D information on a given equal-time hypersurface. The code uses the I/O routines
-provided by the \textit{LATfield2} library, which writes HDF5 format. In addition, the code can write a snapshot of the particle
-configuration also in the binary format of \textit{Gadget-2}. %\textit{LATfield2} offers two different options for writing HDF5 data for vector and tensor fields. For the default option the organization of the data mirrors the way data is handled in \textit{LATfield2}: at each point in the 3D domain, a set of values representing the components of the vector or tensor is stored. However, this format can not easily be interpreted by some post-processing software. Alternatively, by using the compiler option \texttt{H5\_HAVE\_PIXIE}, a separate 3D dataset is stored for each component.
+provided by the \textit{LATfield2} library, which writes HDF5 format. In addition, the code can write snapshots of the particle
+configuration also in the binary format of \textit{Gadget-2}. With the release of v1.2, \textit{gevolution} can distribute those over multiple
+files, eliminating a limitation that was present for runs with more than 3.5$\times$10$^\mathsf{8}$ particles.
+
+\paragraph{Light cones} represent information on a \textit{null} hypersurface that corresponds to the past light cone of a specified \textit{observation event}.
+Output can be requested for any number of observation events, each specified by a \textit{vertex} location (in comoving coordinates) and an observation
+time (usually taken to be redshift zero, but other choices are possible). In addition, a \textit{survey geometry} can be specified in terms of
+a \textit{distance interval} (minimum and maximum look-back distances away from the vertex) and a \textit{solid angle} that could either be the full
+sky or a pencil beam. In the latter case, the survey area is further specified by a direction vector and an opening half-angle, i.e.\
+the field of view with respect to the direction vector (see figure \ref{fig:pencilbeam}).
+
+Two different output formats are supported. Particle positions and velocities can be recorded on the light cone using the \textit{Gadget-2} binary
+format.\footnote{Note that the velocities are \textit{not} rescaled by the usual $\sqrt{\mathsf{a}}$-factor since the scale factor $\mathsf{a}$
+is not a constant on a light cone.}
+In each simulation time step a shell centered on the current look-back distance, with a radial extent corresponding to the current step size, is recorded
+for each light cone. Note that the positions and velocities are updated by fractional time steps in order to move them as close as possible to the
+null hypersurface. This eliminates artefacts of the time discretisation at the shell boundaries. Furthermore, the code keeps track of the IDs of particles
+that have been written in the previous time step, in order to guarantee that the shells can later be catenated without duplicating or missing any particles.
+A simple post-processing tool (\textit{lccat}) is provided for this purpose. While \textit{gevolution} can handle light-cone geometries that make use of
+the periodic boundary conditions, the user is responsible for ensuring that the light cones do not intersect with each other (or with themselves). If they do,
+particles may only appear in one of the duplicated regions.
+
+\begin{SCfigure}[3.0][t!]
+\label{fig:pencilbeam}
+ \includegraphics[width=0.45\textwidth]{pencilbeam}
+ \caption{\small Illustration of a generic light-cone geometry, given by a vertex location and observation time, a look-back distance interval, and a
+ field of view specified through a direction vector and an opening half-angle.}
+\end{SCfigure}
+
+In order to record metric fields on a light cone, each field is resampled on spherical shells that are pixelised using the \textit{HEALPix} framework.
+A radial sampling rate (distance between shells) and a map resolution (either a fixed angular resolution, or an adaptive angular resolution that approximately
+maintains a fixed \textit{spatial} resolution between shells of different radius) can be chosen. At each time step, a certain number of shells with
+radius in the vicinity of the current look-back distance is recorded. The number depends on a \textit{covering} factor that effectively determines the finite
+time interval (in terms of simulation time steps) around the null hypersurface for which metric data should be recorded, e.g.\ in order to perform spacetime
+interpolations or take time-derivatives. A covering factor of one means that a given shell will be recorded once, at the simulation time step at which the
+look-back distance is closest to the shell radius. A covering factor of two (see figure \ref{fig:covering}) means that each shell will be recorded twice,
+i.e.\ for the two simulation time steps with the closest look-back distances, and so on.
+
+For each metric component, the collection of shells belonging to one time step (cycle) is saved into a single file that uses a custom binary format that has been
+optimised for I/O performance. A simple post-processing tool (\textit{lcmap}) is provided in order to extract individual shells and convert them to the standard
+\textit{FITS} format that is commonly used for \textit{HEALPix} data. The tool can also be used to do some pixel-based data reduction.
+
+A small \textit{info} file is written for each light cone, summarising the geometric parameters and a per-cycle breakdown of the look-back distance intervals
+(in units of the boxsize) for which data are recorded.
 
 \subsection{Hibernation, restarting a run}
 
@@ -541,8 +654,8 @@ ordering between \texttt{dim=1} and \texttt{dim=2} has been exchanged, but the \
  image of an existing \texttt{Lattice} (the geometry follows automatically in this case). 
  
  \item[] \hspace{-25pt}\texttt{Site} ~ This class essentially represents a grid coordinate and provides a simple way to navigate the 3D
- data. There are two related classes, \texttt{rKSite} and \texttt{cKSite}, which are used to navigate the Fourier lattices of a real-to
- complex or complex-to-complex Fourier transform, respectively.
+ data. There are two related classes, \texttt{rKSite} and \texttt{cKSite}, which are used to navigate the Fourier lattices of a
+ real-to-complex or complex-to-complex Fourier transform, respectively.
  
  \item[] \hspace{-25pt}\texttt{Field} ~ This class represents \textit{data} living on a \texttt{Lattice}. It could be a scalar field (real
  or complex) or a vector/tensor field. In \textit{gevolution} all fields live on the same \texttt{Lattice} (or its Fourier image).
@@ -624,22 +737,27 @@ The source code of \textit{gevolution} consists of several \textit{header} files
 
 \begin{itemize}
  \item Initialization and parsing of settings file
- \item Generation of initial conditions ``on the fly'' %(lines \texttt{263}-\texttt{281})
- \item Main loop %(line \texttt{324})
-% \begin{itemize}
-%  \item Construction of stress-energy tensor of the N-body ensemble (lines \texttt{329}-\texttt{349})
-%  \item Output of \textit{snapshots} (lines \texttt{357}-\texttt{593})
-%  \item Output of \textit{power spectra} (lines \texttt{600}-\texttt{826})
-%  \item Update $\mathsf{\Phi}$ (lines \texttt{853} and \texttt{864}, or line \texttt{877} for a \textit{Newtonian} run; the backwards FFT is done in line \texttt{883} for both cases, followed by \texttt{updateHalo} in line \texttt{888})
-%  \item Output of \textit{background data} (lines \texttt{890}-\texttt{907})
-%  \item Compute $\mathsf{\chi}$ (lines \texttt{911} and \texttt{922}; the backwards FFT is done in line \texttt{929}, followed by \texttt{updateHalo} in line \texttt{934})
-%  \item Update B$_\mathsf{i}$ (line \texttt{924}; the backwards FFT is done in line \texttt{944} and \texttt{updateHalo} in line \texttt{949}) -- note that a copy of [\textit{a}$^\mathsf{2}$ B$_\mathsf{i}$] is kept in Fourier space in order for the solver to work (for all other fields, the Fourier image can usually be discarded after the backwards transform)
-%  \item Update $\mathsf{\Psi}$ (lines \texttt{938}-\texttt{957})
-%  \item Determine time step subdivision for non-CDM species (lines \texttt{959}-\texttt{975})
-%  \item Update N-body particles (momenta and positions) using leap-frog (lines \texttt{997}-\texttt{1099}) -- the background is also evolved in this code section (lines \texttt{1063} and \texttt{1098})
-%  \item $\mathsf{\tau}$ \texttt{+=} $\mathsf{\Delta\tau}$ and determine $\mathsf{\Delta\tau}$ for the next time step (lines \texttt{1111}-\texttt{1124})
-% \end{itemize}
-% \item The main loop terminates when no more output is scheduled (line \texttt{909})
+ \item Generation of initial conditions ``on the fly'' (lines \texttt{263}-\texttt{281})
+ \item Main loop (line \texttt{324})
+\begin{itemize}
+ \item Construction of the stress-energy tensor of linear sources (line \texttt{364})
+ \item Construction of stress-energy tensor of the N-body ensembles (lines \texttt{329}-\texttt{349})
+ \item Update $\mathsf{\phi}$ (lines \texttt{441} and \texttt{452}, or line \texttt{475} for a \textit{Newtonian} run; the \texttt{updateHalo} occurs in line
+\texttt{487} for both cases)
+ \item Output of \textit{background data} (lines \texttt{890}-\texttt{907})
+ \item Compute $\mathsf{\chi}$ (lines \texttt{911} and \texttt{922})
+ \item Update B$_\mathsf{i}$ (lines \texttt{924}-\texttt{949}) -- note that a copy of [\textit{a}$^\mathsf{2}$ B$_\mathsf{i}$] is kept in Fourier space in order for the \texttt{parabolic} solver to work (for all other fields and for the \texttt{elliptic} solver, the Fourier image can usually be discarded after the backwards transform)
+ \item Output of \textit{snapshots} (lines \texttt{357}-\texttt{593})
+ \item Output of \textit{power spectra} (lines \texttt{600}-\texttt{826})
+ %\item Update $\mathsf{\Phi}$ (lines \texttt{853} and \texttt{864}, or line \texttt{877} for a \textit{Newtonian} run; the backwards FFT is done in line \texttt{883} for both cases, followed by \texttt{updateHalo} in line \texttt{888})
+ %\item Compute $\mathsf{\chi}$ (lines \texttt{911} and \texttt{922}; the backwards FFT is done in line \texttt{929}, followed by \texttt{updateHalo} in line \texttt{934})
+ %\item Update $\mathsf{\Psi}$ (lines \texttt{938}-\texttt{957})
+ \item Determine time step subdivision for non-CDM species (lines \texttt{959}-\texttt{975})
+ \item Update N-body particles (momenta and positions) using leap-frog (lines \texttt{997}-\texttt{199}) -- the background is also evolved in this code section (lines \texttt{1063} and \texttt{1098})
+ \item $\mathsf{\tau}$ \texttt{+=} $\mathsf{\Delta\tau}$ (line \texttt{779})
+ \item Write hibernation point (lines \texttt{787}-\texttt{825})
+\end{itemize}
+\item The main loop terminates when no more output is scheduled (line \texttt{909})
  \item Cleanup
 \end{itemize}
 
@@ -657,11 +775,12 @@ if additional quantities are to be studied.
 \label{sec:units}
 
 The code works in natural units where \textit{c} = 1. Both, conformal distances and conformal time are measured in units of the comoving box
-size (i.e.\ spatial coordinates range between 0 and 1). Metric perturbations are dimensionless. The canonical momentum is measured in units
+size (i.e.\ spatial coordinates range between 0 and 1). Metric perturbations are dimensionless. Note that the vector perturbation is internally
+stored as [\textit{a}$^\mathsf{2}$ B$_\mathsf{i}$] and rescaled for outputs. The canonical momentum is measured in units
 of the particle mass in order to make it dimensionless and independent of the mass resolution.
 
 For the stress-energy tensor the code actually computes -\textit{a}$^\mathsf{3} \mathsf{T^0_0}$ and \textit{a}$^\mathsf{3} \mathsf{T^i_j}$,
-i.e.\ the background expansion is scaled out. Also, the mass units are chosen such that, in the homogeneous limit and for nonrelativistic
+i.e.\ the background expansion is scaled out. Also, the mass units are chosen such that, in the homogeneous limit and for non-relativistic
 matter, the -\textit{a}$^\mathsf{3}\mathsf{\bar{T}^0_0}$ is equal its density parameter $\mathsf{\Omega}$ at redshift \textit{z} = 0.
 
 When output power spectra are computed, the code always writes the dimensionless spectra as defined in \cite{Adamek:2015eda}. However,

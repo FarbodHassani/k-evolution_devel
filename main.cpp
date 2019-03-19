@@ -1,5 +1,5 @@
 //////////////////////////
-// Copyright (c) 2015-2018 Julian Adamek
+// Copyright (c) 2015-2019 Julian Adamek
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -28,11 +28,13 @@
 //
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
-// Last modified: November 2018
+// Last modified: February 2019
 //
 //////////////////////////
 
 #include <stdlib.h>
+#include <set>
+#include <vector>
 #ifdef HAVE_CLASS
 #include "class.h"
 #undef MAX			// due to macro collision this has to be done BEFORE including LATfield2 headers!
@@ -101,6 +103,7 @@ int main(int argc, char **argv)
 	char filename[2*PARAM_MAX_LENGTH+24];
 	string h5filename;
 	char * settingsfile = NULL;
+	char * precisionfile = NULL;
 	parameter * params = NULL;
 	metadata sim;
 	cosmology cosmo;
@@ -123,6 +126,13 @@ int main(int argc, char **argv)
 				break;
 			case 'm':
 				m =  atoi(argv[++i]); //size of the dim 2 of the processor grid
+				break;
+			case 'p':
+#ifndef HAVE_CLASS
+				cout << "HAVE_CLASS needs to be set at compilation to use CLASS precision files" << endl;
+				exit(-100);
+#endif
+				precisionfile = argv[++i];
 				break;
 			case 'i':
 #ifndef EXTERNAL_IO
@@ -179,7 +189,12 @@ int main(int argc, char **argv)
 	background class_background;
   	perturbs class_perturbs;
   	spectra class_spectra;
+
+  	if (precisionfile != NULL)
+	  	numparam = loadParameterFile(precisionfile, params);
+	else
 #endif
+		numparam = 0;
 
 	h5filename.reserve(2*PARAM_MAX_LENGTH);
 	h5filename.assign(sim.output_path);
@@ -199,6 +214,7 @@ int main(int argc, char **argv)
 	Field<Real> * update_b_fields[3];
 	Field<Real> * update_ncdm_fields[3];
 	double f_params[5];
+	set<long> IDbacklog[MAX_PCL_SPECIES];
 
 	Field<Real> phi;
   Field<Real> phi_old;
@@ -209,8 +225,10 @@ int main(int argc, char **argv)
 	Field<Real> Sij;
 	Field<Real> Bi;
 	Field<Cplx> scalarFT;
+  //FH added
   Field<Cplx> scalarFT_phi_old;
   Field<Cplx> phi_prime_scalarFT;
+  //FH ended
 	Field<Cplx> SijFT;
 	Field<Cplx> BiFT;
 	source.initialize(lat,1);
@@ -233,6 +251,7 @@ int main(int argc, char **argv)
 	BiFT_check.initialize(latFT,3);
 	PlanFFT<Cplx> plan_Bi_check(&Bi_check, &BiFT_check);
 #endif
+//FH added
 phi_old.initialize(lat,1);
 scalarFT_phi_old.initialize(latFT,1);
 PlanFFT<Cplx> plan_phi_old(&phi_old, &scalarFT_phi_old);
@@ -240,6 +259,7 @@ PlanFFT<Cplx> plan_phi_old(&phi_old, &scalarFT_phi_old);
 phi_prime.initialize(lat,1);
 phi_prime_scalarFT.initialize(latFT,1);
 PlanFFT<Cplx> phi_prime_plan(&phi_prime, &phi_prime_scalarFT);
+//FH end
 
 	Field<Real> * lcbuffer[LIGHTCONE_MAX_FIELDS*LIGHTCONE_THICKNESS];
 	Lattice * lclat[LIGHTCONE_MAX_FIELDS];
@@ -289,6 +309,16 @@ PlanFFT<Cplx> phi_prime_plan(&phi_prime, &phi_prime_scalarFT);
 				lcbuffer[LIGHTCONE_THICKNESS*LIGHTCONE_HIJ_OFFSET+i] = new Field<Real>((*lclat[LIGHTCONE_HIJ_OFFSET]), 1);
 		}
 	}
+#else
+#ifdef UNITY_HACK
+	lclat[0] = &lat;
+	lclat[1] = &lat;
+	lcbuffer[0] = new Field<Real>;
+	lcbuffer[0]->initialize(lat,1);
+	PlanFFT<Cplx> plan_ncdm(lcbuffer[0], &scalarFT);
+	lcbuffer[1] = new Field<Real>(lat,1);
+	lcbuffer[2] = new Field<Real>(lat,1);
+#endif
 #endif
 
 	update_cdm_fields[0] = &phi;
@@ -330,12 +360,12 @@ PlanFFT<Cplx> phi_prime_plan(&phi_prime, &phi_prime_scalarFT);
 	dtau_older = 0.;
 
 	if (ic.generator == ICGEN_BASIC)
-		generateIC_basic(sim, ic, cosmo, fourpiG, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij); // generates ICs on the fly
+		generateIC_basic(sim, ic, cosmo, fourpiG, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, params, numparam); // generates ICs on the fly
 	else if (ic.generator == ICGEN_READ_FROM_DISK)
-		readIC(sim, ic, cosmo, fourpiG, a, tau, dtau, dtau_old, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, cycle, snapcount, pkcount, restartcount);
+		readIC(sim, ic, cosmo, fourpiG, a, tau, dtau, dtau_old, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, cycle, snapcount, pkcount, restartcount, IDbacklog);
 #ifdef ICGEN_PREVOLUTION
 	else if (ic.generator == ICGEN_PREVOLUTION)
-		generateIC_prevolution(sim, ic, cosmo, fourpiG, a, tau, dtau, dtau_old, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij);
+		generateIC_prevolution(sim, ic, cosmo, fourpiG, a, tau, dtau, dtau_old, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, params, numparam);
 #endif
 #ifdef ICGEN_FALCONIC
 	else if (ic.generator == ICGEN_FALCONIC)
@@ -384,12 +414,12 @@ PlanFFT<Cplx> phi_prime_plan(&phi_prime, &phi_prime_scalarFT);
 
 #ifdef HAVE_CLASS
 #ifdef COSIRA_HACK
-	initializeCLASSstructures(sim, ic, cosmo, class_background, class_perturbs, class_spectra);
+	initializeCLASSstructures(sim, ic, cosmo, class_background, class_perturbs, class_spectra, params, numparam);
 #endif // COSIRA_HACK
 	if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
 	{
 #ifndef COSIRA_HACK
-		initializeCLASSstructures(sim, ic, cosmo, class_background, class_perturbs, class_spectra);
+		initializeCLASSstructures(sim, ic, cosmo, class_background, class_perturbs, class_spectra, params, numparam);
 #endif // COSIRA_HACK
 #ifndef MULTISTEP_PROJECTION
 		if (sim.gr_flag > 0 && a < 1. / (sim.z_switch_linearchi + 1.) && (ic.generator == ICGEN_BASIC || (ic.generator == ICGEN_READ_FROM_DISK && cycle == 0)))
@@ -402,19 +432,22 @@ PlanFFT<Cplx> phi_prime_plan(&phi_prime, &phi_prime_scalarFT);
 		}
 #endif
 	}
+	if (numparam > 0) free(params);
 #endif
 
 	while (true)    // main loop
 	{
-
+    //FH added
     for (x.first(); x.test(); x.next())
-  		{
+      {
         // cout<<"tau: "<<tau<<" z: "<<1./(a) -1.<<endl;
         //\Phi(n-1) = \Phi(old) and \Phi(n) which will be updated in this loops
         // Just note that in the first 2-3 steps it does not work since we
-  			phi_old(x) =phi(x);
+        phi_old(x) =phi(x);
          // if(x.coord(0)==32 && x.coord(1)==12 && x.coord(2)==32) cout<<"zeta_half: "<<zeta_half(x)<<endl;
-  		}
+      }
+    //FH ended
+
 #ifdef BENCHMARK
 		cycle_start_time = MPI_Wtime();
 #endif
@@ -423,7 +456,14 @@ PlanFFT<Cplx> phi_prime_plan(&phi_prime, &phi_prime_scalarFT);
 		projection_init(&source);
 #ifdef HAVE_CLASS
 		if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
+#ifndef UNITY_HACK
 			projection_T00_project(class_background, class_perturbs, class_spectra, source, scalarFT, &plan_source, sim, ic, cosmo, fourpiG, a);
+#else
+#ifndef HAVE_HEALPIX
+#error UNITY_HACK requires HAVE_HEALPIX!
+#endif
+			projection_T00_project(class_background, class_perturbs, class_spectra, *lcbuffer[0], scalarFT, &plan_ncdm, sim, ic, cosmo, fourpiG, a);
+#endif
 #endif
 #endif
 		if (sim.gr_flag > 0)
@@ -440,7 +480,11 @@ PlanFFT<Cplx> phi_prime_plan(&phi_prime, &phi_prime_scalarFT);
 				{
 					tmp = bg_ncdm(a, cosmo, i);
 					for(x.first(); x.test(); x.next())
+#ifdef UNITY_HACK
+						(*lcbuffer[0])(x) += tmp;
+#else
 						source(x) += tmp;
+#endif
 				}
 			}
 #endif
@@ -459,6 +503,23 @@ PlanFFT<Cplx> phi_prime_plan(&phi_prime, &phi_prime_scalarFT);
 #endif
 		}
 		projection_T00_comm(&source);
+
+#ifdef UNITY_HACK
+		for (x.first(); x.test(); x.next())
+		{
+			(*lcbuffer[1])(x) = source(x);
+			source(x) += (*lcbuffer[0])(x);
+		}
+
+		projection_init(lcbuffer[2]);
+		if (sim.num_lightcone > 0 && sim.lightcone[sim.num_lightcone-1].distance[0] + 0.5 * sim.covering[sim.num_lightcone-1] * dtau_old + 2. * dx > particleHorizon(1, fourpiG, cosmo) - tau)
+			projection_RSD_project(&pcls_cdm, lcbuffer[2], a, sim.lightcone[sim.num_lightcone-1], particleHorizon(1, fourpiG, cosmo) - tau - 0.5 * sim.covering[sim.num_lightcone-1] * dtau - 2. * dx, particleHorizon(1, fourpiG, cosmo) - tau + 0.5 * sim.covering[sim.num_lightcone-1] * dtau_old + 2. * dx);
+		projection_T00_comm(lcbuffer[2]);
+
+		lcbuffer[0]->updateHalo();
+		lcbuffer[1]->updateHalo();
+		lcbuffer[2]->updateHalo();
+#endif
 
 #ifndef VECTOREXTRA
 		if (sim.vector_flag == VECTOR_ELLIPTIC)
@@ -665,36 +726,37 @@ PlanFFT<Cplx> phi_prime_plan(&phi_prime, &phi_prime_scalarFT);
 
 		// lightcone output
 		if (sim.num_lightcone > 0)
-			writeLightcones(sim, cosmo, fourpiG, a, tau, dtau, dtau_old, dtau_older, maxvel[0], cycle, h5filename + sim.basename_lightcone, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &chi, &Bi, &Sij, &BiFT, &SijFT, &plan_Bi, &plan_Sij, lcbuffer, lclat, done_hij);
+			writeLightcones(sim, cosmo, fourpiG, a, tau, dtau, dtau_old, dtau_older, maxvel[0], cycle, h5filename + sim.basename_lightcone, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &chi, &Bi, &Sij, &BiFT, &SijFT, &plan_Bi, &plan_Sij, lcbuffer, lclat, done_hij, IDbacklog);
 		else done_hij = 0;
 
 #ifdef BENCHMARK
 		lightcone_output_time += MPI_Wtime() - ref_time;
 		ref_time = MPI_Wtime();
 #endif
-
+//FH added
 for (x.first(); x.test(); x.next())
 {
   phi_prime(x) =(phi(x)-phi_old(x))/(dtau);
 }
+//FH ended
 		// snapshot output
 		if (snapcount < sim.num_snapshot && 1. / a < sim.z_snapshot[snapcount] + 1.)
 		{
 			COUT << COLORTEXT_CYAN << " writing snapshot" << COLORTEXT_RESET << " at z = " << ((1./a) - 1.) <<  " (cycle " << cycle << "), tau/boxsize = " << tau << endl;
 
 #ifdef CHECK_B
-			writeSnapshots(sim, cosmo, fourpiG, a, done_hij, snapcount, h5filename + sim.basename_snapshot,
-        #ifdef HAVE_CLASS
-          class_background, class_perturbs, class_spectra, ic,
-        #endif
-         &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
+    writeSnapshots(sim, cosmo, fourpiG, a, dtau_old, done_hij, snapcount, h5filename + sim.basename_snapshot,
+      #ifdef HAVE_CLASS
+        class_background, class_perturbs, class_spectra, ic,
+      #endif
+       &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
 #else
-			writeSnapshots(sim, cosmo, fourpiG, a, done_hij, snapcount, h5filename + sim.basename_snapshot,
-        #ifdef HAVE_CLASS
-          class_background, class_perturbs, class_spectra, ic,
-        #endif
-         &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij);
-#endif
+    writeSnapshots(sim, cosmo, fourpiG, a, dtau_old,done_hij, snapcount, h5filename + sim.basename_snapshot,
+      #ifdef HAVE_CLASS
+        class_background, class_perturbs, class_spectra, ic,
+      #endif
+       &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij);
+ #endif
 
 			snapcount++;
 		}
@@ -707,14 +769,10 @@ for (x.first(); x.test(); x.next())
 		// power spectra
 		if (pkcount < sim.num_pk && 1. / a < sim.z_pk[pkcount] + 1.)
 		{
-
 #ifdef COSIRA_HACK
 			if (sim.gr_flag > 0)
 			{
 				COUT << COLORTEXT_CYAN << " writing power spectra" << COLORTEXT_RESET << " at z = " << ((1./a) - 1.) <<  " (cycle " << cycle << "), tau/boxsize = " << tau << endl;
-
-        writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
-
 				writeSpectra(sim, cosmo, fourpiG, a, pkcount,
 #ifdef HAVE_CLASS
 					class_background, class_perturbs, class_spectra, ic,
@@ -724,6 +782,7 @@ for (x.first(); x.test(); x.next())
 					, &Bi_check, &BiFT_check, &plan_Bi_check
 #endif
 				);
+        writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
 
 				pkcount++;
 
@@ -788,7 +847,6 @@ for (x.first(); x.test(); x.next())
 			if (sim.gr_flag == 0)
 			{
 				COUT << COLORTEXT_CYAN << " writing power spectra" << COLORTEXT_RESET << " at z = " << ((1./a) - 1.) <<  " (cycle " << cycle << "), tau/boxsize = " << tau << endl;
-        writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
 
 				writeSpectra(sim, cosmo, fourpiG, a, pkcount,
 #ifdef HAVE_CLASS
@@ -864,8 +922,6 @@ for (x.first(); x.test(); x.next())
 
 		if (pkcount < sim.num_pk && 1. / tmp < sim.z_pk[pkcount] + 1.)
 		{
-      writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
-
 			writeSpectra(sim, cosmo, fourpiG, a, pkcount,
 #ifdef HAVE_CLASS
 					class_background, class_perturbs, class_spectra, ic,
@@ -875,6 +931,7 @@ for (x.first(); x.test(); x.next())
 					, &Bi_check, &BiFT_check, &plan_Bi_check
 #endif
 			);
+      writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
 		}
 #endif // EXACT_OUTPUT_REDSHIFTS
 
@@ -948,7 +1005,6 @@ for (x.first(); x.test(); x.next())
 		}
 #endif
 #endif
-
 		for (j = 0; j < numsteps; j++) // particle update
 		{
 #ifdef BENCHMARK
@@ -1187,6 +1243,12 @@ for (x.first(); x.test(); x.next())
 
 #ifdef BENCHMARK
 		ref_time = MPI_Wtime();
+#endif
+
+#ifdef UNITY_HACK
+	delete lcbuffer[0];
+	delete lcbuffer[1];
+	delete lcbuffer[2];
 #endif
 
 #ifndef HAVE_HEALPIX
