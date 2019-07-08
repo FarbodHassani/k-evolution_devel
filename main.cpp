@@ -226,6 +226,11 @@ int main(int argc, char **argv)
 	Field<Real> phi_old;
   //phi at two step before to compute phi'(n+1/2)
 	Field<Real> phi_prime;
+  #ifdef BACKREACTION_TEST
+  Field<Real> short_wave;
+  Field<Real> relativistic_term;
+  Field<Real> stress_tensor;
+  #endif
 	Field<Real> pi_k;
 	// Field<Real> zeta_integer;
   Field<Real> zeta_half;
@@ -234,6 +239,11 @@ int main(int argc, char **argv)
 	Field<Real> Tij_Kess;
 	Field<Cplx> scalarFT_phi_old;
 	Field<Cplx> phi_prime_scalarFT;
+  #ifdef BACKREACTION_TEST
+  Field<Cplx> short_wave_scalarFT;
+  Field<Cplx> relativistic_term_scalarFT;
+  Field<Cplx> stress_tensor_scalarFT;
+  #endif
 	Field<Cplx> scalarFT_chi_old;
 	Field<Cplx> scalarFT_pi;
 	// Field<Cplx> scalarFT_zeta_integer;
@@ -270,6 +280,18 @@ int main(int argc, char **argv)
 	phi_prime.initialize(lat,1);
 	phi_prime_scalarFT.initialize(latFT,1);
 	PlanFFT<Cplx> phi_prime_plan(&phi_prime, &phi_prime_scalarFT);
+  //Relativistic corrections
+  #ifdef BACKREACTION_TEST
+  short_wave.initialize(lat,1);
+  short_wave_scalarFT.initialize(latFT,1);
+  PlanFFT<Cplx> short_wave_plan(&short_wave, &short_wave_scalarFT);
+  relativistic_term.initialize(lat,1);
+  relativistic_term_scalarFT.initialize(latFT,1);
+  PlanFFT<Cplx> relativistic_term_plan(&relativistic_term, &relativistic_term_scalarFT);
+  stress_tensor.initialize(lat,1);
+  stress_tensor_scalarFT.initialize(latFT,1);
+  PlanFFT<Cplx> stress_tensor_plan(&stress_tensor, &stress_tensor_scalarFT);
+  #endif
 	//pi_k kessence
 	pi_k.initialize(lat,1);
 	scalarFT_pi.initialize(latFT,1);
@@ -570,7 +592,7 @@ int norm_kFT_squared = 0.;
       for (x.first(); x.test(); x.next())
     	{
           //NL_test, Printing out average
-        if(x.coord(0)==32 && x.coord(1)==32 && x.coord(2)==32)
+        if(x.coord(0)==32 && x.coord(1)==20 && x.coord(2)==10)
         {
           // if(parallel.isRoot())
           // {
@@ -686,6 +708,10 @@ if (sim.Kess_source_gravity==1)
 			source(x) += T00_Kess(x);
 			if (sim.vector_flag == VECTOR_ELLIPTIC)for(int 	c=0;c<3;c++)Bi(x,c)+=  T0i_Kess(x,c);
 			for(int c=0;c<6;c++)Sij(x,c)+=(2.) * Tij_Kess(x,c);
+      // if(x.coord(0)==32 && x.coord(1)==20 && x.coord(2)==10)
+      // {
+      // cout<<"x"<<x<<"T00_Kess(x): "<<T00_Kess(x)<<endl;
+      // }
 		}
 }
 #ifdef BENCHMARK
@@ -709,7 +735,12 @@ if (sim.Kess_source_gravity==1)
 
 			if (dtau_old > 0.)
 			{
-				prepareFTsource<Real>(phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hconf(a, fourpiG, cosmo) * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hconf(a, fourpiG, cosmo) * Hconf(a, fourpiG, cosmo) * dx * dx);  // prepare nonlinear source for phi update
+        #ifdef BACKREACTION_TEST
+
+				prepareFTsource_BackReactionTest<Real>(short_wave, relativistic_term, stress_tensor  , dx, phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hconf(a, fourpiG, cosmo) * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hconf(a, fourpiG, cosmo) * Hconf(a, fourpiG, cosmo) * dx * dx);  // prepare nonlinear source for phi update
+        #else
+        prepareFTsource<Real>(phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hconf(a, fourpiG, cosmo) * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hconf(a, fourpiG, cosmo) * Hconf(a, fourpiG, cosmo) * dx * dx);  // prepare nonlinear source for phi update
+        #endif
 
 #ifdef BENCHMARK
 				ref2_time= MPI_Wtime();
@@ -876,16 +907,18 @@ for (x.first(); x.test(); x.next())
 		{
 			COUT << COLORTEXT_CYAN << " writing power spectra" << COLORTEXT_RESET << " at z = " << ((1./a) - 1.) <<  " (cycle " << cycle << "), tau/boxsize = " << tau << endl;
 
+#ifdef BACKREACTION_TEST
+      writeSpectra_PoissonTerms(sim,  cosmo,  fourpiG,  a, pkcount, &relativistic_term, &relativistic_term_scalarFT, &relativistic_term_plan, &short_wave, &short_wave_scalarFT , &short_wave_plan, &stress_tensor, &stress_tensor_scalarFT, &stress_tensor_plan);
+#endif
 #ifdef CHECK_B
 			//kessence included
 			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij, &Bi_check, &BiFT_check, &plan_Bi_check);
+
 #else
 			//kessence included
 			writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
 
       writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
-
-
 #endif
 
 			pkcount++;
@@ -909,8 +942,9 @@ for (x.first(); x.test(); x.next())
     #endif
 		    );
     writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
-
-
+    #ifdef BACKREACTION_TEST
+    writeSpectra_PoissonTerms(sim,  cosmo,  fourpiG,  a, pkcount, &relativistic_term, &relativistic_term_scalarFT, &relativistic_term_plan, &short_wave, &short_wave_scalarFT , &short_wave_plan, &stress_tensor, &stress_tensor_scalarFT, &stress_tensor_plan);
+    #endif
     		}
     #endif // EXACT_OUTPUT_REDSHIFTS
 

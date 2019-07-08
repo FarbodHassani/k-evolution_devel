@@ -758,6 +758,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 template <class FieldType>
 void prepareFTsource(Field<FieldType> & phi, Field<FieldType> & chi, Field<FieldType> & source, const FieldType bgmodel, Field<FieldType> & result, const double coeff, const double coeff2, const double coeff3)
 {
+
 	Site x(phi.lattice());
 
 	for (x.first(); x.test(); x.next())
@@ -780,6 +781,37 @@ void prepareFTsource(Field<FieldType> & phi, Field<FieldType> & chi, Field<Field
 	}
 }
 
+template <class FieldType>
+void prepareFTsource_BackReactionTest( Field<FieldType> & short_wave, Field<FieldType> & relativistic_term,Field<FieldType> & stress_tensor, const double dx, Field<FieldType> & phi, Field<FieldType> & chi, Field<FieldType> & source, const FieldType bgmodel, Field<FieldType> & result, const double coeff, const double coeff2, const double coeff3)
+{
+
+	Site x(phi.lattice());
+
+	for (x.first(); x.test(); x.next())
+	{
+		result(x) = coeff2 * (source(x) - bgmodel);
+#ifdef PHINONLINEAR
+#ifdef ORIGINALMETRIC
+		result(x) *= 1. - 4. * phi(x);
+		result(x) -= 0.375 * (phi(x-0) - phi(x+0)) * (phi(x-0) - phi(x+0));
+		result(x) -= 0.375 * (phi(x-1) - phi(x+1)) * (phi(x-1) - phi(x+1));
+		result(x) -= 0.375 * (phi(x-2) - phi(x+2)) * (phi(x-2) - phi(x+2));
+#else
+    short_wave(x) = 0.125 * (phi(x-0) - phi(x+0)) * (phi(x-0) - phi(x+0));
+    short_wave(x) +=0.125 * (phi(x-1) - phi(x+1)) * (phi(x-1) - phi(x+1));
+    short_wave(x) +=0.125 * (phi(x-2) - phi(x+2)) * (phi(x-2) - phi(x+2));
+    short_wave(x) /= dx * dx;
+    relativistic_term(x) = - coeff * phi(x)/dx/dx;
+    stress_tensor(x) = coeff2 * (source(x) - bgmodel)/dx/dx;
+		result(x) *= 1. - 2. * phi(x);
+		result(x) += 0.125 * (phi(x-0) - phi(x+0)) * (phi(x-0) - phi(x+0));
+		result(x) += 0.125 * (phi(x-1) - phi(x+1)) * (phi(x-1) - phi(x+1));
+		result(x) += 0.125 * (phi(x-2) - phi(x+2)) * (phi(x-2) - phi(x+2));
+#endif
+#endif
+		result(x) += (coeff3 - coeff) * phi(x) - coeff3 * chi(x);
+	}
+}
 
 #ifdef FFT3D
 //////////////////////////
