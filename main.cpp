@@ -362,6 +362,7 @@ int main(int argc, char **argv)
 		// dtau = sim.steplimit / Hconf(a, fourpiG, cosmo) / sim.nKe_numsteps;
     dtau = sim.steplimit / Hconf(a, fourpiG, cosmo);
 
+
 	dtau_old = 0.;
 
 	if (ic.generator == ICGEN_BASIC)
@@ -555,6 +556,10 @@ int norm_kFT_squared = 0.;
 	while (true)    // main loop
 	{
     //Kessence
+    if (a > 1./(1.+0.5) )
+      {
+        dtau = dtau/4;
+      }
   	for (x.first(); x.test(); x.next())
   		{
         // cout<<"tau: "<<tau<<" z: "<<1./(a) -1.<<endl;
@@ -737,7 +742,7 @@ if (sim.Kess_source_gravity==1)
 			{
         #ifdef BACKREACTION_TEST
 
-				prepareFTsource_BackReactionTest<Real>(short_wave, relativistic_term, stress_tensor  , dx, phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hconf(a, fourpiG, cosmo) * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hconf(a, fourpiG, cosmo) * Hconf(a, fourpiG, cosmo) * dx * dx);  // prepare nonlinear source for phi update
+				prepareFTsource_BackReactionTest<Real>(short_wave, relativistic_term, stress_tensor  , dx, phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hconf(a, fourpiG, cosmo) * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hconf(a, fourpiG, cosmo) * Hconf(a, fourpiG, cosmo) * dx * dx, sim.boxsize );  // prepare nonlinear source for phi update
         #else
         prepareFTsource<Real>(phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hconf(a, fourpiG, cosmo) * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hconf(a, fourpiG, cosmo) * Hconf(a, fourpiG, cosmo) * dx * dx);  // prepare nonlinear source for phi update
         #endif

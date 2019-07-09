@@ -782,7 +782,7 @@ void prepareFTsource(Field<FieldType> & phi, Field<FieldType> & chi, Field<Field
 }
 
 template <class FieldType>
-void prepareFTsource_BackReactionTest( Field<FieldType> & short_wave, Field<FieldType> & relativistic_term,Field<FieldType> & stress_tensor, const double dx, Field<FieldType> & phi, Field<FieldType> & chi, Field<FieldType> & source, const FieldType bgmodel, Field<FieldType> & result, const double coeff, const double coeff2, const double coeff3)
+void prepareFTsource_BackReactionTest( Field<FieldType> & short_wave, Field<FieldType> & relativistic_term,Field<FieldType> & stress_tensor, const double dx, Field<FieldType> & phi, Field<FieldType> & chi, Field<FieldType> & source, const FieldType bgmodel, Field<FieldType> & result, const double coeff, const double coeff2, const double coeff3, const double boxsize)
 {
 
 	Site x(phi.lattice());
@@ -800,7 +800,8 @@ void prepareFTsource_BackReactionTest( Field<FieldType> & short_wave, Field<Fiel
     short_wave(x) = 0.125 * (phi(x-0) - phi(x+0)) * (phi(x-0) - phi(x+0));
     short_wave(x) +=0.125 * (phi(x-1) - phi(x+1)) * (phi(x-1) - phi(x+1));
     short_wave(x) +=0.125 * (phi(x-2) - phi(x+2)) * (phi(x-2) - phi(x+2));
-    short_wave(x) /= dx * dx;
+    short_wave(x) /= (dx * dx * boxsize *boxsize); //The unit is now 1/Mpc^2
+    // cout<<"dx"<<dx<<endl;
     relativistic_term(x) = - coeff * phi(x)/dx/dx;
     stress_tensor(x) = coeff2 * (source(x) - bgmodel)/dx/dx;
 		result(x) *= 1. - 2. * phi(x);
