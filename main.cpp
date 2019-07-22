@@ -348,8 +348,9 @@ int main(int argc, char **argv)
 			sim.movelimit = lat.sizeLocal(i)-1;
 	}
 	parallel.min(sim.movelimit);
-
 	fourpiG = 1.5 * sim.boxsize * sim.boxsize / C_SPEED_OF_LIGHT / C_SPEED_OF_LIGHT; // Just a definition to make Friedmann equation simplified! and working with normal numbers
+  // cout<<"Gevolution H0: "<<sqrt(2. * fourpiG / 3.)<<endl;
+  // cout<<"Box: "<<sim.boxsize<<endl;
 	a = 1. / (1. + sim.z_in);
 	tau = particleHorizon(a, fourpiG, cosmo);
 	tau_Lambda = -1.0;
@@ -556,10 +557,10 @@ int norm_kFT_squared = 0.;
 	while (true)    // main loop
 	{
     //Kessence
-    if (a > 1./(1.+0.5) )
-      {
-        dtau = dtau/4;
-      }
+    // if (a > 1./(1.+0.1) )
+    //   {
+    //     // dtau = dtau/4;
+    //   }
   	for (x.first(); x.test(); x.next())
   		{
         // cout<<"tau: "<<tau<<" z: "<<1./(a) -1.<<endl;
@@ -742,7 +743,7 @@ if (sim.Kess_source_gravity==1)
 			{
         #ifdef BACKREACTION_TEST
 
-				prepareFTsource_BackReactionTest<Real>(short_wave, relativistic_term, stress_tensor  , dx, phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hconf(a, fourpiG, cosmo) * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hconf(a, fourpiG, cosmo) * Hconf(a, fourpiG, cosmo) * dx * dx, sim.boxsize );  // prepare nonlinear source for phi update
+				prepareFTsource_BackReactionTest<Real>(short_wave, dx, phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hconf(a, fourpiG, cosmo) * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hconf(a, fourpiG, cosmo) * Hconf(a, fourpiG, cosmo) * dx * dx, sim.boxsize);  // prepare nonlinear source for phi update
         #else
         prepareFTsource<Real>(phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hconf(a, fourpiG, cosmo) * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hconf(a, fourpiG, cosmo) * Hconf(a, fourpiG, cosmo) * dx * dx);  // prepare nonlinear source for phi update
         #endif
@@ -913,7 +914,7 @@ for (x.first(); x.test(); x.next())
 			COUT << COLORTEXT_CYAN << " writing power spectra" << COLORTEXT_RESET << " at z = " << ((1./a) - 1.) <<  " (cycle " << cycle << "), tau/boxsize = " << tau << endl;
 
 #ifdef BACKREACTION_TEST
-      writeSpectra_PoissonTerms(sim,  cosmo,  fourpiG,  a, pkcount, &relativistic_term, &relativistic_term_scalarFT, &relativistic_term_plan, &short_wave, &short_wave_scalarFT , &short_wave_plan, &stress_tensor, &stress_tensor_scalarFT, &stress_tensor_plan);
+      writeSpectra_PoissonTerms(sim,  cosmo,  fourpiG,  a, pkcount, &short_wave, &short_wave_scalarFT , &short_wave_plan);
 #endif
 #ifdef CHECK_B
 			//kessence included
@@ -948,7 +949,7 @@ for (x.first(); x.test(); x.next())
 		    );
     writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
     #ifdef BACKREACTION_TEST
-    writeSpectra_PoissonTerms(sim,  cosmo,  fourpiG,  a, pkcount, &relativistic_term, &relativistic_term_scalarFT, &relativistic_term_plan, &short_wave, &short_wave_scalarFT , &short_wave_plan, &stress_tensor, &stress_tensor_scalarFT, &stress_tensor_plan);
+    writeSpectra_PoissonTerms(sim,  cosmo,  fourpiG,  a, pkcount, &short_wave, &short_wave_scalarFT , &short_wave_plan);
     #endif
     		}
     #endif // EXACT_OUTPUT_REDSHIFTS

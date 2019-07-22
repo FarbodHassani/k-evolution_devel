@@ -888,13 +888,13 @@ free(occupation);
 
 
 // Modified Poisson equation terms- TESTS
-void writeSpectra_PoissonTerms(metadata & sim, cosmology & cosmo, const double fourpiG, const double a, const int pkcount, Field<Real> * relativistic_term ,Field<Cplx> * relativistic_term_scalarFT , PlanFFT<Cplx> * relativistic_term_plan, Field<Real> * short_wave ,Field<Cplx> * short_wave_scalarFT , PlanFFT<Cplx> * short_wave_plan, Field<Real> * stress_tensor ,Field<Cplx> * stress_tensor_scalarFT , PlanFFT<Cplx> * stress_tensor_plan)
+void writeSpectra_PoissonTerms(metadata & sim, cosmology & cosmo, const double fourpiG, const double a, const int pkcount, Field<Real> * short_wave ,Field<Cplx> * short_wave_scalarFT , PlanFFT<Cplx> * short_wave_plan)
 {
 char filename[2*PARAM_MAX_LENGTH+24];
 char buffer[64];
 int i, j;
-Site x(relativistic_term->lattice());
-rKSite kFT(relativistic_term_scalarFT->lattice());
+Site x(short_wave->lattice());
+rKSite kFT(short_wave_scalarFT->lattice());
 long numpts3d = (long) sim.numpts * (long) sim.numpts * (long) sim.numpts;
 Cplx tempk;
 
@@ -911,21 +911,23 @@ pscatter = (Real *) malloc(sim.numbins * sizeof(Real));
 occupation = (int *) malloc(sim.numbins * sizeof(int));
 
     // It's dimensionless
-    relativistic_term_plan->execute(FFT_FORWARD);
-    extractPowerSpectrum(*relativistic_term_scalarFT , kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
-    sprintf(filename, "%s%s%03d_RE_phi_prime_over_dtau.dat", sim.output_path, sim.basename_pk, pkcount);
-    writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of relativistic term in Poisson equation; phi_prime/dtau (dimensionless)", a, sim.z_pk[pkcount]);
+    // relativistic_term_plan->execute(FFT_FORWARD);
+    // extractPowerSpectrum(*relativistic_term_scalarFT , kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
+    // sprintf(filename, "%s%s%03d_RE_phi_prime_over_dtau.dat", sim.output_path, sim.basename_pk, pkcount);
+    // writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of relativistic term in Poisson equation; phi_prime/dtau (dimensionless)", a, sim.z_pk[pkcount]);
 
+
+    // We divide by H_conf^2 to make it dimentionless!
     short_wave_plan->execute(FFT_FORWARD);
     extractPowerSpectrum(*short_wave_scalarFT , kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
     sprintf(filename, "%s%s%03d_short_wave.dat", sim.output_path, sim.basename_pk, pkcount);
-    writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI , filename, "power spectrum of short wave correction (dimensionless)", a, sim.z_pk[pkcount]);
+    writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * (Hconf(a,fourpiG,cosmo) * Hconf(a,fourpiG,cosmo),  Hconf(a,fourpiG,cosmo),  Hconf(a,fourpiG,cosmo)) , filename, "power spectrum of short wave correction (dimensionless)", a, sim.z_pk[pkcount]);
 
 
-    stress_tensor_plan->execute(FFT_FORWARD);
-    extractPowerSpectrum(*stress_tensor_scalarFT , kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
-    sprintf(filename, "%s%s%03d_stress_tensor.dat", sim.output_path, sim.basename_pk, pkcount);
-    writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI , filename, "power spectrum of stress tensor part to the Poisson equation (dimensionless)", a, sim.z_pk[pkcount]);
+    // stress_tensor_plan->execute(FFT_FORWARD);
+    // extractPowerSpectrum(*stress_tensor_scalarFT , kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
+    // sprintf(filename, "%s%s%03d_stress_tensor.dat", sim.output_path, sim.basename_pk, pkcount);
+    // writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI , filename, "power spectrum of stress tensor part to the Poisson equation (dimensionless)", a, sim.z_pk[pkcount]);
 
 free(kbin);
 free(power);

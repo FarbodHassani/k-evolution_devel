@@ -782,10 +782,11 @@ void prepareFTsource(Field<FieldType> & phi, Field<FieldType> & chi, Field<Field
 }
 
 template <class FieldType>
-void prepareFTsource_BackReactionTest( Field<FieldType> & short_wave, Field<FieldType> & relativistic_term,Field<FieldType> & stress_tensor, const double dx, Field<FieldType> & phi, Field<FieldType> & chi, Field<FieldType> & source, const FieldType bgmodel, Field<FieldType> & result, const double coeff, const double coeff2, const double coeff3, const double boxsize)
+void prepareFTsource_BackReactionTest( Field<FieldType> & short_wave, const double dx, Field<FieldType> & phi, Field<FieldType> & chi, Field<FieldType> & source, const FieldType bgmodel, Field<FieldType> & result, const double coeff, const double coeff2, const double coeff3, const double boxsize )
 {
 
 	Site x(phi.lattice());
+  double dl; // dl is the physical dx on the lattice dl = L/N_grid
 
 	for (x.first(); x.test(); x.next())
 	{
@@ -800,10 +801,10 @@ void prepareFTsource_BackReactionTest( Field<FieldType> & short_wave, Field<Fiel
     short_wave(x) = 0.125 * (phi(x-0) - phi(x+0)) * (phi(x-0) - phi(x+0));
     short_wave(x) +=0.125 * (phi(x-1) - phi(x+1)) * (phi(x-1) - phi(x+1));
     short_wave(x) +=0.125 * (phi(x-2) - phi(x+2)) * (phi(x-2) - phi(x+2));
-    short_wave(x) /= (dx * dx * boxsize *boxsize); //The unit is now 1/Mpc^2
-    // cout<<"dx"<<dx<<endl;
-    relativistic_term(x) = - coeff * phi(x)/dx/dx;
-    stress_tensor(x) = coeff2 * (source(x) - bgmodel)/dx/dx;
+    dl = boxsize*dx;
+    short_wave(x) /= (dl * dl ); //The unit is now 1/Mpc^2
+    // relativistic_term(x) = - coeff * phi(x)/dx/dx;
+    // stress_tensor(x) = coeff2 * (source(x) - bgmodel)/dx/dx;
 		result(x) *= 1. - 2. * phi(x);
 		result(x) += 0.125 * (phi(x-0) - phi(x+0)) * (phi(x-0) - phi(x+0));
 		result(x) += 0.125 * (phi(x-1) - phi(x+1)) * (phi(x-1) - phi(x+1));
@@ -1132,7 +1133,6 @@ void solveModifiedPoissonFT(Field<Cplx> & sourceFT, Field<Cplx> & potFT, Real co
 	gridk2 = (Real *) malloc(linesize * sizeof(Real));
 
 	coeff /= -((long) linesize * (long) linesize * (long) linesize);
-
 	for (i = 0; i < linesize; i++)
 	{
 		gridk2[i] = 2. * (Real) linesize * sin(M_PI * (Real) i / (Real) linesize);
