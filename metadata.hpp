@@ -64,9 +64,14 @@
 #define MASK_DELTA  4096
 #define MASK_DBARE  8192
 #define MASK_PI_K    16384
-#define MASK_PI_K_V    32768
+#define MASK_zeta    32768
 #define MASK_MULTI  65536
 #define MASK_VEL    131072
+#define MASK_T_KESS 262144
+#define MASK_Delta_KESS 524288
+#define MASK_PHI_PRIME 1048576
+#define MASK_DELTAKESS_DELTA 2097152
+
 
 #define ICFLAG_CORRECT_DISPLACEMENT 1
 #define ICFLAG_KSPHERE              2
@@ -242,6 +247,11 @@ struct metadata
 	char output_path[PARAM_MAX_LENGTH];
 	char restart_path[PARAM_MAX_LENGTH];
 	char basename_restart[PARAM_MAX_LENGTH];
+	//Kessence part
+	int nKe_numsteps;
+	int Kess_source_gravity;
+  int NL_kessence;
+	//kessence end
 };
 
 struct icsettings
@@ -254,6 +264,9 @@ struct icsettings
 	char pclfile[MAX_PCL_SPECIES][PARAM_MAX_LENGTH];
 	char pkfile[PARAM_MAX_LENGTH];
 	char tkfile[PARAM_MAX_LENGTH];
+	//Kessence
+	char tk_kessence[PARAM_MAX_LENGTH];
+	//kessence end
 	char metricfile[3][PARAM_MAX_LENGTH];
 	double restart_tau;
 	double restart_dtau;
@@ -269,16 +282,14 @@ struct icsettings
 struct cosmology
 {
 	double Omega_cdm;
-    double Omega_kessence;
-    double w_kessence;
-		double  cs2_kessence;
 	double Omega_b;
 	double Omega_m;
 	double Omega_Lambda;
-	double Omega_fld;
-	double w0_fld;
-	double wa_fld;
-	double cs2_fld;
+	// Kessence part
+	double Omega_kessence;
+  double w_kessence;
+	double cs2_kessence;
+	//kessence end
 	double Omega_g;
 	double Omega_ur;
 	double Omega_rad;

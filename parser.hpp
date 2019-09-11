@@ -657,13 +657,14 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 
 				if (strcmp(item, "Phi") == 0 || strcmp(item, "phi") == 0)
 					pvalue |= MASK_PHI;
-
-				else if (strcmp(item, "pi_k") == 0 || strcmp(item, "pi_k") == 0)
+          //Kessence part
+				else if (strcmp(item, "phi_prime") == 0 || strcmp(item, "Phi_prime") == 0)
+						pvalue |= MASK_PHI_PRIME;
+				else if (strcmp(item, "pi_k") == 0 || strcmp(item, "Pi_k") == 0)
 					pvalue |= MASK_PI_K;
-
-					else if (strcmp(item, "pi_k_v") == 0 || strcmp(item, "pi_k_v") == 0)
-					pvalue |= MASK_PI_K_V;
-
+				else if (strcmp(item, "zeta") == 0 || strcmp(item, "zeta") == 0)
+					pvalue |= MASK_zeta;
+          //Kessence end
 				else if (strcmp(item, "Chi") == 0 || strcmp(item, "chi") == 0)
 					pvalue |= MASK_CHI;
 				else if (strcmp(item, "Pot") == 0 || strcmp(item, "pot") == 0 || strcmp(item, "Psi_N") == 0 || strcmp(item, "psi_N") == 0 || strcmp(item, "PsiN") == 0 || strcmp(item, "psiN") == 0)
@@ -694,18 +695,30 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 					pvalue |= MASK_DBARE;
 				else if (strcmp(item, "v") == 0 || strcmp(item, "velocity") == 0)
 					pvalue |= MASK_VEL;
+          //kessence part
+				else if (strcmp(item, "T_Kess") == 0 || strcmp(item, "T_Kessence") == 0)
+					pvalue |= MASK_T_KESS;
 
+				else if (strcmp(item, "Delta_Kess") == 0 || strcmp(item, "delta_Kessence") == 0)
+					pvalue |= MASK_Delta_KESS;
+        else if (strcmp(item, "Cross_dkess_dm") == 0 || strcmp(item, "Cross_dkess_dmatter") == 0)
+          pvalue |= MASK_DELTAKESS_DELTA;
+
+					//Kessence end
 				start = comma+1;
 				while (*start == ' ' || *start == '\t') start++;
 			}
 
 			if (strcmp(start, "Phi") == 0 || strcmp(start, "phi") == 0)
 				pvalue |= MASK_PHI;
-
+      //kessence part
+			else if (strcmp(start, "Phi_prime") == 0 || strcmp(start, "phi_prime") == 0)
+				pvalue |= MASK_PHI_PRIME;
 			else if (strcmp(start, "Pi_k") == 0 || strcmp(start, "pi_k") == 0)
 				pvalue |= MASK_PI_K;
-			else if (strcmp(start, "Pi_k_v") == 0 || strcmp(start, "pi_k_v") == 0)
-				pvalue |= MASK_PI_K_V;
+			else if (strcmp(start, "zeta") == 0 || strcmp(start, "zeta") == 0)
+				pvalue |= MASK_zeta;
+        //Kessence end
 			else if (strcmp(start, "Chi") == 0 || strcmp(start, "chi") == 0)
 				pvalue |= MASK_CHI;
 			else if (strcmp(start, "Pot") == 0 || strcmp(start, "pot") == 0 || strcmp(start, "Psi_N") == 0 || strcmp(start, "psi_N") == 0 || strcmp(start, "PsiN") == 0 || strcmp(start, "psiN") == 0)
@@ -781,6 +794,9 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 
 	ic.pkfile[0] = '\0';
 	ic.tkfile[0] = '\0';
+	//kessence part
+	ic.tk_kessence[0]='\0';
+	//kessence end
 	ic.metricfile[0][0] = '\0';
 	ic.metricfile[1][0] = '\0';
 	ic.metricfile[2][0] = '\0';
@@ -860,6 +876,11 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		else
 			strcpy(ic.pclfile[i], ic.pclfile[i-1]);
 	}
+//Kessence part
+parseParameter(params, numparam, "T_kessence file", ic.tk_kessence);
+// if (!parseParameter(params, numparam, "T_kessence file", ic.tk_kessence) && ic.generator != ICGEN_READ_FROM_DISK);
+//kessence end
+
 
 #ifdef ICGEN_FALCONIC
 	if ((!parseParameter(params, numparam, "mPk file", ic.pkfile) && !parseParameter(params, numparam, "Tk file", ic.tkfile) && ic.generator != ICGEN_READ_FROM_DISK && ic.generator != ICGEN_FALCONIC)
@@ -1624,20 +1645,32 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	{
 		cosmo.h = P_HUBBLE;
 	}
-
-    // K-essence  paramteres
- if (!parseParameter(params, numparam, "cs2_kessence",  cosmo.cs2_kessence))
-    {
-        cosmo.cs2_kessence=1;
-    }
-    if (!parseParameter(params, numparam, "Omega_kessence",  cosmo.Omega_kessence))
-    {
-        cosmo.Omega_kessence=0.7199;
-    }
-    if (!parseParameter(params, numparam, "w_kessence",  cosmo.w_kessence))
-    {
-        cosmo.w_kessence=-1.1;
-    }
+	// K-essence  paramteres
+	if (!parseParameter(params, numparam, "cs2_kessence",  cosmo.cs2_kessence))
+	{
+			cosmo.cs2_kessence=1;
+	}
+	if (!parseParameter(params, numparam, "Omega_kessence",  cosmo.Omega_kessence))
+	{
+			cosmo.Omega_kessence=0.7199;
+	}
+	if (!parseParameter(params, numparam, "w_kessence",  cosmo.w_kessence))
+	{
+			cosmo.w_kessence=-0.9;
+	}
+  if (!parseParameter(params, numparam, "nKe_numsteps",  sim.nKe_numsteps))
+  {
+    sim.nKe_numsteps = 1;
+  }
+  if (!parseParameter(params, numparam, "Kessence source gravity", sim.Kess_source_gravity))
+  {
+    sim.Kess_source_gravity = 0;
+  }
+  if (!parseParameter(params, numparam, "NL_kessence", sim.NL_kessence))
+  {
+    sim.NL_kessence = 0; //Default is linear kessence.
+  }
+  //kessence end
 
 	cosmo.num_ncdm = MAX_PCL_SPECIES-2;
 	if (!parseParameter(params, numparam, "m_ncdm", cosmo.m_ncdm, cosmo.num_ncdm))
@@ -1716,22 +1749,22 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 
 	cosmo.Omega_rad = cosmo.Omega_g + cosmo.Omega_ur;
 
-	if (parseParameter(params, numparam, "omega_fld", cosmo.Omega_fld))
-		cosmo.Omega_fld /= cosmo.h * cosmo.h;
-	else if (!parseParameter(params, numparam, "Omega_fld", cosmo.Omega_fld))
-		cosmo.Omega_fld = 0.;
-	if (!parseParameter(params, numparam, "w0_fld", cosmo.w0_fld))
-		cosmo.w0_fld = -1.;
-	if (!parseParameter(params, numparam, "wa_fld", cosmo.wa_fld))
-		cosmo.wa_fld = 0.;
-	if (!parseParameter(params, numparam, "cs2_fld", cosmo.cs2_fld))
-		cosmo.cs2_fld = 1.;
-
-	if (cosmo.Omega_fld > 0 && cosmo.w0_fld == -1.)
-	{
-		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": w0_fld = -1 is singular, setting Omega_fld = 0." << endl;
-		cosmo.Omega_fld = 0.;
-	}
+	// if (parseParameter(params, numparam, "omega_fld", cosmo.Omega_fld))
+	// 	cosmo.Omega_fld /= cosmo.h * cosmo.h;
+	// else if (!parseParameter(params, numparam, "Omega_fld", cosmo.Omega_fld))
+	// 	cosmo.Omega_fld = 0.;
+	// if (!parseParameter(params, numparam, "w0_fld", cosmo.w0_fld))
+	// 	cosmo.w0_fld = -1.;
+	// if (!parseParameter(params, numparam, "wa_fld", cosmo.wa_fld))
+	// 	cosmo.wa_fld = 0.;
+	// if (!parseParameter(params, numparam, "cs2_fld", cosmo.cs2_fld))
+	// 	cosmo.cs2_fld = 1.;
+  //
+	// if (cosmo.Omega_fld > 0 && cosmo.w0_fld == -1.)
+	// {
+	// 	COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": w0_fld = -1 is singular, setting Omega_fld = 0." << endl;
+	// 	cosmo.Omega_fld = 0.;
+	// }
 
 	if (parseParameter(params, numparam, "omega_b", cosmo.Omega_b))
 	{
@@ -1772,7 +1805,9 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	}
 	else
 	{
-		COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad << ", h = " << cosmo.h << ", Omega_kessence0= "<<cosmo.Omega_kessence<<", w_kessence= "<<cosmo.w_kessence<<endl;
+		//Kessence part added
+    COUT << "Kessence source gravity = " << sim.Kess_source_gravity<< ", Non-linear kessence = " << sim.NL_kessence<< ", Number of kessence update = " <<sim.nKe_numsteps <<endl;
+		COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad << ", h = " << cosmo.h << ", Omega_kessence0= "<<cosmo.Omega_kessence<<", w_kessence= "<<cosmo.w_kessence<<", cs^2 (kessence)= "<<cosmo.cs2_kessence<<endl;
 		cosmo.Omega_Lambda = 1. - cosmo.Omega_m - cosmo.Omega_kessence - cosmo.Omega_rad;
 	}
 
