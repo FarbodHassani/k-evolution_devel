@@ -4,9 +4,9 @@
 // 
 // Collection of analysis tools for gevolution
 //
-// Author: Julian Adamek (Université de Genève & Observatoire de Paris)
+// Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
-// Last modified: July 2016
+// Last modified: April 2019
 //
 //////////////////////////
 
@@ -165,24 +165,49 @@ void extractCrossSpectrum(Field<Cplx> & fld1FT, Field<Cplx> & fld2FT, Real * kbi
 	
 	free(typek2);
 	free(sinc);
-	
-	parallel.sum<Real>(kbin, numbins);
-	parallel.sum<Real>(kscatter, numbins);
-	parallel.sum<Real>(power, numbins);
-	parallel.sum<Real>(pscatter, numbins);
-	parallel.sum<int>(occupation, numbins);
-	
-	for (i = 0; i < numbins; i++)
+
+	if (parallel.isRoot())
 	{
-		if (occupation[i] > 0)
+#ifdef SINGLE
+		MPI_Reduce(MPI_IN_PLACE, (void *) kbin, numbins, MPI_FLOAT, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce(MPI_IN_PLACE, (void *) kscatter, numbins, MPI_FLOAT, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce(MPI_IN_PLACE, (void *) power, numbins, MPI_FLOAT, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce(MPI_IN_PLACE, (void *) pscatter, numbins, MPI_FLOAT, MPI_SUM, 0, parallel.lat_world_comm());
+#else
+		MPI_Reduce(MPI_IN_PLACE, (void *) kbin, numbins, MPI_DOUBLE, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce(MPI_IN_PLACE, (void *) kscatter, numbins, MPI_DOUBLE, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce(MPI_IN_PLACE, (void *) power, numbins, MPI_DOUBLE, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce(MPI_IN_PLACE, (void *) pscatter, numbins, MPI_DOUBLE, MPI_SUM, 0, parallel.lat_world_comm());
+#endif
+		MPI_Reduce(MPI_IN_PLACE, (void *) occupation, numbins, MPI_INT, MPI_SUM, 0, parallel.lat_world_comm());
+
+		for (i = 0; i < numbins; i++)
 		{
-			kscatter[i] = sqrt(kscatter[i] * occupation[i] - kbin[i] * kbin[i]) / occupation[i];
-			if (!isfinite(kscatter[i])) kscatter[i] = 0.;
-			kbin[i] = kbin[i] / occupation[i];
-			power[i] /= occupation[i];
-			pscatter[i] = sqrt(pscatter[i] / occupation[i] - power[i] * power[i]);
-			if (!isfinite(pscatter[i])) pscatter[i] = 0.;
+			if (occupation[i] > 0)
+			{
+				kscatter[i] = sqrt(kscatter[i] * occupation[i] - kbin[i] * kbin[i]) / occupation[i];
+				if (!isfinite(kscatter[i])) kscatter[i] = 0.;
+				kbin[i] = kbin[i] / occupation[i];
+				power[i] /= occupation[i];
+				pscatter[i] = sqrt(pscatter[i] / occupation[i] - power[i] * power[i]);
+				if (!isfinite(pscatter[i])) pscatter[i] = 0.;
+			}
 		}
+	}
+	else
+	{
+#ifdef SINGLE
+		MPI_Reduce((void *) kbin, NULL, numbins, MPI_FLOAT, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce((void *) kscatter, NULL, numbins, MPI_FLOAT, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce((void *) power, NULL, numbins, MPI_FLOAT, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce((void *) pscatter, NULL, numbins, MPI_FLOAT, MPI_SUM, 0, parallel.lat_world_comm());
+#else
+		MPI_Reduce((void *) kbin, NULL, numbins, MPI_DOUBLE, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce((void *) kscatter, NULL, numbins, MPI_DOUBLE, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce((void *) power, NULL, numbins, MPI_DOUBLE, MPI_SUM, 0, parallel.lat_world_comm());
+		MPI_Reduce((void *) pscatter, NULL, numbins, MPI_DOUBLE, MPI_SUM, 0, parallel.lat_world_comm());
+#endif
+		MPI_Reduce((void *) occupation, NULL, numbins, MPI_INT, MPI_SUM, 0, parallel.lat_world_comm());
 	}
 }
 
@@ -234,15 +259,65 @@ void extractPowerSpectrum(Field<Cplx> & fldFT, Real * kbin, Real * power, Real *
 //   filename       output file name
 //   description    descriptive header
 //   a              scale factor for this spectrum
+//   z_target       target redshift for this output (used only if EXACT_OUTPUT_REDSHIFTS is defined)
 //
 // Returns:
 // 
 //////////////////////////
 
-void writePowerSpectrum(Real * kbin, Real * power, Real * kscatter, Real * pscatter, int * occupation, const int numbins, const Real rescalek, const Real rescalep, const char * filename, const char * description, const double a)
+void writePowerSpectrum(Real * kbin, Real * power, Real * kscatter, Real * pscatter, int * occupation, const int numbins, const Real rescalek, const Real rescalep, const char * filename, const char * description, double a, const double z_target = -1)
 {
 	if (parallel.isRoot())
 	{
+#ifdef EXACT_OUTPUT_REDSHIFTS
+		Real * power2 = (Real *) malloc(numbins * sizeof(Real));
+
+		for (int i = 0; i < numbins; i++)
+			power2[i] = power[i]/rescalep;
+
+		if (1. / a < z_target + 1.)
+		{
+			FILE * infile = fopen(filename, "r");
+			double weight = 1.;
+			int count = 0;
+			if (infile != NULL)
+			{
+				fscanf(infile, "%*[^\n]\n");
+				if (fscanf(infile, "# redshift z=%lf\n", &weight) != 1)
+				{
+					cout << " error parsing power spectrum file header for interpolation (EXACT_OUTPUT_REDSHIFTS)" << endl;
+					weight = 1.;
+				}
+				else
+				{
+					weight = (weight - z_target) / (1. + weight - 1./a);
+					fscanf(infile, "%*[^\n]\n");
+					for (int i = 0; i < numbins; i++)
+					{
+						if (occupation[i] > 0)
+						{
+#ifdef SINGLE
+							if(fscanf(infile, " %*e %e %*e %*e %*d \n", power2+i) != 1)
+#else
+							if(fscanf(infile, " %*e %le %*e %*e %*d \n", power2+i) != 1)
+#endif
+							{
+								cout << " error parsing power spectrum file data " << i << " for interpolation (EXACT_OUTPUT_REDSHIFTS)" << endl;
+								break;
+							}
+							else count++;
+						}
+					}
+				}
+				fclose(infile);
+
+				for (int i = 0; i < numbins; i++)
+					power2[i] = (1.-weight)*power2[i] + weight*power[i]/rescalep;
+
+				a = 1. / (z_target + 1.);
+			}
+		}
+#endif // EXACT_OUTPUT_REDSHIFTS
 		FILE * outfile = fopen(filename, "w");
 		if (outfile == NULL)
 		{
@@ -256,10 +331,17 @@ void writePowerSpectrum(Real * kbin, Real * power, Real * kscatter, Real * pscat
 			for (int i = 0; i < numbins; i++)
 			{
 				if (occupation[i] > 0)
+#ifdef EXACT_OUTPUT_REDSHIFTS
+					fprintf(outfile, "  %e   %e   %e   %e   %d\n", kbin[i]/rescalek, power2[i], kscatter[i]/rescalek, pscatter[i]/rescalep/ sqrt(occupation[i]), occupation[i]);
+#else
 					fprintf(outfile, "  %e   %e   %e   %e   %d\n", kbin[i]/rescalek, power[i]/rescalep, kscatter[i]/rescalek, pscatter[i]/rescalep/ sqrt(occupation[i]), occupation[i]);
+#endif
 			}
 			fclose(outfile);
 		}
+#ifdef EXACT_OUTPUT_REDSHIFTS
+		free(power2);
+#endif
 	}
 }
 
@@ -346,6 +428,222 @@ void computeTensorDiagnostics(Field<Real> & hij, Real & mdivh, Real & mtraceh, R
 	parallel.max<Real>(mdivh);
 	parallel.max<Real>(mtraceh);
 	parallel.max<Real>(mnormh);
+}
+
+
+//////////////////////////
+// findIntersectingLightcones
+//////////////////////////
+// Description:
+//   determines periodic copies of light cone vertex for which the present
+//   look-back interval may overlap with a given spatial domain
+// 
+// Arguments:
+//   lightcone  reference to structure describing light cone geometry
+//   outer      outer (far) limit of look-back interval
+//   inner      inner (close) limit of look-back interval
+//   domain     array of domain boundaries
+//   vertex     will contain array of relevant vertex locations
+//
+// Returns:
+//   number of vertices found
+// 
+//////////////////////////
+
+int findIntersectingLightcones(lightcone_geometry & lightcone, double outer, double inner, double * domain, double vertex[MAX_INTERSECTS][3])
+{
+	int range = (int) ceil(outer) + 1;
+	int u, v, w, n = 0;
+	double corner[8][3];
+	double rdom, dist;
+
+	corner[0][0] = domain[0];
+	corner[0][1] = domain[1];
+	corner[0][2] = domain[2];
+
+	corner[1][0] = domain[3];
+	corner[1][1] = domain[1];
+	corner[1][2] = domain[2];
+
+	corner[2][0] = domain[0];
+	corner[2][1] = domain[4];
+	corner[2][2] = domain[2];
+
+	corner[3][0] = domain[3];
+	corner[3][1] = domain[4];
+	corner[3][2] = domain[2];
+
+	corner[4][0] = domain[0];
+	corner[4][1] = domain[1];
+	corner[4][2] = domain[5];
+
+	corner[5][0] = domain[3];
+	corner[5][1] = domain[1];
+	corner[5][2] = domain[5];
+
+	corner[6][0] = domain[0];
+	corner[6][1] = domain[4];
+	corner[6][2] = domain[5];
+
+	corner[7][0] = domain[3];
+	corner[7][1] = domain[4];
+	corner[7][2] = domain[5];
+
+	for (u = -range; u <= range; u++)
+	{
+		for (v = -range; v <= range; v++)
+		{
+			for (w = -range; w <= range; w++)
+			{
+				if (n >= MAX_INTERSECTS)
+				{
+					cout << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": maximum number of lightcone intersects exceeds MAX_INTERSECTS = " << MAX_INTERSECTS << " for domain (" << domain[0] << ", " << domain[1] << ", " << domain[2] << ") - (" << domain[3] << ", " << domain[4] << ", " << domain[5] << "); some data may be missing in output!" << endl;
+					return MAX_INTERSECTS;
+				}
+				vertex[n][0] = lightcone.vertex[0] + u;
+				vertex[n][1] = lightcone.vertex[1] + v;
+				vertex[n][2] = lightcone.vertex[2] + w;
+
+				// first, check if domain lies outside outer sphere
+				if (vertex[n][0] < domain[0])
+				{
+					if (vertex[n][1] < domain[1])
+					{
+						if (vertex[n][2] < domain[2])
+						{
+							if (sqrt((vertex[n][0]-corner[0][0])*(vertex[n][0]-corner[0][0]) + (vertex[n][1]-corner[0][1])*(vertex[n][1]-corner[0][1]) + (vertex[n][2]-corner[0][2])*(vertex[n][2]-corner[0][2])) > outer) continue;
+						}
+						else if (vertex[n][2] > domain[5])
+						{
+							if (sqrt((vertex[n][0]-corner[4][0])*(vertex[n][0]-corner[4][0]) + (vertex[n][1]-corner[4][1])*(vertex[n][1]-corner[4][1]) + (vertex[n][2]-corner[4][2])*(vertex[n][2]-corner[4][2])) > outer) continue;
+						}
+						else if (sqrt((vertex[n][0]-domain[0])*(vertex[n][0]-domain[0]) + (vertex[n][1]-domain[1])*(vertex[n][1]-domain[1])) > outer) continue;
+					}
+					else if (vertex[n][1] > domain[4])
+					{
+						if (vertex[n][2] < domain[2])
+						{
+							if (sqrt((vertex[n][0]-corner[2][0])*(vertex[n][0]-corner[2][0]) + (vertex[n][1]-corner[2][1])*(vertex[n][1]-corner[2][1]) + (vertex[n][2]-corner[2][2])*(vertex[n][2]-corner[2][2])) > outer) continue;
+						}
+						else if (vertex[n][2] > domain[5])
+						{
+							if (sqrt((vertex[n][0]-corner[6][0])*(vertex[n][0]-corner[6][0]) + (vertex[n][1]-corner[6][1])*(vertex[n][1]-corner[6][1]) + (vertex[n][2]-corner[6][2])*(vertex[n][2]-corner[6][2])) > outer) continue;
+						}
+						else if (sqrt((vertex[n][0]-domain[0])*(vertex[n][0]-domain[0]) + (vertex[n][1]-domain[4])*(vertex[n][1]-domain[4])) > outer) continue;
+					}
+					else
+					{
+						if (vertex[n][2] < domain[2])
+						{
+							if (sqrt((vertex[n][0]-domain[0])*(vertex[n][0]-domain[0]) + (vertex[n][2]-domain[2])*(vertex[n][2]-domain[2])) > outer) continue;
+						}
+						else if (vertex[n][2] > domain[5])
+						{
+							if (sqrt((vertex[n][0]-domain[0])*(vertex[n][0]-domain[0]) + (vertex[n][2]-domain[5])*(vertex[n][2]-domain[5])) > outer) continue;
+						}
+						else if (domain[0]-vertex[n][0] > outer) continue;
+					}
+				}
+				else if (vertex[n][0] > domain[3])
+				{
+					if (vertex[n][1] < domain[1])
+					{
+						if (vertex[n][2] < domain[2])
+						{
+							if (sqrt((vertex[n][0]-corner[1][0])*(vertex[n][0]-corner[1][0]) + (vertex[n][1]-corner[1][1])*(vertex[n][1]-corner[1][1]) + (vertex[n][2]-corner[1][2])*(vertex[n][2]-corner[1][2])) > outer) continue;
+						}
+						else if (vertex[n][2] > domain[5])
+						{
+							if (sqrt((vertex[n][0]-corner[5][0])*(vertex[n][0]-corner[5][0]) + (vertex[n][1]-corner[5][1])*(vertex[n][1]-corner[5][1]) + (vertex[n][2]-corner[5][2])*(vertex[n][2]-corner[5][2])) > outer) continue;
+						}
+						else if (sqrt((vertex[n][0]-domain[3])*(vertex[n][0]-domain[3]) + (vertex[n][1]-domain[1])*(vertex[n][1]-domain[1])) > outer) continue;
+					}
+					else if (vertex[n][1] > domain[4])
+					{
+						if (vertex[n][2] < domain[2])
+						{
+							if (sqrt((vertex[n][0]-corner[3][0])*(vertex[n][0]-corner[3][0]) + (vertex[n][1]-corner[3][1])*(vertex[n][1]-corner[3][1]) + (vertex[n][2]-corner[3][2])*(vertex[n][2]-corner[3][2])) > outer) continue;
+						}
+						else if (vertex[n][2] > domain[5])
+						{
+							if (sqrt((vertex[n][0]-corner[7][0])*(vertex[n][0]-corner[7][0]) + (vertex[n][1]-corner[7][1])*(vertex[n][1]-corner[7][1]) + (vertex[n][2]-corner[7][2])*(vertex[n][2]-corner[7][2])) > outer) continue;
+						}
+						else if (sqrt((vertex[n][0]-domain[3])*(vertex[n][0]-domain[3]) + (vertex[n][1]-domain[4])*(vertex[n][1]-domain[4])) > outer) continue;
+					}
+					else
+					{
+						if (vertex[n][2] < domain[2])
+						{
+							if (sqrt((vertex[n][0]-domain[3])*(vertex[n][0]-domain[3]) + (vertex[n][2]-domain[2])*(vertex[n][2]-domain[2])) > outer) continue;
+						}
+						else if (vertex[n][2] > domain[5])
+						{
+							if (sqrt((vertex[n][0]-domain[3])*(vertex[n][0]-domain[3]) + (vertex[n][2]-domain[5])*(vertex[n][2]-domain[5])) > outer) continue;
+						}
+						else if (vertex[n][0]-domain[3] > outer) continue;
+					}
+				}
+				else
+				{
+					if (vertex[n][1] < domain[1])
+					{
+						if (vertex[n][2] < domain[2])
+						{
+							if (sqrt((vertex[n][1]-domain[1])*(vertex[n][1]-domain[1]) + (vertex[n][2]-domain[2])*(vertex[n][2]-domain[2])) > outer) continue;
+						}
+						else if (vertex[n][2] > domain[5])
+						{
+							if (sqrt((vertex[n][1]-domain[1])*(vertex[n][1]-domain[1]) + (vertex[n][2]-domain[5])*(vertex[n][2]-domain[5])) > outer) continue;
+						}
+						else if (domain[1]-vertex[n][1] > outer) continue;
+					}
+					else if (vertex[n][1] > domain[4])
+					{
+						if (vertex[n][2] < domain[2])
+						{
+							if (sqrt((vertex[n][1]-domain[4])*(vertex[n][1]-domain[4]) + (vertex[n][2]-domain[2])*(vertex[n][2]-domain[2])) > outer) continue;
+						}
+						else if (vertex[n][2] > domain[5])
+						{
+							if (sqrt((vertex[n][1]-domain[4])*(vertex[n][1]-domain[4]) + (vertex[n][2]-domain[5])*(vertex[n][2]-domain[5])) > outer) continue;
+						}
+						else if (vertex[n][1]-domain[4] > outer) continue;
+					}
+					else if (vertex[n][2]-domain[5] > outer || domain[2]-vertex[n][2] > outer) continue;
+				}
+				
+				if (sqrt((corner[0][0]-vertex[n][0])*(corner[0][0]-vertex[n][0]) + (corner[0][1]-vertex[n][1])*(corner[0][1]-vertex[n][1]) + (corner[0][2]-vertex[n][2])*(corner[0][2]-vertex[n][2])) < inner && sqrt((corner[1][0]-vertex[n][0])*(corner[1][0]-vertex[n][0]) + (corner[1][1]-vertex[n][1])*(corner[1][1]-vertex[n][1]) + (corner[1][2]-vertex[n][2])*(corner[1][2]-vertex[n][2])) < inner && sqrt((corner[2][0]-vertex[n][0])*(corner[2][0]-vertex[n][0]) + (corner[2][1]-vertex[n][1])*(corner[2][1]-vertex[n][1]) + (corner[2][2]-vertex[n][2])*(corner[2][2]-vertex[n][2])) < inner && sqrt((corner[3][0]-vertex[n][0])*(corner[3][0]-vertex[n][0]) + (corner[3][1]-vertex[n][1])*(corner[3][1]-vertex[n][1]) + (corner[3][2]-vertex[n][2])*(corner[3][2]-vertex[n][2])) < inner && sqrt((corner[4][0]-vertex[n][0])*(corner[4][0]-vertex[n][0]) + (corner[4][1]-vertex[n][1])*(corner[4][1]-vertex[n][1]) + (corner[4][2]-vertex[n][2])*(corner[4][2]-vertex[n][2])) < inner && sqrt((corner[5][0]-vertex[n][0])*(corner[5][0]-vertex[n][0]) + (corner[5][1]-vertex[n][1])*(corner[5][1]-vertex[n][1]) + (corner[5][2]-vertex[n][2])*(corner[5][2]-vertex[n][2])) < inner && sqrt((corner[6][0]-vertex[n][0])*(corner[6][0]-vertex[n][0]) + (corner[6][1]-vertex[n][1])*(corner[6][1]-vertex[n][1]) + (corner[6][2]-vertex[n][2])*(corner[6][2]-vertex[n][2])) < inner && sqrt((corner[7][0]-vertex[n][0])*(corner[7][0]-vertex[n][0]) + (corner[7][1]-vertex[n][1])*(corner[7][1]-vertex[n][1]) + (corner[7][2]-vertex[n][2])*(corner[7][2]-vertex[n][2])) < inner) continue; // domain lies within inner sphere
+
+				rdom = 0.5 * sqrt((domain[3]-domain[0])*(domain[3]-domain[0]) + (domain[4]-domain[1])*(domain[4]-domain[1]) + (domain[5]-domain[2])*(domain[5]-domain[2]));
+				dist = sqrt((0.5*domain[0]+0.5*domain[3]-vertex[n][0])*(0.5*domain[0]+0.5*domain[3]-vertex[n][0]) + (0.5*domain[1]+0.5*domain[4]-vertex[n][1])*(0.5*domain[1]+0.5*domain[4]-vertex[n][1]) + (0.5*domain[2]+0.5*domain[5]-vertex[n][2])*(0.5*domain[2]+0.5*domain[5]-vertex[n][2]));
+
+				if (dist <= rdom) // vertex lies within domain enclosing sphere
+				{
+					n++;
+					continue;
+				}
+
+				if (((0.5*domain[0]+0.5*domain[3]-vertex[n][0])*lightcone.direction[0] + (0.5*domain[1]+0.5*domain[4]-vertex[n][1])*lightcone.direction[1] + (0.5*domain[2]+0.5*domain[5]-vertex[n][2])*lightcone.direction[2]) / dist >= lightcone.opening) // center of domain lies within opening
+				{
+					n++;
+					continue;
+				} 
+
+				if (dist > outer && acos(((0.5*domain[0]+0.5*domain[3]-vertex[n][0])*lightcone.direction[0] + (0.5*domain[1]+0.5*domain[4]-vertex[n][1])*lightcone.direction[1] + (0.5*domain[2]+0.5*domain[5]-vertex[n][2])*lightcone.direction[2]) / dist) - acos(lightcone.opening) <= acos((outer*outer + dist*dist - rdom*rdom) / (2. * outer * dist))) // enclosing sphere within opening
+				{
+					n++;
+					continue;
+				}
+				
+				if (dist <= outer && acos(((0.5*domain[0]+0.5*domain[3]-vertex[n][0])*lightcone.direction[0] + (0.5*domain[1]+0.5*domain[4]-vertex[n][1])*lightcone.direction[1] + (0.5*domain[2]+0.5*domain[5]-vertex[n][2])*lightcone.direction[2]) / dist) - acos(lightcone.opening) <= asin(rdom / dist)) // enclosing sphere within opening
+				{
+					n++;
+				}
+			}
+		}
+	}
+
+	return n;
 }
 
 

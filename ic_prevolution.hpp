@@ -6,9 +6,9 @@
 // generating the full phase space for relativistic particles
 // [see C.-P. Ma and E. Bertschinger, Astrophys. J. 429, 22 (1994)]
 //
-// Author: Julian Adamek (Université de Genève & Observatoire de Paris)
+// Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
-// Last modified: December 2016
+// Last modified: April 2019
 //
 //////////////////////////
 
@@ -59,16 +59,20 @@ using namespace LATfield2;
 //   plan_Bi        pointer to FFT planner
 //   plan_source    pointer to FFT planner
 //   plan_Sij       pointer to FFT planner
+//   params         pointer to array of precision settings for CLASS (can be NULL)
+//   numparam       number of precision settings for CLASS (can be 0)
 //
 // Returns:
 // 
 //////////////////////////
 
-void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, const double fourpiG, double & a, double & tau, double & dtau, double & dtau_old, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, double * maxvel, Field<Real> * phi, Field<Real> * chi, Field<Real> * Bi, Field<Real> * source, Field<Real> * Sij, Field<Cplx> * scalarFT, Field<Cplx> * BiFT, Field<Cplx> * SijFT, PlanFFT<Cplx> * plan_phi, PlanFFT<Cplx> * plan_chi, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_source, PlanFFT<Cplx> * plan_Sij)
+void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, const double fourpiG, double & a, double & tau, double & dtau, double & dtau_old, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, double * maxvel, Field<Real> * phi, Field<Real> * chi, Field<Real> * Bi, Field<Real> * source, Field<Real> * Sij, Field<Cplx> * scalarFT, Field<Cplx> * BiFT, Field<Cplx> * SijFT, PlanFFT<Cplx> * plan_phi, PlanFFT<Cplx> * plan_chi, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_source, PlanFFT<Cplx> * plan_Sij, parameter * params, int & numparam)
 {
 #ifdef HAVE_CLASS
 	int i, j, p;
 	float * pcldata = NULL;
+	string h5filename;
+	char filename[2*PARAM_MAX_LENGTH+24];
 	gsl_spline * phispline = NULL;
 	gsl_spline * phispline2 = NULL;
 	gsl_spline * chispline = NULL;
@@ -96,6 +100,13 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 	int cycle = 0;
     int relax_cycles = 0;
 
+	Real * kbin;
+	Real * power;
+	Real * kscatter;
+	Real * pscatter;
+	int * occupation;
+    long numpts3d = (long) sim.numpts * (long) sim.numpts * (long) sim.numpts;
+
   	background class_background;
   	perturbs class_perturbs;
   	spectra class_spectra;
@@ -103,12 +114,22 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 	ic_fields[0] = phi;
 	ic_fields[1] = chi;
 
+	h5filename.reserve(2*PARAM_MAX_LENGTH);
+	h5filename.assign(sim.output_path);
+	h5filename += sim.basename_generic;
+
+	kbin = (Real *) malloc(sim.numbins * sizeof(Real));
+	power = (Real *) malloc(sim.numbins * sizeof(Real));
+	kscatter = (Real *) malloc(sim.numbins * sizeof(Real));
+	pscatter = (Real *) malloc(sim.numbins * sizeof(Real));
+	occupation = (int *) malloc(sim.numbins * sizeof(int));
+
 	a = 1. / (1. + ic.z_ic);
 	tau = particleHorizon(a, fourpiG, cosmo);
 
 	COUT << " initial particle horizon tau = " << tau * sim.numpts << " lattice units." << endl;
 
-	initializeCLASSstructures(sim, ic, cosmo, class_background, class_perturbs, class_spectra);
+	initializeCLASSstructures(sim, ic, cosmo, class_background, class_perturbs, class_spectra, params, numparam);
 
 	loadTransferFunctions(class_background, class_perturbs, class_spectra, tk_d1, tk_d2, NULL, sim.boxsize, ic.z_ic, cosmo.h);
 
@@ -131,6 +152,8 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 
 	for (p = 0; p < cosmo.num_ncdm; p++)
 	{
+		if (ic.numtile[((sim.baryon_flag == 1) ? 2 : 1)+p] < 1) continue;
+
 		loadHomogeneousTemplate(ic.pclfile[((sim.baryon_flag == 1) ? 2 : 1)+p], sim.numpcl[((sim.baryon_flag == 1) ? 2 : 1)+p], pcldata);
 	
 		if (pcldata == NULL)
@@ -202,6 +225,9 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 		plan_chi->execute(FFT_BACKWARD);
 		chi->updateHalo();
 		gsl_spline_free(tk_d2);
+	
+		sprintf(filename, "_dT_ncdm%d.h5", p);
+		chi->saveHDF5(h5filename + filename);
 
 		mean_q = applyMomentumDistribution(pcls_ncdm+p, (unsigned int) (ic.seed + p), rescale, chi);
 		parallel.sum(mean_q);
@@ -453,7 +479,10 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 					chi->updateHalo();
 
 					for (p = 0; p < cosmo.num_ncdm; p++)
-		        		maxvel[1+sim.baryon_flag+p] = pcls_ncdm[p].updateVel(update_q, dtau_old / 2., ic_fields, 2, &a);
+					{
+						if (ic.numtile[1+sim.baryon_flag+p] < 1) maxvel[1+sim.baryon_flag+p] = 0;
+						else maxvel[1+sim.baryon_flag+p] = pcls_ncdm[p].updateVel(update_q, dtau_old / 2., ic_fields, 2, &a);
+					}
 
 					dtau_old = 0.;
 					break;
@@ -511,17 +540,17 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 			projection_init(source);
 			if (cosmo.num_ncdm > 0 || cosmo.Omega_rad > 0)
 				plan_source->execute(FFT_BACKWARD);
-	        projection_T00_project(pcls_cdm, source, a, phi);
+	        	projection_T00_project(pcls_cdm, source, a, phi);
 			if (sim.baryon_flag)
 				projection_T00_project(pcls_b, source, a, phi);
-	        projection_T00_comm(source);
+			projection_T00_comm(source);
 	        
 	        prepareFTsource<Real>(*phi, *chi, *source, cosmo.Omega_cdm + cosmo.Omega_b, *source, 3. * Hconf(a, fourpiG, cosmo) * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hconf(a, fourpiG, cosmo) * Hconf(a, fourpiG, cosmo) * dx * dx);
 	        plan_source->execute(FFT_FORWARD);
 	        solveModifiedPoissonFT(*scalarFT, *scalarFT, 1. / (dx * dx), 3. * Hconf(a, fourpiG, cosmo) / dtau_old);
 	        plan_chi->execute(FFT_BACKWARD);     // nonlinear phi temporarily stored in chi
             
-            relax_cycles++;
+			relax_cycles++;
 	    }
 
 		loadTransferFunctions(class_background, class_perturbs, class_spectra, tk_d1, tk_d2, NULL, sim.boxsize, (1. / a) - 1., cosmo.h);
@@ -543,12 +572,35 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 		generateRealization(*scalarFT, 0., phispline, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE, 0);
 		plan_phi->execute(FFT_BACKWARD);
 
+		if (relax_cycles == 1)
+	    {
+	    	plan_phi->execute(FFT_FORWARD);
+			extractPowerSpectrum(*scalarFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, false, KTYPE_LINEAR);
+			sprintf(filename, "%s%sICtarget_phi.dat", sim.output_path, sim.basename_pk);
+			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of phi", a);
+			plan_chi->execute(FFT_FORWARD);
+			extractPowerSpectrum(*scalarFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, false, KTYPE_LINEAR);
+			sprintf(filename, "%s%sICactual_phi.dat", sim.output_path, sim.basename_pk);
+			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of phi", a);
+		}
+
 	    if (relax_cycles > 0)
 	    {	
 	        for (x.first(); x.test(); x.next())     // interpolate between linear and nonlinear solution
 	            (*phi)(x) = (((1. / (sim.z_in + 1.)) - a) * (*phi)(x) + (a - (1. / (ic.z_relax + 1.))) * (*chi)(x)) / ((1. / (sim.z_in + 1.)) - (1. / (ic.z_relax + 1.)));
 		}
 		phi->updateHalo();
+
+		if (cycle == 0)
+		{
+			sprintf(filename, "_ICinit_phi.h5");
+			phi->saveHDF5(h5filename + filename);
+
+			plan_phi->execute(FFT_FORWARD);
+			extractPowerSpectrum(*scalarFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, false, KTYPE_LINEAR);
+			sprintf(filename, "%s%sICinit_phi.dat", sim.output_path, sim.basename_pk);
+			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of phi", a);
+		}
 
 		generateRealization(*scalarFT, 0., chispline, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE, 0);
 		plan_chi->execute(FFT_BACKWARD);
@@ -579,7 +631,10 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 		}
 
 	    for (p = 0; p < cosmo.num_ncdm; p++)
-	        maxvel[((sim.baryon_flag == 1) ? 2 : 1)+p] = pcls_ncdm[p].updateVel(update_q, (dtau + dtau_old) / 2., ic_fields, 2, &a);
+		{
+			if (ic.numtile[((sim.baryon_flag == 1) ? 2 : 1)+p] < 1)	maxvel[((sim.baryon_flag == 1) ? 2 : 1)+p] = 0;
+			else maxvel[((sim.baryon_flag == 1) ? 2 : 1)+p] = pcls_ncdm[p].updateVel(update_q, (dtau + dtau_old) / 2., ic_fields, 2, &a);
+		}
 
 		rungekutta4bg(a, fourpiG, cosmo, 0.5 * dtau);
 
@@ -591,7 +646,10 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 		}
 
 	    for (p = 0; p < cosmo.num_ncdm; p++)
-	        pcls_ncdm[p].moveParticles(update_pos, dtau, ic_fields, 2, &a);
+		{
+			if (ic.numtile[((sim.baryon_flag == 1) ? 2 : 1)+p] < 1) continue;
+		        pcls_ncdm[p].moveParticles(update_pos, dtau, ic_fields, 2, &a);
+		}
 
 		rungekutta4bg(a, fourpiG, cosmo, 0.5 * dtau);
 	    tau += dtau;
@@ -677,6 +735,7 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 		}
 		for (p = 0; p < cosmo.num_ncdm; p++)
 		{
+			if (ic.numtile[((sim.baryon_flag == 1) ? 2 : 1)+p] < 1) continue;
 			pcls_ncdm[p].moveParticles(displace_pcls_ic_basic, 1., &source, 1, NULL, &max_displacement, &i, 1);
 			COUT << " Poisson gauge -> N-body gauge, ncdm species " << p+1 << " maximum displacement = " << max_displacement * sim.numpts << " lattice units." << endl;
 		}
@@ -722,6 +781,11 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 		}
 		for (p = 0; p < cosmo.num_ncdm; p++)
 		{
+			if (ic.numtile[((sim.baryon_flag == 1) ? 2 : 1)+p] < 1)
+			{
+				maxvel[p+1+sim.baryon_flag] = 0;
+				continue;
+			}
 			COUT << " Poisson gauge -> N-body gauge, ncdm species " << p+1 << " maximum velocity: " << maxvel[p+1+sim.baryon_flag] << " -> ";
 			maxvel[p+1+sim.baryon_flag] = pcls_ncdm[p].updateVel(update_q_Newton, 1., &source, 1, &a);
 			COUT << maxvel[p+1+sim.baryon_flag] << endl;
@@ -730,7 +794,10 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 		projection_init(source);
 		scalarProjectionCIC_project(pcls_cdm, source);
 		for (p = 0; p < cosmo.num_ncdm; p++)
+		{
+			if (ic.numtile[((sim.baryon_flag == 1) ? 2 : 1)+p] < 1) continue;
 			scalarProjectionCIC_project(pcls_ncdm+p, source);
+		}
 		projection_T00_comm(source);
 		plan_source->execute(FFT_FORWARD);
 		solveModifiedPoissonFT(*scalarFT, *scalarFT, fourpiG / a);
@@ -760,6 +827,12 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 	gsl_spline_free(chispline);
 	free(temp1);
 	free(temp2);
+
+    free(kbin);
+	free(power);
+	free(kscatter);
+	free(pscatter);
+	free(occupation);
 	
 	projection_init(Bi);
 	projection_T0i_project(pcls_cdm, Bi, phi);

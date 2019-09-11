@@ -4,9 +4,9 @@
 // 
 // code components related to radiation and linear relativistic species
 //
-// Author: Julian Adamek (Université de Genève & Observatoire de Paris)
+// Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
-// Last modified: November 2016
+// Last modified: June 2018
 //
 //////////////////////////
 
@@ -51,11 +51,11 @@ void projection_T00_project(background & class_background, perturbs & class_pert
 	double * k = NULL;
 	char ncdm_name[8];
 	int i, p, n = 0;
-	double rescale, Omega_ncdm = 0., Omega_rad = 0.;
+	double rescale, Omega_ncdm = 0., Omega_rad = 0., Omega_fld = 0.;
 	Site x(source.lattice());
 	rKSite kFT(scalarFT.lattice());
 
-	if (a < 1. / (sim.z_switch_deltarad + 1.) && cosmo.Omega_g > 0)
+	if (a < 1. / (sim.z_switch_deltarad + 1.) && cosmo.Omega_g > 0 && sim.radiation_flag == 1)
 	{
 		loadTransferFunctions(class_background, class_perturbs, class_spectra, tk1, tk2, "g", sim.boxsize, (1. / a) - 1., cosmo.h);
 		Omega_rad += cosmo.Omega_g;
@@ -74,7 +74,7 @@ void projection_T00_project(background & class_background, perturbs & class_pert
 		gsl_spline_free(tk2);
 	}
 
-	if (a < 1. / (sim.z_switch_deltarad + 1.) && cosmo.Omega_ur > 0)
+	if (a < 1. / (sim.z_switch_deltarad + 1.) && cosmo.Omega_ur > 0 && sim.radiation_flag == 1)
 	{
 		loadTransferFunctions(class_background, class_perturbs, class_spectra, tk1, tk2, "ur", sim.boxsize, (1. / a) - 1., cosmo.h);
 		Omega_rad += cosmo.Omega_ur;
@@ -95,6 +95,33 @@ void projection_T00_project(background & class_background, perturbs & class_pert
 		{
 			for (i = 0; i < n; i++)
 				delta[i] -= tk1->y[i] * coeff * cosmo.Omega_ur * M_PI * sqrt(Pk_primordial(tk1->x[i] * cosmo.h / sim.boxsize, ic) / tk1->x[i]) / tk1->x[i] / a;
+		}
+
+		gsl_spline_free(tk1);
+		gsl_spline_free(tk2);
+	}
+
+	if (a < 1. && cosmo.Omega_fld > 0 && sim.fluid_flag == 1)
+	{
+		loadTransferFunctions(class_background, class_perturbs, class_spectra, tk1, tk2, "fld", sim.boxsize, (1. / a) - 1., cosmo.h);
+		Omega_fld = cosmo.Omega_fld / pow(a, 3. * cosmo.w0_fld);
+
+		if (delta == NULL)
+		{
+			n = tk1->size;
+			delta = (double *) malloc(n * sizeof(double));
+			k = (double *) malloc(n * sizeof(double));
+
+			for (i = 0; i < n; i++)
+			{
+				delta[i] = -tk1->y[i] * coeff * Omega_fld * M_PI * sqrt(Pk_primordial(tk1->x[i] * cosmo.h / sim.boxsize, ic) / tk1->x[i]) / tk1->x[i];
+				k[i] = tk1->x[i];
+			}
+		}
+		else
+		{
+			for (i = 0; i < n; i++)
+				delta[i] -= tk1->y[i] * coeff * Omega_fld * M_PI * sqrt(Pk_primordial(tk1->x[i] * cosmo.h / sim.boxsize, ic) / tk1->x[i]) / tk1->x[i];
 		}
 
 		gsl_spline_free(tk1);
@@ -141,7 +168,7 @@ void projection_T00_project(background & class_background, perturbs & class_pert
 			rescale = Hconf(a, fourpiG, cosmo);
 
 			for (i = 0; i < n; i++)
-				delta[i] -= coeff * (4. * Omega_rad / a + 3. * Omega_ncdm) * rescale * M_PI * tk2->y[i] * sqrt(Pk_primordial(tk2->x[i] * cosmo.h / sim.boxsize, ic) / tk2->x[i]) / tk2->x[i] / tk2->x[i] / tk2->x[i];
+				delta[i] -= coeff * (4. * Omega_rad / a + 3. * Omega_ncdm + 3. * (1. + cosmo.w0_fld) * Omega_fld) * rescale * M_PI * tk2->y[i] * sqrt(Pk_primordial(tk2->x[i] * cosmo.h / sim.boxsize, ic) / tk2->x[i]) / tk2->x[i] / tk2->x[i] / tk2->x[i];
 
 			gsl_spline_free(tk1);
 			gsl_spline_free(tk2);
@@ -306,7 +333,7 @@ void prepareFTchiLinear(background & class_background, perturbs & class_perturbs
 	tk2 = gsl_spline_alloc(gsl_interp_cspline, tk1->size);
 	gsl_spline_init(tk2, tk1->x, chi, tk1->size);
 
-	generateRealization(scalarFT, 0., tk2, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE);
+	generateRealization(scalarFT, 0., tk2, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE, 0);
 
 	gsl_spline_free(tk1);
 	gsl_spline_free(tk2);
