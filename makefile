@@ -1,9 +1,9 @@
 # programming environment
 COMPILER     := mpic++
-INCLUDE      := -I/usr/local/include/gsl  -I/Users/farbod/Dropbox/Projects/k-evolution/Kevolution/LATfield2-master/  -I /Users/farbod/Packages/hdf5-1.10.1/hdf5/include    # add the path to LATfield2 and other libraries (if necessary)
-LIB          :=-L/Users/farbod/Packages/hdf5-1.10.1/hdf5/lib -lfftw3 -lm -lhdf5 -lgsl -lgslcblas
+INCLUDE      := -I/usr/local/Cellar/gsl/2.4/include  -I/Users/farbod/Dropbox/Projects/Blowup-EFT-kessence-BH/LATfield2-master/  -I /Users/farbod/Packages/hdf5-1.10.1/hdf5/include -I/Users/farbod/include    # add the path to LATfield2 and other libraries (if necessary)
+LIB          :=-L/Users/farbod/Packages/hdf5-1.10.1/hdf5/lib -L/Users/farbod/usr/lib -L/usr/local/Cellar/gsl/2.4/lib -lfftw3 -lm -lhdf5 -lgsl -lgslcblas
 
-# target and source
+# target and sources
 EXEC         := gevolution
 SOURCE       := main.cpp
 HEADERS      := $(wildcard *.hpp)
