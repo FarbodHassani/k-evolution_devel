@@ -99,7 +99,7 @@ int main(int argc, char **argv)
 	int io_size = 0;
 	int io_group_size = 0;
 
-	int i, j, cycle = 0, snapcount = 0, snapcount_b=0,  pkcount = 0, restartcount = 0, usedparams, numparam = 0, numsteps, numspecies;
+	int i, j, cycle = 0, snapcount = 0, snapcount_b=1,  pkcount = 0, restartcount = 0, usedparams, numparam = 0, numsteps, numspecies;
 
 	int numsteps_ncdm[MAX_PCL_SPECIES-2];
 	long numpts3d;
@@ -560,6 +560,7 @@ double avg_pi = 0.;
 double avg_zeta = 0.;
 double avg_phi = 0.;
 double max_zeta_old = 0.;
+double avg_zeta_old = 0.;
 
 double max_pi = 0.;
 double max_zeta = 0.;
@@ -1019,11 +1020,7 @@ for (x.first(); x.test(); x.next())
 		ref_time = MPI_Wtime();
 #endif
 
-for (x.first(); x.test(); x.next())
-{
-pi_k_old(x)=pi_k(x);
-zeta_half_old(x)=zeta_half(x);
-}
+
 
         // We just need to update halo when we want to calculate spatial derivative or use some neibours at the same time! So here wo do not nee to update halo for phi_prime!
 //**********************
@@ -1035,6 +1032,11 @@ zeta_half_old(x)=zeta_half(x);
   {
     for (i=0;i<sim.nKe_numsteps;i++)
     {
+      for (x.first(); x.test(); x.next())
+      {
+      pi_k_old(x)=pi_k(x);
+      zeta_half_old(x)=zeta_half(x);
+      }
       //computing zeta_half(-1/2) and zeta_int(-1) but we do not work with zeta(-1)
       update_zeta(-dtau/ (2. * sim.nKe_numsteps) , dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_prime(a_kess, fourpiG, cosmo), sim.NL_kessence);
       // zeta_integer.updateHalo();
@@ -1045,6 +1047,11 @@ zeta_half_old(x)=zeta_half(x);
  //Then fwe start the main loop zeta is updated to get zeta(n+1/2) from pi(n) and zeta(n-1/2)
 	for (i=0;i<sim.nKe_numsteps;i++)
 	{
+    for (x.first(); x.test(); x.next())
+    {
+    pi_k_old(x)=pi_k(x);
+    zeta_half_old(x)=zeta_half(x);
+    }
     //********************************************************************************
     //Updating zeta_integer to get zeta_integer(n+1/2) and zeta_integer(n+1), in the first loop is getting zeta_integer(1/2) and zeta_integer(1)
     // In sum: zeta_integer(n+1/2) = zeta_integer(n-1/2)+ zeta_integer'(n)dtau which needs background to be at n with then
@@ -1078,7 +1085,10 @@ zeta_half_old(x)=zeta_half(x);
     //Make snapshots and power arround blowup TIME
   max_zeta =maximum(  zeta_half, Hconf(a, fourpiG, cosmo), numpts3d ) ;
   max_zeta_old =maximum(  zeta_half_old, Hconf(a, fourpiG, cosmo), numpts3d ) ;
-  if (  (max_zeta/max_zeta_old) > 3.e0  && (a_kess > 1./(1.0 +4.) ) )
+  // avg_zeta =average(  zeta_half,1., numpts3d ) ;
+  // avg_zeta_old =average(  zeta_half_old,1., numpts3d ) ;
+
+  if (  (max_zeta/max_zeta_old) > 2.0  && (a_kess > 1./(1.0 +7.) ) )
   {
     // break;
       str_filename =  "./output/pi_k_" + to_string(snapcount_b) + ".h5";
@@ -1118,7 +1128,8 @@ zeta_half_old(x)=zeta_half(x);
       }
     }
           // Condition to break the code if the field blows up!
-          if ( (avg_zeta) > 4000)  break;
+          if ( (avg_zeta) > 100)  break;
+
 #endif
 
 
