@@ -502,7 +502,6 @@ for (x.first(); x.test(); x.next())
 
 
   snprintf(filename_avg, sizeof(filename_avg),"./output/Result_avg.txt");
-  snprintf(filename_redshift, sizeof(filename_redshift),"./output/redshifts.txt");
   snprintf(filename_snapshot, sizeof(filename_snapshot),"./output/snapshots.txt");
   // snprintf(filename_real, sizeof(filename_real),"./output/Result_real.txt");
   // snprintf(filename_fourier, sizeof(filename_fourier),"./output/Result_fourier.txt");
@@ -513,17 +512,15 @@ for (x.first(); x.test(); x.next())
   // ofstream out_real(filename_real,ios::out);
   // ofstream out_fourier(filename_fourier,ios::out);
   ofstream out_max(filename_max,ios::out);
-  ofstream out_redshifts(filename_redshift,ios::out);
   ofstream out_snapshots(filename_snapshot,ios::out);
 
   Result_avg=fopen(filename_avg,"w");
   // Result_real=fopen(filename_real,"w");
   // Result_fourier=fopen(filename_fourier,"w");
   Result_max=fopen(filename_max,"w");
-  Redshifts=fopen(filename_redshift,"w");
   snapshots_file=fopen(filename_snapshot,"w");
 
-  out_avg<<"### The result of the verage over time \n### d tau = "<< dtau<<endl;
+  out_avg<<"### The result of the average over time \n### d tau = "<< dtau<<endl;
   out_avg<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
   out_avg<<"### initial time = "<< tau <<endl;
   out_avg<<"### 1- tau\t2- average(H pi_k)\t3- average (zeta)\t 4- average (phi)\t5-z(redshift)   " <<endl;
@@ -533,11 +530,6 @@ for (x.first(); x.test(); x.next())
   out_max<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
   out_max<<"### initial time = "<< tau <<endl;
   out_max<<"### 1- tau\t2- max(H pi_k)\t3- max (zeta)\t 4- max (phi) \t 4- z  " <<endl;
-
-  out_redshifts<<"### The result of the verage over time \n### d tau = "<< dtau<<endl;
-  out_redshifts<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
-  out_redshifts<<"### initial time = "<< tau <<endl;
-  out_redshifts<<"### 1- tau\t2- <zeta> \t3-<pi>\t 4-z" <<endl;
 
   out_snapshots<<"### The result of the snapshots produced over time for blow-up \n### d tau = "<< dtau<<endl;
   out_snapshots<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
@@ -561,6 +553,7 @@ double avg_zeta = 0.;
 double avg_phi = 0.;
 double max_zeta_old = 0.;
 double avg_zeta_old = 0.;
+double avg_pi_old = 0.;
 
 double max_pi = 0.;
 double max_zeta = 0.;
@@ -1046,7 +1039,7 @@ for (x.first(); x.test(); x.next())
 
  //Then fwe start the main loop zeta is updated to get zeta(n+1/2) from pi(n) and zeta(n-1/2)
 	for (i=0;i<sim.nKe_numsteps;i++)
-	{
+  {
     for (x.first(); x.test(); x.next())
     {
     pi_k_old(x)=pi_k(x);
@@ -1079,58 +1072,47 @@ for (x.first(); x.test(); x.next())
     //********************************************************************************
     rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0 );
 
-	}
-
-#ifdef BACKREACTION_TEST
-    //Make snapshots and power arround blowup TIME
-  max_zeta =maximum(  zeta_half, Hconf(a, fourpiG, cosmo), numpts3d ) ;
-  max_zeta_old =maximum(  zeta_half_old, Hconf(a, fourpiG, cosmo), numpts3d ) ;
-  // avg_zeta =average(  zeta_half,1., numpts3d ) ;
-  // avg_zeta_old =average(  zeta_half_old,1., numpts3d ) ;
-
-  if (  (max_zeta/max_zeta_old) > 2.0  && (a_kess > 1./(1.0 +7.) ) )
-  {
-    // break;
-      str_filename =  "./output/pi_k_" + to_string(snapcount_b) + ".h5";
-      str_filename2 = "./output/zeta_" + to_string(snapcount_b) + ".h5";
-      pi_k.saveHDF5(str_filename);
-      zeta_half.saveHDF5(str_filename2);
-      str_filename =  "./output/pi_k_" + to_string(snapcount_b-1) + ".h5";
-      str_filename2 = "./output/zeta_" + to_string(snapcount_b-1) + ".h5";
-      pi_k_old.saveHDF5(str_filename);
-      zeta_half_old.saveHDF5(str_filename2);
-      snapcount_b++;
-      // writeSpectra(sim, cosmo, fourpiG, a, pkcount_blow,
-      //           &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
-      // pkcount_blow++;
-    //****************************
-    //****PRINTING AVERAGE OVER TIME
-    //****************************
-      COUT << scientific << setprecision(8);
-      // if(parallel.isRoot())
-      // {
-      out_redshifts<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << maximum(  zeta_half, Hconf(a, fourpiG, cosmo), numpts3d ) <<"\t"<< setw(9) << maximum(  pi_k, Hconf(a, fourpiG, cosmo), numpts3d )  <<"\t"<< setw(9) << 1./a_kess -1.<<endl;
-      out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(1.+a) <<"\t"<< setw(9) << a <<"\t"<< setw(9) << cycle <<"\t"<< setw(9) <<tau <<"\t"<< setw(9) <<Hconf(a, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo)<<"\t"<< setw(9) <<snapcount_b  <<endl;
-  //****************************
-  //****PRINTING AVERAGE OVER TIME
-  //****************************
-      avg_pi =average(  pi_k, Hconf(a, fourpiG, cosmo), numpts3d ) ;
+    #ifdef BACKREACTION_TEST
+      //   //Make snapshots and power arround blowup TIME
+      // // max_zeta =maximum(  zeta_half, Hconf(a, fourpiG, cosmo), numpts3d ) ;
+      // // max_zeta_old =maximum(  zeta_half_old, Hconf(a, fourpiG, cosmo), numpts3d ) ;
       avg_zeta =average(  zeta_half,1., numpts3d ) ;
-      avg_phi =average(  phi , 1., numpts3d ) ;
-      max_pi =maximum(  pi_k, Hconf(a, fourpiG, cosmo), numpts3d ) ;
-      max_zeta =maximum(  zeta_half,1., numpts3d ) ;
-      max_phi =maximum(  phi , 1., numpts3d ) ;
-      COUT << scientific << setprecision(8);
-      if(parallel.isRoot())
-      {
-        out_avg<<setw(9) << tau <<"\t"<< setw(9) << avg_pi<<"\t"<< setw(9) << avg_zeta<<"\t"<< setw(9) << avg_phi<<"\t"<< setw(9) << 1./a -1.<<endl;
-        out_max<<setw(9) << tau <<"\t"<< setw(9) << max_pi<<"\t"<< setw(9) << max_zeta<<"\t"<< setw(9) <<max_phi<<endl;
-      }
-    }
-          // Condition to break the code if the field blows up!
-          if ( (avg_zeta) > 100)  break;
+      // avg_zeta_old =average(  zeta_half_old,1., numpts3d ) ;
+      // avg_pi =average(  pi_k,1., numpts3d ) ;
+      // avg_pi_old =average(  pi_k_old, 1., numpts3d ) ;
 
-#endif
+      if (  (a_kess > 1./(1.0 +6.) ) && avg_zeta > 1.e-7 )
+      {
+        writeSpectra(sim, cosmo, fourpiG, a, snapcount_b,
+                  &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
+          str_filename =  "./output/pi_k_" + to_string(snapcount_b) + ".h5";
+          str_filename2 = "./output/zeta_" + to_string(snapcount_b) + ".h5";
+          pi_k.saveHDF5(str_filename);
+          zeta_half.saveHDF5(str_filename2);
+          str_filename =  "./output/pi_k_" + to_string(snapcount_b-1) + ".h5";
+          str_filename2 = "./output/zeta_" + to_string(snapcount_b-1) + ".h5";
+          pi_k_old.saveHDF5(str_filename);
+          zeta_half_old.saveHDF5(str_filename2);
+          snapcount_b++;
+
+        //****************************
+        //****PRINTING snapshots info
+        //****************************
+          // COUT << scientific << setprecision(8);
+          // if(parallel.isRoot())
+          // {
+          out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(1.+a_kess) <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << cycle <<"\t"<< setw(9) <<tau <<"\t"<< setw(9) <<Hconf(a_kess, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo)<<"\t"<< setw(9) <<snapcount_b  <<endl;
+        }
+
+    #endif
+  }
+  // Condition to break the code if the field blows up!
+if ( (avg_zeta) > 1000 || (abs(average( phi,1., numpts3d )) > 2 ) || (abs(average( pi_k, 1., numpts3d )) > 1000 ) )
+  {
+    cout<<"Finished at z:"<<1./(1.+a) << " average of zeta: "<< avg_zeta <<" Average of the pi: " << average( pi_k,1., numpts3d ) << " average of phi: " <<average( phi,1., numpts3d )<< endl;
+    return 0;
+  }
+
 
 
 #ifdef BENCHMARK
@@ -1156,6 +1138,13 @@ for (x.first(); x.test(); x.next())
 					maxvel[0] = pcls_cdm.updateVel(update_q, (dtau + dtau_old) / 2., update_cdm_fields, (1. / a < ic.z_relax + 1. ? 3 : 2), f_params);
 					if (sim.baryon_flag)
 						maxvel[1] = pcls_b.updateVel(update_q, (dtau + dtau_old) / 2., update_b_fields, (1. / a < ic.z_relax + 1. ? 3 : 2), f_params);
+            // Condition to break the code if the the particles move fast!
+          if ( maxvel[0] >= 0.8  )
+            {
+              cout<<"Particles moved too far and the simulaition is finished at z:"<<1./(1.+a) << endl;
+              return 0;
+            }
+
 				}
 				else
 				{
