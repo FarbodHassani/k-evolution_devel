@@ -565,6 +565,7 @@ int norm_kFT_squared = 0.;
 // HDF5 outputs!
 string str_filename ;
 string str_filename2 ;
+string str_filename3 ;
 #endif
 
 
@@ -1087,12 +1088,14 @@ for (x.first(); x.test(); x.next())
                   &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
           str_filename =  "./output/pi_k_" + to_string(snapcount_b) + ".h5";
           str_filename2 = "./output/zeta_" + to_string(snapcount_b) + ".h5";
+          str_filename3 = "./output/phi_" + to_string(snapcount_b) + ".h5";
           pi_k.saveHDF5(str_filename);
           zeta_half.saveHDF5(str_filename2);
-          str_filename =  "./output/pi_k_" + to_string(snapcount_b-1) + ".h5";
-          str_filename2 = "./output/zeta_" + to_string(snapcount_b-1) + ".h5";
-          pi_k_old.saveHDF5(str_filename);
-          zeta_half_old.saveHDF5(str_filename2);
+          phi.saveHDF5(str_filename3);
+          // str_filename =  "./output/pi_k_" + to_string(snapcount_b-1) + ".h5";
+          // str_filename2 = "./output/zeta_" + to_string(snapcount_b-1) + ".h5";
+          // pi_k_old.saveHDF5(str_filename);
+          // zeta_half_old.saveHDF5(str_filename2);
           snapcount_b++;
 
         //****************************
@@ -1142,7 +1145,7 @@ if ( (avg_zeta) > 1000 || (abs(average( phi,1., numpts3d )) > 2 ) || (abs(averag
           if ( maxvel[0] >= 0.8  )
             {
               cout<<"Particles moved too far and the simulaition is finished at z:"<<1./(1.+a) << endl;
-              return 0;
+              exit(-1000);
             }
 
 				}
