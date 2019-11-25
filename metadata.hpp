@@ -289,6 +289,11 @@ struct cosmology
 	double Omega_kessence;
   double w_kessence;
 	double cs2_kessence;
+  // fld CLASS
+  double Omega_fld=0.0;
+	double w0_fld=0.0;
+	double wa_fld=0.0;
+	double cs2_fld=1.0;
 	//kessence end
 	double Omega_g;
 	double Omega_ur;
