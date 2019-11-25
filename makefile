@@ -1,7 +1,6 @@
-# programming environment
 COMPILER     := mpic++
-INCLUDE      := -I/usr/local/include/gsl  -I/Users/farbod/Dropbox/Projects/k-evolution/LATfield2-master/  -I /Users/farbod/Packages/hdf5-1.10.1/hdf5/include    # add the path to LATfield2 and other libraries (if necessary)
-LIB          :=-L/Users/farbod/Packages/hdf5-1.10.1/hdf5/lib -lfftw3 -lm -lhdf5 -lgsl -lgslcblas
+INCLUDE      := -I../../LATfield2-master/ -I./../Healpix_3.50/include
+LIB          := -L./../Healpix_3.50/lib -L./../cfitsio -lcfitsio -lchealpix -lfftw3 -lm -lhdf5 -lgsl -lgslcblas
 
 # target and source
 EXEC         := gevolution
@@ -18,15 +17,12 @@ DLATFIELD2   := -DFFT3D -DHDF5
 # optional compiler settings (gevolution)
 DGEVOLUTION  := -DPHINONLINEAR
 DGEVOLUTION  += -DBENCHMARK
-#DGEVOLUTION += -DBACKREACTION_TEST
 DGEVOLUTION  += -DEXACT_OUTPUT_REDSHIFTS
-DGEVOLUTION  += -DMAX_OUTPUTS=64
+DGEVOLUTION  += -DHAVE_HEALPIX
 #DGEVOLUTION += -DCHECK_B
 #DGEVOLUTION += -DHAVE_CLASS # requires OPT -fopenmp and LIB -lclass
-
 # further compiler options
 OPT          := -O3 -std=c++11
 
 $(EXEC): $(SOURCE) $(HEADERS) makefile
 	$(COMPILER) $< -o $@ $(OPT) $(DLATFIELD2) $(DGEVOLUTION) $(INCLUDE) $(LIB)
-
