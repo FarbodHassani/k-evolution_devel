@@ -213,7 +213,7 @@ struct metadata
 	int gr_flag;
 	int vector_flag;
 	int radiation_flag;
-	int fluid_flag;
+	int fluid_flag=0;
 	int out_pk;
 	int out_snapshot;
 	int out_lightcone[MAX_OUTPUTS];
