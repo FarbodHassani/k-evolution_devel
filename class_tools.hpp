@@ -59,7 +59,7 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
 	double perturb_sampling_stepsize;
 	int recfast_Nz0;
 	int i;
-	int num_entries = 19;
+	int num_entries = 20;
 #ifdef CLASS_K_PER_DECADE_FOR_PK
 	int k_per_decade_for_pk;
 	if (numparam == 0 || !parseParameter(params, numparam, "k_per_decade_for_pk", k_per_decade_for_pk))
@@ -98,6 +98,9 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
 		class_filecontent.read[i] = _FALSE_;
 
 	i = 0;
+
+  sprintf(class_filecontent.name[i], "use_ppf");
+	sprintf(class_filecontent.value[i++], "%e", "no");
 
 	sprintf(class_filecontent.name[i], "root");
 	sprintf(class_filecontent.value[i++], "%s%s_class", sim.output_path, sim.basename_generic);
@@ -145,21 +148,21 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
 	sprintf(class_filecontent.value[i++], "%e", cosmo.Omega_ur);
 
 	sprintf(class_filecontent.name[i], "Omega_fld");
-	sprintf(class_filecontent.value[i++], "%e", cosmo.Omega_fld);
+	sprintf(class_filecontent.value[i++], "%e", cosmo.Omega_kessence);
 
 	sprintf(class_filecontent.name[i], "w0_fld");
-	sprintf(class_filecontent.value[i++], "%g", cosmo.w0_fld);
+	sprintf(class_filecontent.value[i++], "%g", cosmo.w_kessence);
 
 	// sprintf(class_filecontent.name[i], "wa_fld");
 	// sprintf(class_filecontent.value[i++], "%g", cosmo.wa_fld);
   //
 	// sprintf(class_filecontent.name[i], "cs2_fld");
 	// sprintf(class_filecontent.value[i++], "%g", cosmo.cs2_fld);
-  sprintf(class_filecontent.name[i], "wa_fld");
-  sprintf(class_filecontent.value[i++], "%g", cosmo.wa_fld);
+  // sprintf(class_filecontent.name[i], "wa_fld");
+  // sprintf(class_filecontent.value[i++], "%g", cosmo.wa_k);
 
   sprintf(class_filecontent.name[i], "cs2_fld");
-  sprintf(class_filecontent.value[i++], "%g", cosmo.cs2_fld);
+  sprintf(class_filecontent.value[i++], "%g", cosmo.cs2_kessence);
 
 	sprintf(class_filecontent.name[i], "N_ncdm");
 	sprintf(class_filecontent.value[i++], "%d", cosmo.num_ncdm);

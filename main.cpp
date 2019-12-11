@@ -466,7 +466,6 @@ int main(int argc, char **argv)
 	if (numparam > 0) free(params);
 #endif
 
-
 //INITIAL CONDITION If U wanna set it yourself
 // for (x.first(); x.test(); x.next())
 //   {
