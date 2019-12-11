@@ -1,12 +1,12 @@
 //////////////////////////
 // metadata.hpp
 //////////////////////////
-//
+// 
 // Constants and metadata structures
 //
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
-// Last modified: April 2019
+// Last modified: November 2018
 //
 //////////////////////////
 
@@ -31,6 +31,10 @@
 #define MAX_INTERSECTS 12
 #endif
 
+#ifndef LIGHTCONE_THICKNESS
+#define LIGHTCONE_THICKNESS 1
+#endif
+
 #ifndef LIGHTCONE_IDCHECK_ZONE
 #define LIGHTCONE_IDCHECK_ZONE 0.05
 #endif
@@ -40,6 +44,9 @@
 #define LIGHTCONE_B_OFFSET   2
 #define LIGHTCONE_HIJ_OFFSET 5
 #define LIGHTCONE_MAX_FIELDS 10
+#define LIGHTCONE_CDM_OFFSET 5
+#define LIGHTCONE_NCDM_OFFSET 6
+#define LIGHTCONE_RSD_OFFSET 7
 
 #ifndef MAX_PCL_SPECIES
 #define MAX_PCL_SPECIES 6
@@ -63,15 +70,7 @@
 #define MASK_XSPEC  2048
 #define MASK_DELTA  4096
 #define MASK_DBARE  8192
-#define MASK_PI_K    16384
-#define MASK_zeta    32768
-#define MASK_MULTI  65536
-#define MASK_VEL    131072
-#define MASK_T_KESS 262144
-#define MASK_Delta_KESS 524288
-#define MASK_PHI_PRIME 1048576
-#define MASK_DELTAKESS_DELTA 2097152
-
+#define MASK_MULTI  16384
 
 #define ICFLAG_CORRECT_DISPLACEMENT 1
 #define ICFLAG_KSPHERE              2
@@ -139,12 +138,12 @@
 #define COLORTEXT_YELLOW    "\033[33;1m"
 #define COLORTEXT_RESET     "\033[0m"
 #else
-#define COLORTEXT_WHITE     '\0'
-#define COLORTEXT_CYAN      '\0'
-#define COLORTEXT_GREEN     '\0'
-#define COLORTEXT_RED       '\0'
-#define COLORTEXT_YELLOW    '\0'
-#define COLORTEXT_RESET     '\0'
+#define COLORTEXT_WHITE     ""
+#define COLORTEXT_CYAN      ""
+#define COLORTEXT_GREEN     ""
+#define COLORTEXT_RED       ""
+#define COLORTEXT_YELLOW    ""
+#define COLORTEXT_RESET     ""
 #endif
 
 // header structure for GADGET-2 files [V. Springel, N. Yoshida, and S.D. White, New Astron. 6 (2001) 79
@@ -247,11 +246,6 @@ struct metadata
 	char output_path[PARAM_MAX_LENGTH];
 	char restart_path[PARAM_MAX_LENGTH];
 	char basename_restart[PARAM_MAX_LENGTH];
-	//Kessence part
-	int nKe_numsteps;
-	int Kess_source_gravity;
-  int NL_kessence;
-	//kessence end
 };
 
 struct icsettings
@@ -264,9 +258,6 @@ struct icsettings
 	char pclfile[MAX_PCL_SPECIES][PARAM_MAX_LENGTH];
 	char pkfile[PARAM_MAX_LENGTH];
 	char tkfile[PARAM_MAX_LENGTH];
-	//Kessence
-	char tk_kessence[PARAM_MAX_LENGTH];
-	//kessence end
 	char metricfile[3][PARAM_MAX_LENGTH];
 	double restart_tau;
 	double restart_dtau;
@@ -285,16 +276,10 @@ struct cosmology
 	double Omega_b;
 	double Omega_m;
 	double Omega_Lambda;
-	// Kessence part
-	double Omega_kessence;
-  double w_kessence;
-	double cs2_kessence;
-  // fld CLASS
-  double Omega_fld=0.0;
-	double w0_fld=0.0;
-	double wa_fld=0.0;
-	double cs2_fld=1.0;
-	//kessence end
+	double Omega_fld;
+	double w0_fld;
+	double wa_fld;
+	double cs2_fld;
 	double Omega_g;
 	double Omega_ur;
 	double Omega_rad;

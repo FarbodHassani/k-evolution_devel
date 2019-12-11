@@ -4,6 +4,9 @@
 #include "metadata.hpp"
 #include "parser.hpp"
 
+
+// g++ lccat.cpp -o lccat -std=c++11 -O3 -DCOLORTERMINAL
+
 using namespace std;
 
 int main(int argc, char **argv)
@@ -430,7 +433,7 @@ int main(int argc, char **argv)
 						}
 
 						if (numfiles > 1)
-							sprintf(ofilename, "%s%s_cdm.%ld", sim.output_path, sim.basename_lightcone, numwrite);
+							sprintf(ofilename, "%s%s_cdm.%d", sim.output_path, sim.basename_lightcone, numwrite);
 						else
 							sprintf(ofilename, "%s%s_cdm", sim.output_path, sim.basename_lightcone);
 
@@ -519,7 +522,7 @@ int main(int argc, char **argv)
 	{
 		cout << " correcting header information (BoxSize = " << outhdr.BoxSize << ") ..." << endl;
 
-		outhdr.npart[1] = (uint32_t) ((((long) numpart_tot) / numfiles) % (1ll << 32));
+		outhdr.npart[1] = (uint32_t) ((((long) numpart_tot) / numfiles) % (1l << 32));
 		blocksize = sizeof(outhdr);
 
 		for (int i = 0; i < numwrite-1; i++)
