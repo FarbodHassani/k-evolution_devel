@@ -1,7 +1,7 @@
 //////////////////////////
 // class_tools.hpp
 //////////////////////////
-// 
+//
 // interface to linear Boltzmann code CLASS
 //
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
@@ -26,7 +26,7 @@ using namespace LATfield2;
 //////////////////////////
 // Description:
 //   initializes CLASS structures containing interpolation tables for various transfer functions
-// 
+//
 // Arguments:
 //   sim               simulation metadata structure
 //   ic                settings for IC generation
@@ -39,7 +39,7 @@ using namespace LATfield2;
 //   output_value      CLASS parameter value specifying the output (optional)
 //
 // Returns:
-// 
+//
 //////////////////////////
 
 void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosmo, background & class_background, perturbs & class_perturbs, spectra & class_spectra, parameter * params = NULL, int numparam = 0, const char * output_value = "dTk, vTk")
@@ -59,7 +59,7 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
 	double perturb_sampling_stepsize;
 	int recfast_Nz0;
 	int i;
-	int num_entries = 19;
+	int num_entries = 20;
 #ifdef CLASS_K_PER_DECADE_FOR_PK
 	int k_per_decade_for_pk;
 	if (numparam == 0 || !parseParameter(params, numparam, "k_per_decade_for_pk", k_per_decade_for_pk))
@@ -87,9 +87,9 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
 	if (numparam == 0 || !parseParameter(params, numparam, "perturb_sampling_stepsize", perturb_sampling_stepsize))
 	{
 		num_entries += 1;
-		perturb_sampling_stepsize = 0.01;		
+		perturb_sampling_stepsize = 0.01;
 	}
-	
+
 	num_entries += numparam;
 
 	parser_init(&class_filecontent, num_entries, filename, class_errmsg);
@@ -98,6 +98,9 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
 		class_filecontent.read[i] = _FALSE_;
 
 	i = 0;
+
+  sprintf(class_filecontent.name[i], "use_ppf");
+	sprintf(class_filecontent.value[i++], "%e", "no");
 
 	sprintf(class_filecontent.name[i], "root");
 	sprintf(class_filecontent.value[i++], "%s%s_class", sim.output_path, sim.basename_generic);
@@ -145,16 +148,21 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
 	sprintf(class_filecontent.value[i++], "%e", cosmo.Omega_ur);
 
 	sprintf(class_filecontent.name[i], "Omega_fld");
-	sprintf(class_filecontent.value[i++], "%e", cosmo.Omega_fld);
+	sprintf(class_filecontent.value[i++], "%e", cosmo.Omega_kessence);
 
 	sprintf(class_filecontent.name[i], "w0_fld");
-	sprintf(class_filecontent.value[i++], "%g", cosmo.w0_fld);
+	sprintf(class_filecontent.value[i++], "%g", cosmo.w_kessence);
 
-	sprintf(class_filecontent.name[i], "wa_fld");
-	sprintf(class_filecontent.value[i++], "%g", cosmo.wa_fld);
+	// sprintf(class_filecontent.name[i], "wa_fld");
+	// sprintf(class_filecontent.value[i++], "%g", cosmo.wa_fld);
+  //
+	// sprintf(class_filecontent.name[i], "cs2_fld");
+	// sprintf(class_filecontent.value[i++], "%g", cosmo.cs2_fld);
+  // sprintf(class_filecontent.name[i], "wa_fld");
+  // sprintf(class_filecontent.value[i++], "%g", cosmo.wa_k);
 
-	sprintf(class_filecontent.name[i], "cs2_fld");
-	sprintf(class_filecontent.value[i++], "%g", cosmo.cs2_fld);
+  sprintf(class_filecontent.name[i], "cs2_fld");
+  sprintf(class_filecontent.value[i++], "%g", cosmo.cs2_kessence);
 
 	sprintf(class_filecontent.name[i], "N_ncdm");
 	sprintf(class_filecontent.value[i++], "%d", cosmo.num_ncdm);
@@ -199,7 +207,7 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
 		sprintf(class_filecontent.name[i], "nonlinear_verbose");
 		sprintf(class_filecontent.value[i++], "1");
 	}
-	
+
 	while (numparam > 0)
 	{
 		numparam--;
@@ -330,14 +338,14 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
 //////////////////////////
 // Description:
 //   frees CLASS structures containing interpolation tables for various transfer functions
-// 
+//
 // Arguments:
 //   class_background  CLASS structure that contains the background
 //   class_perturbs    CLASS structure that contains perturbations
 //   class_spectra     CLASS structure that contains spectra
 //
 // Returns:
-// 
+//
 //////////////////////////
 
 void freeCLASSstructures(background & class_background, perturbs & class_perturbs, spectra & class_spectra)
@@ -367,7 +375,7 @@ void freeCLASSstructures(background & class_background, perturbs & class_perturb
 //////////////////////////
 // Description:
 //   loads a set of tabulated transfer functions from some precomputed CLASS structures
-// 
+//
 // Arguments:
 //   class_background  CLASS structure that contains the background
 //   class_perturbs    CLASS structure that contains the perturbations
@@ -383,7 +391,7 @@ void freeCLASSstructures(background & class_background, perturbs & class_perturb
 //   h                 conversion factor between 1/Mpc and h/Mpc (theta is in units of 1/Mpc)
 //
 // Returns:
-// 
+//
 //////////////////////////
 
 void loadTransferFunctions(background & class_background, perturbs & class_perturbs, spectra & class_spectra, gsl_spline * & tk_delta, gsl_spline * & tk_theta, const char * qname, const double boxsize, const double z, double h)
@@ -453,13 +461,13 @@ void loadTransferFunctions(background & class_background, perturbs & class_pertu
 	}
 
 	free(data);
-	
+
 	tk_delta = gsl_spline_alloc(gsl_interp_cspline, class_spectra.ln_k_size);
 	tk_theta = gsl_spline_alloc(gsl_interp_cspline, class_spectra.ln_k_size);
-	
+
 	gsl_spline_init(tk_delta, k, tk_d, class_spectra.ln_k_size);
 	gsl_spline_init(tk_theta, k, tk_t, class_spectra.ln_k_size);
-	
+
 	free(k);
 	free(tk_d);
 	free(tk_t);
@@ -468,4 +476,3 @@ void loadTransferFunctions(background & class_background, perturbs & class_pertu
 #endif
 
 #endif
-

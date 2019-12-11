@@ -213,7 +213,7 @@ struct metadata
 	int gr_flag;
 	int vector_flag;
 	int radiation_flag;
-	int fluid_flag;
+	int fluid_flag=0;
 	int out_pk;
 	int out_snapshot;
 	int out_lightcone[MAX_OUTPUTS];
@@ -261,6 +261,7 @@ struct icsettings
 	int flags;
 	int generator;
 	int restart_cycle;
+  int IC_kess ; // Initial conditions for kessence fields (pi,zeta); 0 is from CLASS and 1 is provided by hand
 	char pclfile[MAX_PCL_SPECIES][PARAM_MAX_LENGTH];
 	char pkfile[PARAM_MAX_LENGTH];
 	char tkfile[PARAM_MAX_LENGTH];
@@ -277,6 +278,7 @@ struct icsettings
 	double A_s;
 	double n_s;
 	double k_pivot;
+
 };
 
 struct cosmology
@@ -290,10 +292,10 @@ struct cosmology
   double w_kessence;
 	double cs2_kessence;
   // fld CLASS
-  double Omega_fld=0.0;
-	double w0_fld=0.0;
-	double wa_fld=0.0;
-	double cs2_fld=1.0;
+  // double Omega_fld=0.0;
+	// double w0_fld=0.0;
+	// double wa_fld=0.0;
+	// double cs2_fld=1.0;
 	//kessence end
 	double Omega_g;
 	double Omega_ur;

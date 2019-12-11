@@ -104,31 +104,32 @@ void projection_T00_project(background & class_background, perturbs & class_pert
 		gsl_spline_free(tk2);
 	}
 
-	if (a < 1. && cosmo.Omega_fld > 0 && sim.fluid_flag == 1)
+	if (a < 1. && cosmo.Omega_kessence > 0 && sim.fluid_flag == 1)
 	{
-		loadTransferFunctions(class_background, class_perturbs, class_spectra, tk1, tk2, "fld", sim.boxsize, (1. / a) - 1., cosmo.h);
-		Omega_fld = cosmo.Omega_fld / pow(a, 3. * cosmo.w0_fld);
-
-		if (delta == NULL)
-		{
-			n = tk1->size;
-			delta = (double *) malloc(n * sizeof(double));
-			k = (double *) malloc(n * sizeof(double));
-
-			for (i = 0; i < n; i++)
-			{
-				delta[i] = -tk1->y[i] * coeff * Omega_fld * M_PI * sqrt(Pk_primordial(tk1->x[i] * cosmo.h / sim.boxsize, ic) / tk1->x[i]) / tk1->x[i];
-				k[i] = tk1->x[i];
-			}
-		}
-		else
-		{
-			for (i = 0; i < n; i++)
-				delta[i] -= tk1->y[i] * coeff * Omega_fld * M_PI * sqrt(Pk_primordial(tk1->x[i] * cosmo.h / sim.boxsize, ic) / tk1->x[i]) / tk1->x[i];
-		}
-
-		gsl_spline_free(tk1);
-		gsl_spline_free(tk2);
+    cout<<"WARNING: You cannot ask for class dark energy perturbations in k-evolution!";
+		// loadTransferFunctions(class_background, class_perturbs, class_spectra, tk1, tk2, "fld", sim.boxsize, (1. / a) - 1., cosmo.h);
+		// Omega_fld = cosmo.Omega_fld / pow(a, 3. * cosmo.w0_fld);
+    //
+		// if (delta == NULL)
+		// {
+		// 	n = tk1->size;
+		// 	delta = (double *) malloc(n * sizeof(double));
+		// 	k = (double *) malloc(n * sizeof(double));
+    //
+		// 	for (i = 0; i < n; i++)
+		// 	{
+		// 		delta[i] = -tk1->y[i] * coeff * Omega_fld * M_PI * sqrt(Pk_primordial(tk1->x[i] * cosmo.h / sim.boxsize, ic) / tk1->x[i]) / tk1->x[i];
+		// 		k[i] = tk1->x[i];
+		// 	}
+		// }
+		// else
+		// {
+		// 	for (i = 0; i < n; i++)
+		// 		delta[i] -= tk1->y[i] * coeff * Omega_fld * M_PI * sqrt(Pk_primordial(tk1->x[i] * cosmo.h / sim.boxsize, ic) / tk1->x[i]) / tk1->x[i];
+		// }
+    //
+		// gsl_spline_free(tk1);
+		// gsl_spline_free(tk2);
 	}
 
 	for (p = 0; p < cosmo.num_ncdm; p++)
@@ -171,7 +172,7 @@ void projection_T00_project(background & class_background, perturbs & class_pert
 			rescale = Hconf(a, fourpiG, cosmo);
 
 			for (i = 0; i < n; i++)
-				delta[i] -= coeff * (4. * Omega_rad / a + 3. * Omega_ncdm + 3. * (1. + cosmo.w0_fld) * Omega_fld) * rescale * M_PI * tk2->y[i] * sqrt(Pk_primordial(tk2->x[i] * cosmo.h / sim.boxsize, ic) / tk2->x[i]) / tk2->x[i] / tk2->x[i] / tk2->x[i];
+				delta[i] -= coeff * (4. * Omega_rad / a + 3. * Omega_ncdm + 3. * (1. + cosmo.w_kessence) * Omega_fld) * rescale * M_PI * tk2->y[i] * sqrt(Pk_primordial(tk2->x[i] * cosmo.h / sim.boxsize, ic) / tk2->x[i]) / tk2->x[i] / tk2->x[i] / tk2->x[i];
 
 			gsl_spline_free(tk1);
 			gsl_spline_free(tk2);

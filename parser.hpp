@@ -795,6 +795,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	ic.pkfile[0] = '\0';
 	ic.tkfile[0] = '\0';
 	//kessence part
+  ic.IC_kess = 0;
 	ic.tk_kessence[0]='\0';
 	//kessence end
 	ic.metricfile[0][0] = '\0';
@@ -814,7 +815,11 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	ic.restart_version = -1.;
 
 	parseParameter(params, numparam, "seed", ic.seed);
-
+  if (parseParameter(params, numparam, "IC generator_kessence", par_string))
+  {
+    if (par_string[0] == 'f' || par_string[0] == 'F')
+      ic.IC_kess = 1;
+  }
 
 
 	if (parseParameter(params, numparam, "IC generator", par_string))
@@ -877,7 +882,23 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 			strcpy(ic.pclfile[i], ic.pclfile[i-1]);
 	}
 //Kessence part
-parseParameter(params, numparam, "T_kessence file", ic.tk_kessence);
+if (ic.IC_kess == 1)
+{
+  COUT << " initial conditions for kessence fields (pi,zeta) will be computed by the given file" << endl;
+  parseParameter(params, numparam, "T_kessence file", ic.tk_kessence);
+  if (!parseParameter(params, numparam, "T_kessence file", ic.tk_kessence))
+  {
+    if(parallel.isRoot())  cout << " \033[1;31merror:\033[0m"  << "\033[1;35m no file specified!\033[0m" <<endl;
+#ifdef LATFIELD2_HPP
+      parallel.abortForce();
+#endif
+  }
+}
+  if (ic.IC_kess == 0)
+{
+  COUT << " initial conditions for kessence fields (pi,zeta) will be computed using CLASS" << endl;
+}
+
 // if (!parseParameter(params, numparam, "T_kessence file", ic.tk_kessence) && ic.generator != ICGEN_READ_FROM_DISK);
 //kessence end
 
