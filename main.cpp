@@ -534,7 +534,7 @@ for (x.first(); x.test(); x.next())
   out_snapshots<<"### The result of the snapshots produced over time for blow-up \n### d tau = "<< dtau<<endl;
   out_snapshots<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
   out_snapshots<<"### initial time = "<< tau <<endl;
-  out_snapshots<<"### 1- tau\t2- z \t3- a\t 4- cycle\t 5- tau/boxsize\t 6- H_conf/H0 \t 7- snap_count"<<endl;
+  out_snapshots<<"### 1- tau\t2- z \t3- a\t 4- zeta_avg\t 5- tau/boxsize\t 6- H_conf/H0 \t 7- snap_count"<<endl;
 
   // out_real<<"### The result of the verage over time \n### d tau = "<< dtau<<endl;
   // out_real<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
@@ -740,7 +740,7 @@ if (sim.Kess_source_gravity==1)
 
 			if (cycle % CYCLE_INFO_INTERVAL == 0)
 			{
-				COUT << " cycle " << cycle << ", background information: z = " << (1./a) - 1. << ", average T00 = " << T00hom << ", background model = " << cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo) << endl;
+				COUT << " cycle " << cycle << ", background information: z = " << (1./a) - 1.<< ", dtau:" << dtau << ", average T00 = " << T00hom << ", background model = " << cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo) << endl;
 			}
 
 			if (dtau_old > 0.)
@@ -1078,12 +1078,14 @@ for (x.first(); x.test(); x.next())
       // // max_zeta =maximum(  zeta_half, Hconf(a, fourpiG, cosmo), numpts3d ) ;
       // // max_zeta_old =maximum(  zeta_half_old, Hconf(a, fourpiG, cosmo), numpts3d ) ;
       avg_zeta =average(  zeta_half,1., numpts3d ) ;
-      // avg_zeta_old =average(  zeta_half_old,1., numpts3d ) ;
+      avg_zeta_old =average(  zeta_half_old,1., numpts3d ) ;
       // avg_pi =average(  pi_k,1., numpts3d ) ;
       // avg_pi_old =average(  pi_k_old, 1., numpts3d ) ;
 
-      if (  (a_kess > 1./(1.0 +6.) ) && avg_zeta > 1.e-7 )
+      if ( avg_zeta > 1.e-7 && abs(avg_zeta/avg_zeta_old)>1.05 && snapcount_b<300 )
       {
+
+
         writeSpectra(sim, cosmo, fourpiG, a, snapcount_b,
                   &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
           str_filename =  "./output/pi_k_" + to_string(snapcount_b) + ".h5";
@@ -1104,16 +1106,16 @@ for (x.first(); x.test(); x.next())
           // COUT << scientific << setprecision(8);
           // if(parallel.isRoot())
           // {
-          out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(1.+a_kess) <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << cycle <<"\t"<< setw(9) <<tau <<"\t"<< setw(9) <<Hconf(a_kess, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo)<<"\t"<< setw(9) <<snapcount_b  <<endl;
+          out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(1.+a_kess) <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << avg_zeta <<"\t"<< setw(9) <<tau <<"\t"<< setw(9) <<Hconf(a_kess, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo)<<"\t"<< setw(9) <<snapcount_b  <<endl;
         }
 
     #endif
   }
   // Condition to break the code if the field blows up!
-if ( (avg_zeta) > 1000 || (abs(average( phi,1., numpts3d )) > 2 ) || (abs(average( pi_k, 1., numpts3d )) > 1000 ) )
+if ( (avg_zeta) > 2 || (abs(average( phi,1., numpts3d )) > 2 ) || (abs(average( pi_k, 1., numpts3d )) > 2 ) )
   {
-    cout<<"Finished at z:"<<1./(1.+a) << " average of zeta: "<< avg_zeta <<" Average of the pi: " << average( pi_k,1., numpts3d ) << " average of phi: " <<average( phi,1., numpts3d )<< endl;
-    return 0;
+  if(parallel.isRoot()) cout<<"Finished at z:"<<1./(1.+a) << " average of zeta: "<< avg_zeta <<" Average of the pi: " << average( pi_k,1., numpts3d ) << " average of phi: " <<average( phi,1., numpts3d )<< endl;
+    parallel.abortForce();
   }
 
 
@@ -1309,6 +1311,17 @@ if ( (avg_zeta) > 1000 || (abs(average( phi,1., numpts3d )) > 2 ) || (abs(averag
 			dtau = sim.Cf * dx;
 		else
 			dtau = sim.steplimit / Hconf(a, fourpiG, cosmo);
+
+    // kessence blowup increasing time resolution around blowup time to sudy better,
+    if (abs(avg_zeta/avg_zeta_old)>1.03)
+    {
+      if (sim.Cf * dx < sim.steplimit / Hconf(a, fourpiG, cosmo))
+        dtau = sim.Cf * dx/8.0;
+      else
+        dtau = sim.steplimit / Hconf(a, fourpiG, cosmo)/8.0;
+
+        if(parallel.isRoot()) cout<<"******* dtau is decreased to capture the blowup *******"<<" old value:"<<dtau*2 <<" new value: "<<dtau;
+    }
 
 		cycle++;
 
