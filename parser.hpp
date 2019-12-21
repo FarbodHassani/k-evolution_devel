@@ -1687,7 +1687,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	if (parseParameter(params, numparam, "omega_fld", cosmo.Omega_fld))
 		cosmo.Omega_fld /= cosmo.h * cosmo.h;
 	else if (!parseParameter(params, numparam, "Omega_fld", cosmo.Omega_fld))
-		cosmo.Omega_fld = 1. - cosmo.Omega_m - cosmo.Omega_rad;
+		cosmo.Omega_fld = 0.67;
 	if (!parseParameter(params, numparam, "w0_fld", cosmo.w0_fld))
 		cosmo.w0_fld = -1.;
 	if (!parseParameter(params, numparam, "wa_fld", cosmo.wa_fld))
@@ -1740,8 +1740,9 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	}
 	else
 	{
-		COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad << ", h = " << cosmo.h << endl;
-		cosmo.Omega_Lambda = 1. - cosmo.Omega_m - cosmo.Omega_rsad - cosmo.Omega_fld;
+    cosmo.Omega_fld = 1. - cosmo.Omega_m - cosmo.Omega_rad;
+    cosmo.Omega_Lambda = 1. - cosmo.Omega_m - cosmo.Omega_rsad - cosmo.Omega_fld;
+		COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad << ", Omega_fld = " << cosmo.Omega_fld << ", Omega_Lambda = " << cosmo.Omega_Lambda << ", h = " << cosmo.h << endl;
 	}
 
 	if(!parseParameter(params, numparam, "switch delta_rad", sim.z_switch_deltarad))
