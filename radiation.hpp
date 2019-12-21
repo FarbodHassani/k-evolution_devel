@@ -194,6 +194,61 @@ void projection_T00_project(background & class_background, perturbs & class_pert
 }
 
 
+
+
+void projection_T00_project_classkess(background & class_background, perturbs & class_perturbs, spectra & class_spectra, Field<Real> & source, Field<Cplx> & scalarFT, PlanFFT<Cplx> * plan_source, metadata & sim, icsettings & ic, cosmology & cosmo, const double fourpiG, double a, double coeff = 1.)
+{
+	gsl_spline * tk1 = NULL;
+	gsl_spline * tk2 = NULL;
+	double * delta = NULL;
+	double * k = NULL;
+	char ncdm_name[8];
+	int i, p, n = 0;
+	double rescale, Omega_ncdm = 0., Omega_rad = 0., Omega_fld = 0.;
+	Site x(source.lattice());
+	rKSite kFT(scalarFT.lattice());
+
+
+	if (a < 1.)
+	{
+		loadTransferFunctions(class_background, class_perturbs, class_spectra, tk1, tk2, "fld", sim.boxsize, (1. / a) - 1., cosmo.h);
+		Omega_fld = cosmo.Omega_kessence / pow(a, 3. * cosmo.w_kessence);
+
+		// if (delta == NULL)
+		// {
+			n = tk1->size;
+			delta = (double *) malloc(n * sizeof(double));
+			k = (double *) malloc(n * sizeof(double));
+
+			for (i = 0; i < n; i++)
+			{
+				delta[i] = -tk1->y[i] * coeff * Omega_fld * M_PI * sqrt(Pk_primordial(tk1->x[i] * cosmo.h / sim.boxsize, ic) / tk1->x[i]) / tk1->x[i];
+				k[i] = tk1->x[i];
+			}
+		// }
+		// else
+		// {
+		// 	for (i = 0; i < n; i++)
+		// 		delta[i] -= tk1->y[i] * coeff * Omega_fld * M_PI * sqrt(Pk_primordial(tk1->x[i] * cosmo.h / sim.boxsize, ic) / tk1->x[i]) / tk1->x[i];
+		// }
+
+		gsl_spline_free(tk1);
+		gsl_spline_free(tk2);
+    tk1 = gsl_spline_alloc(gsl_interp_cspline, n);
+		gsl_spline_init(tk1, k, delta, n);
+
+		generateRealization(scalarFT, 0., tk1, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE);
+		plan_source->execute(FFT_BACKWARD);
+
+		gsl_spline_free(tk1);
+		free(delta);
+		free(k);
+	}
+
+}
+
+
+
 //////////////////////////
 // prepareFTchiLinear
 //////////////////////////

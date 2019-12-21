@@ -1673,7 +1673,7 @@ if (ic.IC_kess == 1)
 	}
 	if (!parseParameter(params, numparam, "Omega_kessence",  cosmo.Omega_kessence))
 	{
-			cosmo.Omega_kessence=0.7199;
+			cosmo.Omega_kessence=1-cosmo.Omega_m - cosmo.Omega_rad ;
 	}
 	if (!parseParameter(params, numparam, "w_kessence",  cosmo.w_kessence))
 	{
@@ -1691,6 +1691,11 @@ if (ic.IC_kess == 1)
   {
     sim.NL_kessence = 0; //Default is linear kessence.
   }
+  // cosmo.Omega_fld =cosmo.Omega_kessence;
+	// cosmo.w0_fld= cosmo.w_kessence;
+	// cosmo.wa_fld =0.0;
+	// cosmo.cs2_fld = cosmo.cs2_kessence;
+  sim. fluid_flag = 0.0;
   //kessence end
 
 	cosmo.num_ncdm = MAX_PCL_SPECIES-2;
