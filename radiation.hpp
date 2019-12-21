@@ -1,7 +1,7 @@
 //////////////////////////
 // radiation.hpp
 //////////////////////////
-// 
+//
 // code components related to radiation and linear relativistic species
 //
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
@@ -24,7 +24,7 @@
 //   the contributions for the various species are included only until some
 //   individual redshift values are reached (after which no linear treatment
 //   is requested)
-// 
+//
 // Arguments:
 //   class_background  CLASS structure that contains the background
 //   class_perturbs    CLASS structure that contains the perturbations
@@ -40,7 +40,7 @@
 //   coeff             multiplicative coefficient (default 1)
 //
 // Returns:
-// 
+//
 //////////////////////////
 
 void projection_T00_project(background & class_background, perturbs & class_perturbs, spectra & class_spectra, Field<Real> & source, Field<Cplx> & scalarFT, PlanFFT<Cplx> * plan_source, metadata & sim, icsettings & ic, cosmology & cosmo, const double fourpiG, double a, double coeff = 1.)
@@ -63,7 +63,7 @@ void projection_T00_project(background & class_background, perturbs & class_pert
 		n = tk1->size;
 		delta = (double *) malloc(n * sizeof(double));
 		k = (double *) malloc(n * sizeof(double));
-		
+
 		for (i = 0; i < n; i++)
 		{
 			delta[i] = -tk1->y[i] * coeff * cosmo.Omega_g * M_PI * sqrt(Pk_primordial(tk1->x[i] * cosmo.h / sim.boxsize, ic) / tk1->x[i]) / tk1->x[i] / a;
@@ -175,7 +175,95 @@ void projection_T00_project(background & class_background, perturbs & class_pert
 		}
 
 		tk1 = gsl_spline_alloc(gsl_interp_cspline, n);
-		gsl_spline_init(tk1, k, delta, n);		
+		gsl_spline_init(tk1, k, delta, n);
+
+		generateRealization(scalarFT, 0., tk1, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE);
+		plan_source->execute(FFT_BACKWARD);
+
+		gsl_spline_free(tk1);
+		free(delta);
+		free(k);
+
+		for (x.first(); x.test(); x.next())
+			source(x) += Omega_ncdm;
+	}
+}
+
+
+//////////////////////////
+// projection_T00_project (radiation module)
+//////////////////////////
+// Description:
+//   provides a realization of the linear density field of radiation and
+//   non-cold species using linear transfer functions precomputed with CLASS;
+//   the contributions for the various species are included only until some
+//   individual redshift values are reached (after which no linear treatment
+//   is requested)
+//
+// Arguments:
+//   class_background  CLASS structure that contains the background
+//   class_perturbs    CLASS structure that contains the perturbations
+//   class_spectra     CLASS structure that contains the spectra
+//   source            reference to field that will contain the realization
+//   scalarFT          reference to Fourier image of that field
+//   plan_source       pointer to FFT planner
+//   sim               simulation metadata structure
+//   ic                settings for IC generation (contains the random seed)
+//   cosmo             cosmological parameter structure
+//   fourpiG           4 pi G (in code units)
+//   a                 scale factor
+//   coeff             multiplicative coefficient (default 1)
+//
+// Returns:
+//
+//////////////////////////
+
+void projection_T00_project_kess(background & class_background, perturbs & class_perturbs, spectra & class_spectra, Field<Real> & source, Field<Cplx> & scalarFT, PlanFFT<Cplx> * plan_source, metadata & sim, icsettings & ic, cosmology & cosmo, const double fourpiG, double a, double coeff = 1.)
+{
+	gsl_spline * tk1 = NULL;
+	gsl_spline * tk2 = NULL;
+	double * delta = NULL;
+	double * k = NULL;
+	char ncdm_name[8];
+	int i, p, n = 0;
+	double rescale, Omega_ncdm = 0., Omega_rad = 0., Omega_fld = 0.;
+	Site x(source.lattice());
+	rKSite kFT(scalarFT.lattice());
+
+
+	if (a < 1. && cosmo.Omega_fld > 0 && sim.fluid_flag == 1)
+	{
+		loadTransferFunctions(class_background, class_perturbs, class_spectra, tk1, tk2, "fld", sim.boxsize, (1. / a) - 1., cosmo.h);
+		Omega_fld = cosmo.Omega_fld / pow(a, 3. * cosmo.w0_fld);
+
+		if (delta == NULL)
+		{
+			n = tk1->size;
+			delta = (double *) malloc(n * sizeof(double));
+			k = (double *) malloc(n * sizeof(double));
+
+			for (i = 0; i < n; i++)
+			{
+				delta[i] = -tk1->y[i] * coeff * Omega_fld * M_PI * sqrt(Pk_primordial(tk1->x[i] * cosmo.h / sim.boxsize, ic) / tk1->x[i]) / tk1->x[i];
+				k[i] = tk1->x[i];
+			}
+		}
+		else
+		{
+			for (i = 0; i < n; i++)
+				delta[i] -= tk1->y[i] * coeff * Omega_fld * M_PI * sqrt(Pk_primordial(tk1->x[i] * cosmo.h / sim.boxsize, ic) / tk1->x[i]) / tk1->x[i];
+		}
+
+		gsl_spline_free(tk1);
+		gsl_spline_free(tk2);
+	}
+
+
+	if (n > 0)
+	{
+
+		tk1 = gsl_spline_alloc(gsl_interp_cspline, n);
+		gsl_spline_init(tk1, k, delta, n);
 
 		generateRealization(scalarFT, 0., tk1, (unsigned int) ic.seed, ic.flags & ICFLAG_KSPHERE);
 		plan_source->execute(FFT_BACKWARD);
@@ -196,7 +284,7 @@ void projection_T00_project(background & class_background, perturbs & class_pert
 // Description:
 //   provides a (Fourier-space) realization of chi (generated by radiation and
 //   non-cold species) from the linear transfer functions precomputed with CLASS
-// 
+//
 // Arguments:
 //   class_background  CLASS structure that contains the background
 //   class_perturbs    CLASS structure that contains the perturbations
@@ -211,7 +299,7 @@ void projection_T00_project(background & class_background, perturbs & class_pert
 //   coeff             multiplicative coefficient (default 1)
 //
 // Returns:
-// 
+//
 //////////////////////////
 
 void prepareFTchiLinear(background & class_background, perturbs & class_perturbs, spectra & class_spectra, Field<Cplx> & scalarFT, metadata & sim, icsettings & ic, cosmology & cosmo, const double fourpiG, double a, double coeff = 1.)
@@ -342,4 +430,3 @@ void prepareFTchiLinear(background & class_background, perturbs & class_perturbs
 #endif
 
 #endif
-

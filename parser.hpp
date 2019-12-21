@@ -1,7 +1,7 @@
 //////////////////////////
 // parser.hpp
 //////////////////////////
-// 
+//
 // Parser for settings file
 //
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
@@ -44,7 +44,7 @@ int sort_descending(const void * z1, const void * z2)
 //   name and value are copied to the corresponding arrays, and 'true' is returned.
 //   If the format is not recognized (or the line is commented using the hash-symbol)
 //   'false' is returned instead.
-// 
+//
 // Arguments:
 //   line       string containing the line to be read
 //   pname      will contain the name of the declared parameter (if found)
@@ -52,7 +52,7 @@ int sort_descending(const void * z1, const void * z2)
 //
 // Returns:
 //   'true' if a parameter is declared in the line, 'false' otherwise.
-// 
+//
 //////////////////////////
 
 bool readline(char * line, char * pname, char * pvalue)
@@ -61,45 +61,45 @@ bool readline(char * line, char * pname, char * pvalue)
 	char * phash;
 	char * l;
 	char * r;
-	
+
 	pequal = strchr(line, '=');
-	
+
 	if (pequal == NULL || pequal == line) return false;
-	
+
 	phash = strchr(line, '#');
-	
+
 	if (phash != NULL && phash < pequal) return false;
-	
+
 	l = line;
 	while (*l == ' ' || *l == '\t') l++;
-	
+
 	r = pequal-1;
 	while ((*r == ' ' || *r == '\t') && r > line) r--;
-	
+
 	if (r < l) return false;
-	
+
 	if (r-l+1 >= PARAM_MAX_LENGTH) return false;
-	
+
 	strncpy(pname, l, r-l+1);
 	pname[r-l+1] = '\0';
-	
+
 	l = pequal+1;
 	while (*l == ' ' || *l == '\t') l++;
-	
+
 	if (phash == NULL)
 		r = line+strlen(line)-1;
 	else
 		r = phash-1;
-	  
+
 	while (*r == ' ' || *r == '\t' || *r == '\n' || *r == '\r') r--;
-	
+
 	if (r < l) return false;
-	
+
 	if (r-l+1 >= PARAM_MAX_LENGTH) return false;
-	
+
 	strncpy(pvalue, l, r-l+1);
 	pvalue[r-l+1] = '\0';
-	
+
 	return true;
 }
 
@@ -109,14 +109,14 @@ bool readline(char * line, char * pname, char * pvalue)
 //////////////////////////
 // Description:
 //   loads a parameter file and creates an array of parameters declared therein
-// 
+//
 // Arguments:
 //   filename   string containing the path to the parameter file
 //   params     will contain the array of parameters (memory will be allocated)
 //
 // Returns:
 //   number of parameters defined in the parameter file (= length of parameter array)
-// 
+//
 //////////////////////////
 
 int loadParameterFile(const char * filename, parameter * & params)
@@ -124,7 +124,7 @@ int loadParameterFile(const char * filename, parameter * & params)
 	int numparam = 0;
 	int i = 0;
 
-#ifdef LATFIELD2_HPP	
+#ifdef LATFIELD2_HPP
 	if (parallel.grid_rank()[0] == 0) // read file
 	{
 #endif
@@ -132,9 +132,9 @@ int loadParameterFile(const char * filename, parameter * & params)
 		char line[PARAM_MAX_LINESIZE];
 		char pname[PARAM_MAX_LENGTH];
 		char pvalue[PARAM_MAX_LENGTH];
-		
+
 		paramfile = fopen(filename, "r");
-		
+
 		if (paramfile == NULL)
 		{
 #ifdef LATFIELD2_HPP
@@ -145,14 +145,14 @@ int loadParameterFile(const char * filename, parameter * & params)
 			return -1;
 #endif
 		}
-		
+
 		while (!feof(paramfile) && !ferror(paramfile))
 		{
 			if (fgets(line, PARAM_MAX_LINESIZE, paramfile) == NULL) break;
-			
+
 			if (readline(line, pname, pvalue) == true) numparam++;
 		}
-		
+
 		if (numparam == 0)
 		{
 			fclose(paramfile);
@@ -164,9 +164,9 @@ int loadParameterFile(const char * filename, parameter * & params)
 			return -1;
 #endif
 		}
-		
+
 		params = (parameter *) malloc(sizeof(parameter) * numparam);
-		
+
 		if (params == NULL)
 		{
 			fclose(paramfile);
@@ -178,22 +178,22 @@ int loadParameterFile(const char * filename, parameter * & params)
 			return -1;
 #endif
 		}
-		
+
 		rewind(paramfile);
-		
+
 		while (!feof(paramfile) && !ferror(paramfile) && i < numparam)
 		{
 			if (fgets(line, PARAM_MAX_LINESIZE, paramfile) == NULL) break;
-			
+
 			if (readline(line, params[i].name, params[i].value) == true)
 			{
 				params[i].used = false;
 				i++;
 			}
 		}
-		
+
 		fclose(paramfile);
-		
+
 		if (i < numparam)
 		{
 			free(params);
@@ -206,25 +206,25 @@ int loadParameterFile(const char * filename, parameter * & params)
 #endif
 		}
 
-#ifdef LATFIELD2_HPP		
+#ifdef LATFIELD2_HPP
 		parallel.broadcast_dim0<int>(numparam, 0);
 	}
 	else
 	{
 		parallel.broadcast_dim0<int>(numparam, 0);
-		
+
 		params = (parameter *) malloc(sizeof(parameter) * numparam);
-		
+
 		if (params == NULL)
 		{
 			cerr << " proc#" << parallel.rank() << ": error in loadParameterFile! Memory error." << endl;
 			parallel.abortForce();
 		}
 	}
-	
+
 	parallel.broadcast_dim0<parameter>(params, numparam, 0);
 #endif
-	
+
 	return numparam;
 }
 
@@ -234,7 +234,7 @@ int loadParameterFile(const char * filename, parameter * & params)
 //////////////////////////
 // Description:
 //   saves a parameter file
-// 
+//
 // Arguments:
 //   filename   string containing the path to the parameter file
 //   params     array of parameters
@@ -242,7 +242,7 @@ int loadParameterFile(const char * filename, parameter * & params)
 //   used_only  if 'true', only the used parameters will be written (default)
 //
 // Returns:
-// 
+//
 //////////////////////////
 
 void saveParameterFile(const char * filename, parameter * params, const int numparam, bool used_only = true)
@@ -252,9 +252,9 @@ void saveParameterFile(const char * filename, parameter * params, const int nump
 #endif
 	{
 		FILE * paramfile;
-		
+
 		paramfile = fopen(filename, "w");
-		
+
 		if (paramfile == NULL)
 		{
 			cout << " error in saveParameterFile! Unable to open file " << filename << "." << endl;
@@ -266,7 +266,7 @@ void saveParameterFile(const char * filename, parameter * params, const int nump
 				if (!used_only || params[i].used)
 					fprintf(paramfile, "%s = %s\n", params[i].name, params[i].value);
 			}
-			
+
 			fclose(paramfile);
 		}
 	}
@@ -278,7 +278,7 @@ void saveParameterFile(const char * filename, parameter * params, const int nump
 //////////////////////////
 // Description:
 //   searches parameter array for specified parameter name and parses its value as integer
-// 
+//
 // Arguments:
 //   params     array of parameters
 //   numparam   length of parameter array
@@ -287,11 +287,11 @@ void saveParameterFile(const char * filename, parameter * params, const int nump
 //
 // Returns:
 //   'true' if parameter is found and parsed successfully, 'false' otherwise
-// 
+//
 //////////////////////////
 
 bool parseParameter(parameter * & params, const int numparam, const char * pname, int & pvalue)
-{   
+{
 	for (int i = 0; i < numparam; i++)
 	{
 		if (strcmp(params[i].name, pname) == 0)
@@ -303,7 +303,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 			}
 		}
 	}
-	
+
 	return false;
 }
 
@@ -313,7 +313,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 //////////////////////////
 // Description:
 //   searches parameter array for specified parameter name and parses its value as integer
-// 
+//
 // Arguments:
 //   params     array of parameters
 //   numparam   length of parameter array
@@ -322,11 +322,11 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 //
 // Returns:
 //   'true' if parameter is found and parsed successfully, 'false' otherwise
-// 
+//
 //////////////////////////
 
 bool parseParameter(parameter * & params, const int numparam, const char * pname, long & pvalue)
-{   
+{
 	for (int i = 0; i < numparam; i++)
 	{
 		if (strcmp(params[i].name, pname) == 0)
@@ -338,7 +338,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 			}
 		}
 	}
-	
+
 	return false;
 }
 
@@ -348,7 +348,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 //////////////////////////
 // Description:
 //   searches parameter array for specified parameter name and parses its value as double
-// 
+//
 // Arguments:
 //   params     array of parameters
 //   numparam   length of parameter array
@@ -357,11 +357,11 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 //
 // Returns:
 //   'true' if parameter is found and parsed successfully, 'false' otherwise
-// 
+//
 //////////////////////////
 
 bool parseParameter(parameter * & params, const int numparam, const char * pname, double & pvalue)
-{   
+{
 	for (int i = 0; i < numparam; i++)
 	{
 		if (strcmp(params[i].name, pname) == 0)
@@ -373,7 +373,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 			}
 		}
 	}
-	
+
 	return false;
 }
 
@@ -383,7 +383,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 //////////////////////////
 // Description:
 //   searches parameter array for specified parameter name and retrieves its value as string
-// 
+//
 // Arguments:
 //   params     array of parameters
 //   numparam   length of parameter array
@@ -392,11 +392,11 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 //
 // Returns:
 //   'true' if parameter is found, 'false' otherwise
-// 
+//
 //////////////////////////
 
 bool parseParameter(parameter * & params, const int numparam, const char * pname, char * pvalue)
-{   
+{
 	for (int i = 0; i < numparam; i++)
 	{
 		if (strcmp(params[i].name, pname) == 0)
@@ -406,7 +406,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 			return true;
 		}
 	}
-	
+
 	return false;
 }
 
@@ -416,7 +416,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 //////////////////////////
 // Description:
 //   searches parameter array for specified parameter name and parses it as a list of comma-separated double values
-// 
+//
 // Arguments:
 //   params     array of parameters
 //   numparam   length of parameter array
@@ -426,7 +426,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 //
 // Returns:
 //   'true' if parameter is found, 'false' otherwise
-// 
+//
 //////////////////////////
 
 bool parseParameter(parameter * & params, const int numparam, const char * pname, double * pvalue, int & nmax)
@@ -435,7 +435,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 	char * comma;
 	char item[PARAM_MAX_LENGTH];
 	int n = 0;
-	   
+
 	for (int i = 0; i < numparam; i++)
 	{
 		if (strcmp(params[i].name, pname) == 0)
@@ -456,7 +456,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 					if (++n > nmax-2)
 						break;
 				}
-			}   
+			}
 			if (sscanf(start, " %lf ", pvalue+n) != 1)
 			{
 				nmax = n;
@@ -467,7 +467,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 			return true;
 		}
 	}
-	
+
 	nmax = 0;
 	return false;
 }
@@ -478,7 +478,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 //////////////////////////
 // Description:
 //   searches parameter array for specified parameter name and parses it as a list of comma-separated integer values
-// 
+//
 // Arguments:
 //   params     array of parameters
 //   numparam   length of parameter array
@@ -488,7 +488,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 //
 // Returns:
 //   'true' if parameter is found, 'false' otherwise
-// 
+//
 //////////////////////////
 
 bool parseParameter(parameter * & params, const int numparam, const char * pname, int * pvalue, int & nmax)
@@ -497,7 +497,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 	char * comma;
 	char item[PARAM_MAX_LENGTH];
 	int n = 0;
-	   
+
 	for (int i = 0; i < numparam; i++)
 	{
 		if (strcmp(params[i].name, pname) == 0)
@@ -518,7 +518,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 					if (++n > nmax-2)
 						break;
 				}
-			}   
+			}
 			if (sscanf(start, " %d ", pvalue+n) != 1)
 			{
 				nmax = n;
@@ -529,7 +529,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 			return true;
 		}
 	}
-	
+
 	nmax = 0;
 	return false;
 }
@@ -540,7 +540,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 //////////////////////////
 // Description:
 //   searches parameter array for specified parameter name and parses it as a list of comma-separated strings
-// 
+//
 // Arguments:
 //   params     array of parameters
 //   numparam   length of parameter array
@@ -550,7 +550,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 //
 // Returns:
 //   'true' if parameter is found, 'false' otherwise
-// 
+//
 //////////////////////////
 
 bool parseParameter(parameter * & params, const int numparam, const char * pname, char ** pvalue, int & nmax)
@@ -561,7 +561,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 	char * r;
 	char item[PARAM_MAX_LENGTH];
 	int n = 0;
-	   
+
 	for (int i = 0; i < numparam; i++)
 	{
 		if (strcmp(params[i].name, pname) == 0)
@@ -575,16 +575,16 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 					while (*l == ' ' || *l == '\t') l++;
 					r = comma-1;
 					while ((*r == ' ' || *r == '\t') && r > start) r--;
-					
+
 					if (r < l)
 					{
 						nmax = n;
 						return false;
 					}
-					
+
 					strncpy(pvalue[n], l, r-l+1);
 					pvalue[n][r-l+1] = '\0';
-					
+
 					start = comma+1;
 					if (++n > nmax-2)
 						break;
@@ -595,22 +595,22 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 			r = l;
 			while (*r != ' ' && *r != '\t' && *r != '\0') r++;
 			r--;
-			
+
 			if (r < l)
 			{
 				nmax = n;
 				return false;
 			}
-			
+
 			strncpy(pvalue[n], l, r-l+1);
 			pvalue[n][r-l+1] = '\0';
-			
+
 			nmax = ++n;
 			params[i].used = true;
 			return true;
 		}
 	}
-	
+
 	nmax = 0;
 	return false;
 }
@@ -621,7 +621,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 //////////////////////////
 // Description:
 //   searches parameter array for specified parameter name and parses it as a list of comma-separated field specifiers
-// 
+//
 // Arguments:
 //   params     array of parameters
 //   numparam   length of parameter array
@@ -630,7 +630,7 @@ bool parseParameter(parameter * & params, const int numparam, const char * pname
 //
 // Returns:
 //   'true' if parameter is found, 'false' otherwise
-// 
+//
 //////////////////////////
 
 bool parseFieldSpecifiers(parameter * & params, const int numparam, const char * pname, int & pvalue)
@@ -639,7 +639,7 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 	char * comma;
 	int pos;
 	char item[PARAM_MAX_LENGTH];
-		   
+
 	for (int i = 0; i < numparam; i++)
 	{
 		if (strcmp(params[i].name, pname) == 0)
@@ -654,7 +654,7 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 					if (item[pos-1] != ' ' && item[pos-1] != '\t') break;
 				}
 				item[pos] = '\0';
-				
+
 				if (strcmp(item, "Phi") == 0 || strcmp(item, "phi") == 0)
 					pvalue |= MASK_PHI;
 				else if (strcmp(item, "Chi") == 0 || strcmp(item, "chi") == 0)
@@ -685,11 +685,11 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 					pvalue |= MASK_DELTA;
 				else if (strcmp(item, "delta_N") == 0 || strcmp(item, "deltaN") == 0)
 					pvalue |= MASK_DBARE;
-					
+
 				start = comma+1;
 				while (*start == ' ' || *start == '\t') start++;
-			}  
-			
+			}
+
 			if (strcmp(start, "Phi") == 0 || strcmp(start, "phi") == 0)
 				pvalue |= MASK_PHI;
 			else if (strcmp(start, "Chi") == 0 || strcmp(start, "chi") == 0)
@@ -720,12 +720,12 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 				pvalue |= MASK_DELTA;
 			else if (strcmp(start, "delta_N") == 0 || strcmp(start, "deltaN") == 0)
 				pvalue |= MASK_DBARE;
-			
+
 			params[i].used = true;
 			return true;
 		}
 	}
-	
+
 	return false;
 }
 
@@ -735,7 +735,7 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 //////////////////////////
 // Description:
 //   parses all metadata from the parameter array
-// 
+//
 // Arguments:
 //   params     array of parameters
 //   numparam   length of parameter array
@@ -745,7 +745,7 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 //
 // Returns:
 //   number of parameters parsed
-// 
+//
 //////////////////////////
 
 #ifndef LATFIELD2_HPP
@@ -762,7 +762,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	double tmp;
 
 	// parse settings for IC generator
-	
+
 	ic.pkfile[0] = '\0';
 	ic.tkfile[0] = '\0';
 	ic.metricfile[0][0] = '\0';
@@ -780,9 +780,9 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	ic.restart_tau = 0.;
 	ic.restart_dtau = 0.;
 	ic.restart_version = -1.;
-	
+
 	parseParameter(params, numparam, "seed", ic.seed);
-	
+
 	if (parseParameter(params, numparam, "IC generator", par_string))
 	{
 		if (par_string[0] == 'B' || par_string[0] == 'b')
@@ -814,7 +814,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": IC generator not specified, selecting default (basic)" << endl;
 		ic.generator = ICGEN_BASIC;
 	}
-	
+
 	for (i = 0; i < MAX_PCL_SPECIES; i++)
 		pptr[i] = ic.pclfile[i];
 	if (ic.generator == ICGEN_READ_FROM_DISK)
@@ -834,7 +834,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		parallel.abortForce();
 #endif
 	}
-	
+
 	for (; i < MAX_PCL_SPECIES; i++)
 	{
 		if (ic.generator == ICGEN_READ_FROM_DISK)
@@ -863,7 +863,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 #endif
 #endif
 	}
-	
+
 	if (parseParameter(params, numparam, "correct displacement", par_string))
 	{
 		if (par_string[0] == 'Y' || par_string[0] == 'y')
@@ -871,7 +871,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		else if (par_string[0] != 'N' && par_string[0] != 'n')
 			COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": setting chosen for deconvolve displacement option not recognized, using default (no)" << endl;
 	}
-	
+
 	if (parseParameter(params, numparam, "k-domain", par_string))
 	{
 		if (par_string[0] == 'S' || par_string[0] == 's')
@@ -879,17 +879,17 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		else if (par_string[0] != 'C' && par_string[0] != 'c')
 			COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": setting chosen for k-domain option not recognized, using default (cube)" << endl;
 	}
-	
+
 	for (i = 0; i < MAX_PCL_SPECIES; i++)
 		ic.numtile[i] = 0;
-	
+
 	if(!parseParameter(params, numparam, "tiling factor", ic.numtile, i) && ic.generator != ICGEN_READ_FROM_DISK)
 	{
 		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": tiling factor not specified, using default value for all species (1)" << endl;
 		ic.numtile[0] = 1;
 		i = 1;
 	}
-	
+
 	for (; i < MAX_PCL_SPECIES; i++)
 		ic.numtile[i] = ic.numtile[i-1];
 
@@ -898,7 +898,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": tiling number for cdm particle template not set properly; using default value (1)" << endl;
 		ic.numtile[0] = 1;
 	}
-	
+
 	for (i = 1; i < MAX_PCL_SPECIES; i++)
 	{
 		if (ic.numtile[i] < 0 && ic.generator != ICGEN_READ_FROM_DISK)
@@ -909,7 +909,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		else if (ic.generator == ICGEN_READ_FROM_DISK && strcmp(ic.pclfile[i], "/dev/null") != 0)
 			ic.numtile[i] = 1;
 	}
-	
+
 	if (ic.pkfile[0] != '\0')
 	{
 		sim.baryon_flag = 0;
@@ -966,7 +966,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": tiling number for baryon particle template not set properly; using default value (1)" << endl;
 		ic.numtile[1] = 1;
 	}
-	
+
 	if (parseParameter(params, numparam, "radiation treatment", par_string))
 	{
 		if (par_string[0] == 'i' || par_string[0] == 'I' || par_string[0] == 'b' || par_string[0] == 'B')
@@ -1046,7 +1046,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	}
 	else
 			sim.fluid_flag = 0;
-	
+
 	parseParameter(params, numparam, "relaxation redshift", ic.z_relax);
 
 	if (ic.generator == ICGEN_READ_FROM_DISK)
@@ -1073,9 +1073,9 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 			}
 		}
 	}
-#ifdef ICGEN_PREVOLUTION	
+#ifdef ICGEN_PREVOLUTION
 	else if (ic.generator == ICGEN_PREVOLUTION)
-	{	
+	{
 		if (!parseParameter(params, numparam, "prevolution redshift", ic.z_ic))
 		{
 			COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": no starting redshift specified for IC generator = prevolution" << endl;
@@ -1083,7 +1083,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 			parallel.abortForce();
 #endif
 		}
-		
+
 		parseParameter(params, numparam, "prevolution Courant factor", ic.Cf);
 	}
 #endif
@@ -1094,13 +1094,13 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 #endif
 #ifdef ICGEN_PREVOLUTION
 		ic.generator == ICGEN_PREVOLUTION ||
-#endif		
+#endif
 		sim.radiation_flag > 0 || (ic.pkfile[0] == '\0' && ic.generator != ICGEN_READ_FROM_DISK)))
 	{
 		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": power spectrum normalization not specified, using default value (2.215e-9)" << endl;
 	}
 
-	if (!parseParameter(params, numparam, "n_s", ic.n_s) && (	
+	if (!parseParameter(params, numparam, "n_s", ic.n_s) && (
 #ifdef ICGEN_FALCONIC
 		ic.generator == ICGEN_FALCONIC ||
 #endif
@@ -1111,7 +1111,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	{
 		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": scalar spectral index not specified, using default value (0.9619)" << endl;
 	}
-	
+
 	if (!parseParameter(params, numparam, "k_pivot", ic.k_pivot) && (
 #ifdef ICGEN_FALCONIC
 		ic.generator == ICGEN_FALCONIC ||
@@ -1123,9 +1123,9 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	{
 		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": pivot scale not specified, using default value (0.05 / Mpc)" << endl;
 	}
-	
+
 	// parse metadata
-	
+
 	sim.numpts = 0;
 	sim.downgrade_factor = 1;
 	for (i = 0; i < MAX_PCL_SPECIES; i++) sim.numpcl[i] = 0;
@@ -1166,28 +1166,28 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 #endif
 		}
 	}
-	
+
 	if (!parseParameter(params, numparam, "generic file base", sim.basename_generic))
 		sim.basename_generic[0] = '\0';
-	
+
 	if (!parseParameter(params, numparam, "snapshot file base", sim.basename_snapshot))
 		strcpy(sim.basename_snapshot, "snapshot");
-		
+
 	if (!parseParameter(params, numparam, "Pk file base", sim.basename_pk))
 		strcpy(sim.basename_pk, "pk");
 
 	if (!parseParameter(params, numparam, "lightcone file base", sim.basename_lightcone))
 		strcpy(sim.basename_lightcone, "lightcone");
-		
+
 	if (!parseParameter(params, numparam, "output path", sim.output_path))
 		sim.output_path[0] = '\0';
-		
+
 	if (!parseParameter(params, numparam, "hibernation path", sim.restart_path))
 		strcpy(sim.restart_path, sim.output_path);
-		
+
 	if (!parseParameter(params, numparam, "hibernation file base", sim.basename_restart))
 		strcpy(sim.basename_restart, "restart");
-		
+
 	parseParameter(params, numparam, "boxsize", sim.boxsize);
 	if (sim.boxsize <= 0. || !isfinite(sim.boxsize))
 	{
@@ -1196,7 +1196,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		parallel.abortForce();
 #endif
 	}
-	
+
 	parseParameter(params, numparam, "Ngrid", sim.numpts);
 	if (sim.numpts < 2 || !isfinite(sim.numpts))
 	{
@@ -1225,12 +1225,12 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	parseParameter(params, numparam, "Courant factor", sim.Cf);
 
 	if (ic.Cf < 0.) ic.Cf = sim.Cf;
-	
+
 	parseParameter(params, numparam, "time step limit", sim.steplimit);
-	
+
 	if (!parseParameter(params, numparam, "move limit", sim.movelimit))
 		sim.movelimit = (double) sim.numpts;
-	
+
 	if (!parseParameter(params, numparam, "initial redshift", sim.z_in))
 	{
 		COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": initial redshift not specified!" << endl;
@@ -1238,9 +1238,9 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		parallel.abortForce();
 #endif
 	}
-	
+
 	if (ic.z_relax < -1.) ic.z_relax = sim.z_in;
-#ifdef ICGEN_PREVOLUTION	
+#ifdef ICGEN_PREVOLUTION
 	else if (ic.generator == ICGEN_PREVOLUTION && ic.z_relax < sim.z_in)
 	{
 		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": relaxation redshift cannot be below initial redshift for IC generator = prevolution; reset to initial redshift!" << endl;
@@ -1249,22 +1249,22 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 #endif
 
 	if (ic.z_ic < sim.z_in && ic.generator != ICGEN_READ_FROM_DISK) ic.z_ic = sim.z_in;
-	
+
 	parseParameter(params, numparam, "snapshot redshifts", sim.z_snapshot, sim.num_snapshot);
 	if (sim.num_snapshot > 0)
 		qsort((void *) sim.z_snapshot, (size_t) sim.num_snapshot, sizeof(double), sort_descending);
-	
+
 	parseParameter(params, numparam, "Pk redshifts", sim.z_pk, sim.num_pk);
 	if (sim.num_pk > 0)
 		qsort((void *) sim.z_pk, (size_t) sim.num_pk, sizeof(double), sort_descending);
-		
+
 	parseParameter(params, numparam, "hibernation redshifts", sim.z_restart, sim.num_restart);
 	if (sim.num_restart > 0)
 		qsort((void *) sim.z_restart, (size_t) sim.num_restart, sizeof(double), sort_descending);
-		
+
 	parseParameter(params, numparam, "hibernation wallclock limit", sim.wallclocklimit);
-	
-	parseFieldSpecifiers(params, numparam, "lightcone outputs", sim.out_lightcone[0]);	
+
+	parseFieldSpecifiers(params, numparam, "lightcone outputs", sim.out_lightcone[0]);
 	parseFieldSpecifiers(params, numparam, "snapshot outputs", sim.out_snapshot);
 	parseFieldSpecifiers(params, numparam, "Pk outputs", sim.out_pk);
 
@@ -1439,7 +1439,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 					}
 					else
 						sim.lightcone[sim.num_lightcone].opening = -1.;
-					
+
 					sprintf(par_string, "lightcone %d distance", sim.num_lightcone);
 					i = 2;
 					if (parseParameter(params, numparam, par_string, sim.lightcone[sim.num_lightcone].distance, i))
@@ -1543,7 +1543,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 			else break;
 		}
 	}
-	
+
 	i = MAX_PCL_SPECIES;
 	parseParameter(params, numparam, "tracer factor", sim.tracer_factor, i);
 	for (; i > 0; i--)
@@ -1554,18 +1554,18 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 			sim.tracer_factor[i-1] = 1;
 		}
 	}
-	
+
 	if ((sim.num_snapshot <= 0 || sim.out_snapshot == 0) && (sim.num_pk <= 0 || sim.out_pk == 0))
 	{
 		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": no output specified!" << endl;
 	}
-	
+
 	if (!parseParameter(params, numparam, "Pk bins", sim.numbins))
 	{
 		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": number of Pk bins not set properly; using default value (64)" << endl;
 		sim.numbins = 64;
 	}
-	
+
 	if (parseParameter(params, numparam, "gravity theory", par_string))
 	{
 		if (par_string[0] == 'N' || par_string[0] == 'n')
@@ -1598,22 +1598,22 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": gravity theory not selected, using default (General Relativity)" << endl;
 		sim.gr_flag = 1;
 	}
-	
-	
+
+
 	// parse cosmological parameters
-	
+
 	if (!parseParameter(params, numparam, "h", cosmo.h))
 	{
 		cosmo.h = P_HUBBLE;
 	}
-	
+
 	cosmo.num_ncdm = MAX_PCL_SPECIES-2;
 	if (!parseParameter(params, numparam, "m_ncdm", cosmo.m_ncdm, cosmo.num_ncdm))
 	{
 		for (i = 0; i < MAX_PCL_SPECIES-2; i++) cosmo.m_ncdm[i] = 0.;
 		cosmo.num_ncdm = 0;
 	}
-	
+
 	if (parseParameter(params, numparam, "N_ncdm", i))
 	{
 		if (i < 0 || !isfinite(i))
@@ -1636,21 +1636,21 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	{
 		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": N_ncdm not specified, inferring from number of mass parameters in m_ncdm (" << cosmo.num_ncdm << ")!" << endl;
 	}
-	
+
 	for (i = 0; i < MAX_PCL_SPECIES-2; i++)
 	{
 		cosmo.T_ncdm[i] = P_T_NCDM;
-		cosmo.deg_ncdm[i] = 1.0;	
+		cosmo.deg_ncdm[i] = 1.0;
 	}
 	parseParameter(params, numparam, "T_ncdm", cosmo.T_ncdm, i);
 	i = MAX_PCL_SPECIES-2;
 	parseParameter(params, numparam, "deg_ncdm", cosmo.deg_ncdm, i);
-	
+
 	for (i = 0; i < cosmo.num_ncdm; i++)
 	{
 		cosmo.Omega_ncdm[i] = cosmo.m_ncdm[i] * cosmo.deg_ncdm[i] / P_NCDM_MASS_OMEGA / cosmo.h / cosmo.h;
 	}
-	
+
 	if (parseParameter(params, numparam, "T_cmb", cosmo.Omega_g))
 	{
 		cosmo.Omega_g = cosmo.Omega_g * cosmo.Omega_g / cosmo.h;
@@ -1664,7 +1664,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	{
 		cosmo.Omega_g = 0.;
 	}
-	
+
 	if (parseParameter(params, numparam, "N_ur", cosmo.Omega_ur))
 	{
 		cosmo.Omega_ur *= (7./8.) * pow(4./11., 4./3.) * cosmo.Omega_g;
@@ -1681,13 +1681,13 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	{
 		cosmo.Omega_ur = P_N_UR * (7./8.) * pow(4./11., 4./3.) * cosmo.Omega_g;
 	}
-	
+
 	cosmo.Omega_rad = cosmo.Omega_g + cosmo.Omega_ur;
 
 	if (parseParameter(params, numparam, "omega_fld", cosmo.Omega_fld))
 		cosmo.Omega_fld /= cosmo.h * cosmo.h;
 	else if (!parseParameter(params, numparam, "Omega_fld", cosmo.Omega_fld))
-		cosmo.Omega_fld = 0.;
+		cosmo.Omega_fld = 1. - cosmo.Omega_m - cosmo.Omega_rad;
 	if (!parseParameter(params, numparam, "w0_fld", cosmo.w0_fld))
 		cosmo.w0_fld = -1.;
 	if (!parseParameter(params, numparam, "wa_fld", cosmo.wa_fld))
@@ -1700,7 +1700,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": w0_fld = -1 is singular, setting Omega_fld = 0." << endl;
 		cosmo.Omega_fld = 0.;
 	}
-	
+
 	if (parseParameter(params, numparam, "omega_b", cosmo.Omega_b))
 	{
 		cosmo.Omega_b /= cosmo.h * cosmo.h;
@@ -1710,7 +1710,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": Omega_b not found in settings file, setting to default (0)." << endl;
 		cosmo.Omega_b = 0.;
 	}
-	
+
 	if (parseParameter(params, numparam, "omega_cdm", cosmo.Omega_cdm))
 	{
 		cosmo.Omega_cdm /= cosmo.h * cosmo.h;
@@ -1720,10 +1720,10 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 		COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": Omega_cdm not found in settings file, setting to default (1)." << endl;
 		cosmo.Omega_cdm = 1.;
 	}
-	
+
 	cosmo.Omega_m = cosmo.Omega_cdm + cosmo.Omega_b;
 	for (i = 0; i < cosmo.num_ncdm; i++) cosmo.Omega_m += cosmo.Omega_ncdm[i];
-	
+
 	if (cosmo.Omega_m <= 0. || cosmo.Omega_m > 1.)
 	{
 		COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": total matter density out of range!" << endl;
@@ -1741,7 +1741,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	else
 	{
 		COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad << ", h = " << cosmo.h << endl;
-		cosmo.Omega_Lambda = 1. - cosmo.Omega_m - cosmo.Omega_rad - cosmo.Omega_fld;
+		cosmo.Omega_Lambda = 1. - cosmo.Omega_m - cosmo.Omega_rsad - cosmo.Omega_fld;
 	}
 
 	if(!parseParameter(params, numparam, "switch delta_rad", sim.z_switch_deltarad))
@@ -1765,7 +1765,7 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 			sim.z_switch_linearchi = 0.;
 		else
 			sim.z_switch_linearchi = 0.011;
-			
+
 		for (i = 0; i < cosmo.num_ncdm; i++)
 		{
 			if (sim.z_switch_linearchi < sim.z_switch_deltancdm[i])
@@ -1787,12 +1787,12 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
 	}
 	for (; i < MAX_PCL_SPECIES-2; i++)
 		sim.z_switch_Bncdm[i] = sim.z_switch_Bncdm[i-1];
-	
+
 	for (i = 0; i < numparam; i++)
 	{
 		if (params[i].used) usedparams++;
 	}
-	
+
 	return usedparams;
 }
 
