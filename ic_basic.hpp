@@ -2030,7 +2030,7 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
     {
       // The relation between pi_k and delta and theta!
       //\pi_conf in Newtonian in class : -(-\theta/k^2) pi here is pi_conf! k unit should be in 1/Mpc.
-      // In the below by (tk_t_kess->y[i]/(tk_d_kess->x[i] * cosmo.h)/(tk_d_kess->x[i] * cosmo.h) we wasily make pi_k_Newtonian from theta_kess as we do to make initial condition in python from class data! The rest is what we do to the pi_k to make it ready for pi_k as initial condition in k-evolution
+      // In the below by (tk_t_kess->y[i]/(tk_d_kess->x[i] * cosmo.h)/(tk_d_kess->x[i] * cosmo.h) we wisely make pi_k_Newtonian from theta_kess as we do to make initial condition in python from class data! The rest is what we do to the pi_k to make it ready for pi_k as initial condition in k-evolution
       kess_field[i] =  - M_PI * (tk_t_kess->y[i]/(tk_t_kess->x[i] * cosmo.h)/(tk_t_kess->x[i] * cosmo.h)) * sqrt(  Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_t_kess->x[i])
        / tk_t_kess->x[i];
       // zeta according to the definitions below:
