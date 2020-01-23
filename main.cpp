@@ -29,7 +29,7 @@
 //
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris)
 //
-// Last modified: February 2017
+// Last modified: Jan 2020 for the Blowup paper by Farbod Hassani
 //
 //////////////////////////
 #include <stdlib.h>
