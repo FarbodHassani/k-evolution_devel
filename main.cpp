@@ -28,8 +28,8 @@
 //
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
-// Last modified: May 2019
-// 
+// Last modified: Dec 2019 by FH for the full parametrisation project with Julian Adamek, Benjamin L'Huiliere, Martin Kunz and Arman Shafieloo.
+//
 //////////////////////////
 #include <stdlib.h>
 #include <set>
