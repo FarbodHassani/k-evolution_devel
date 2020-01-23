@@ -29,8 +29,7 @@
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
 // Last modified: May 2019
-
-//
+// 
 //////////////////////////
 #include <stdlib.h>
 #include <set>
