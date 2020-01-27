@@ -1147,7 +1147,8 @@ if ( (avg_zeta) > 2 || (abs(average( phi,1., numpts3d )) > 2 ) || (abs(average( 
           if ( maxvel[0] >= 0.8  )
             {
               cout<<"Particles moved too far and the simulaition is finished at z:"<<1./(1.+a) << endl;
-              exit(-1000);
+              // exit(-1000);
+              parallel.abortForce();
             }
 
 				}
@@ -1312,15 +1313,15 @@ if ( (avg_zeta) > 2 || (abs(average( phi,1., numpts3d )) > 2 ) || (abs(average( 
 		else
 			dtau = sim.steplimit / Hconf(a, fourpiG, cosmo);
 
-    // kessence blowup increasing time resolution around blowup time to sudy better,
+    // kessence blowup increasing time resolution around blowup time to study better,
     if (abs(avg_zeta/avg_zeta_old)>1.03)
     {
       if (sim.Cf * dx < sim.steplimit / Hconf(a, fourpiG, cosmo))
-        dtau = sim.Cf * dx/8.0;
+        dtau = sim.Cf * dx/2.0;
       else
-        dtau = sim.steplimit / Hconf(a, fourpiG, cosmo)/8.0;
+        dtau = sim.steplimit / Hconf(a, fourpiG, cosmo)/2.0;
 
-        if(parallel.isRoot()) cout<<"******* dtau is decreased to capture the blowup *******"<<" old value:"<<dtau*2 <<" new value: "<<dtau;
+        if(parallel.isRoot()) cout<<"******* dtau is decreased to capture the blowup *******"<<" old value:"<<dtau*2 <<" new value: "<<dtau<<endl;
     }
 
 		cycle++;
