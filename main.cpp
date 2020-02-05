@@ -1106,7 +1106,7 @@ for (x.first(); x.test(); x.next())
           // COUT << scientific << setprecision(8);
           // if(parallel.isRoot())
           // {
-          out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(1.+a_kess) <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << avg_zeta <<"\t"<< setw(9) <<tau <<"\t"<< setw(9) <<Hconf(a_kess, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo)<<"\t"<< setw(9) <<snapcount_b  <<endl;
+          out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(a_kess) -1.0 <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << avg_zeta <<"\t"<< setw(9) <<tau <<"\t"<< setw(9) <<Hconf(a_kess, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo)<<"\t"<< setw(9) <<snapcount_b  <<endl;
         }
 
     #endif
