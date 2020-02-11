@@ -534,7 +534,7 @@ for (x.first(); x.test(); x.next())
   out_snapshots<<"### The result of the snapshots produced over time for blow-up \n### d tau = "<< dtau<<endl;
   out_snapshots<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
   out_snapshots<<"### initial time = "<< tau <<endl;
-  out_snapshots<<"### 1- tau\t2- z \t3- a\t 4- zeta_avg\t 5- tau/boxsize\t 6- H_conf/H0 \t 7- snap_count"<<endl;
+  out_snapshots<<"### 1- tau\t2- z \t3- a\t 4- zeta_avg\t 5- avg_pi\t 6- avg_phi\t 7- tau/boxsize\t 8- H_conf/H0 \t 9- snap_count"<<endl;
 
   // out_real<<"### The result of the verage over time \n### d tau = "<< dtau<<endl;
   // out_real<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
@@ -1079,10 +1079,12 @@ for (x.first(); x.test(); x.next())
       // // max_zeta_old =maximum(  zeta_half_old, Hconf(a, fourpiG, cosmo), numpts3d ) ;
       avg_zeta =average(  zeta_half,1., numpts3d ) ;
       avg_zeta_old =average(  zeta_half_old,1., numpts3d ) ;
-      // avg_pi =average(  pi_k,1., numpts3d ) ;
+      avg_pi =average(  pi_k,1., numpts3d ) ;
+      avg_phi =average(  phi , 1., numpts3d ) ;
+
       // avg_pi_old =average(  pi_k_old, 1., numpts3d ) ;
 
-      if ( avg_zeta > 1.e-7 && abs(avg_zeta/avg_zeta_old)>1.05 && snapcount_b<300 )
+      if ( avg_zeta > 1.e-7 && abs(avg_zeta/avg_zeta_old)>1.02 && snapcount_b<300 )
       {
 
 
@@ -1106,17 +1108,19 @@ for (x.first(); x.test(); x.next())
           // COUT << scientific << setprecision(8);
           // if(parallel.isRoot())
           // {
-          out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(a_kess) -1.0 <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << avg_zeta <<"\t"<< setw(9) <<tau <<"\t"<< setw(9) <<Hconf(a_kess, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo)<<"\t"<< setw(9) <<snapcount_b  <<endl;
+          // out_snapshots<<"### 1- tau\t2- z \t3- a\t 4- zeta_avg\t 5- avg_pi\t 6- avg_phi\t 7- tau/boxsize\t 8- H_conf/H0 \t 9- snap_count"<<endl;
+
+          out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(a_kess) -1.0 <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << avg_zeta <<"\t"<< setw(9) << avg_pi <<"\t"<< setw(9) << avg_phi <<"\t"<< setw(9) <<tau <<"\t"<< setw(9) <<Hconf(a_kess, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo)<<"\t"<< setw(9) <<snapcount_b  <<endl;
         }
 
     #endif
   }
-  // Condition to break the code if the field blows up!
-if ( (avg_zeta) > 2 || (abs(average( phi,1., numpts3d )) > 2 ) || (abs(average( pi_k, 1., numpts3d )) > 2 ) )
-  {
-  if(parallel.isRoot()) cout<<"Finished at z:"<<1./(1.+a) << " average of zeta: "<< avg_zeta <<" Average of the pi: " << average( pi_k,1., numpts3d ) << " average of phi: " <<average( phi,1., numpts3d )<< endl;
-    parallel.abortForce();
-  }
+  // Condition to break the code if the field blows up! It's not important if we want to study only-field evolution
+// if ( (avg_zeta) > 2 || (abs(average( phi,1., numpts3d )) > 2 ) || (abs(average( pi_k, 1., numpts3d )) > 2 ) )
+//   {
+//   if(parallel.isRoot()) cout<<"Finished at z:"<<1./(1.+a) << " average of zeta: "<< avg_zeta <<" Average of the pi: " << average( pi_k,1., numpts3d ) << " average of phi: " <<average( phi,1., numpts3d )<< endl;
+//     parallel.abortForce();
+//   }
 
 
 
