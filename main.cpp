@@ -101,7 +101,7 @@ int main(int argc, char **argv)
 	int io_size = 0;
 	int io_group_size = 0;
 
-	int i, j, cycle = 0, snapcount = 0, snapcount_b=1,  pkcount = 0, restartcount = 0, usedparams, numparam = 0, numsteps, numspecies;
+	int i, j, cycle = 0, snapcount = 0, snapcount_b=1,  pkcount = 0, restartcount = 0, usedparams, numparam = 0, numsteps, numspecies,  done_hij;;
 
 	int numsteps_ncdm[MAX_PCL_SPECIES-2];
 	long numpts3d;
