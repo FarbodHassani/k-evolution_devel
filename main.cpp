@@ -1138,6 +1138,10 @@ for (x.first(); x.test(); x.next())
       avg_pi =average(  pi_k,1., numpts3d ) ;
       avg_phi =average(  phi , 1., numpts3d ) ;
 
+      if ( avg_zeta > 1.e-7 && abs(avg_zeta/avg_zeta_old)>1.02)
+      {
+        out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(a_kess) -1.0 <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << avg_zeta <<"\t"<< setw(9) << avg_pi <<"\t"<< setw(9) << avg_phi <<"\t"<< setw(9) <<tau <<"\t"<< setw(9) <<Hconf(a_kess, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo)<<"\t"<< setw(9) <<snapcount_b  <<endl;
+      }
       // avg_pi_old =average(  pi_k_old, 1., numpts3d ) ;
 
       if ( avg_zeta > 1.e-7 && abs(avg_zeta/avg_zeta_old)>1.02 && snapcount_b< sim.num_snapshot_kess )
@@ -1217,7 +1221,7 @@ for (x.first(); x.test(); x.next())
         {
 					maxvel[i+1+sim.baryon_flag] = pcls_ncdm[i].updateVel(update_q, (dtau + dtau_old) / 2. / numsteps_ncdm[i], update_ncdm_fields, (1. / a < ic.z_relax + 1. ? 3 : 2), f_params);
             // Condition to break the code if the the particles move fast!
-          if ( maxvel[0] >= 0.8  )
+          if ( maxvel[0] >= 0.8  || maxvel[1] >= 0.8 || maxvel[2] >= 0.8 )
             {
               cout<<"Particles moved too far and the simulaition is finished at z:"<<1./(1.+a) << endl;
               // exit(-1000);
@@ -1225,7 +1229,15 @@ for (x.first(); x.test(); x.next())
             }
 				}
 				else
+        {
 					maxvel[i+1+sim.baryon_flag] = pcls_ncdm[i].updateVel(update_q_Newton, (dtau + dtau_old) / 2. / numsteps_ncdm[i], update_ncdm_fields, ((sim.radiation_flag + sim.fluid_flag > 0 && a < 1. / (sim.z_switch_linearchi + 1.)) ? 2 : 1), f_params);
+          if ( maxvel[0] >= 0.8  || maxvel[1] >= 0.8 || maxvel[2] >= 0.8)
+            {
+              cout<<"Particles moved too far and the simulaition is finished at z:"<<1./(1.+a) << endl;
+              // exit(-1000);
+              parallel.abortForce();
+            }
+        }
 
 #ifdef BENCHMARK
 				update_q_count++;
