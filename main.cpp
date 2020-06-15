@@ -1140,9 +1140,18 @@ for (x.first(); x.test(); x.next())
       if ( avg_zeta > 1.e-7 && abs(avg_zeta/avg_zeta_old)>1.02 && snapcount_b< sim.num_snapshot_kess )
       {
 
-
-        writeSpectra(sim, cosmo, fourpiG, a, snapcount_b,
-                  &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
+        writeSpectra(sim, cosmo, fourpiG, a, pkcount,
+      #ifdef HAVE_CLASS
+            class_background, class_perturbs, class_spectra, ic,
+      #endif
+            &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij
+      #ifdef CHECK_B
+            , &Bi_check, &BiFT_check, &plan_Bi_check
+      #endif
+      #ifdef VELOCITY
+          , &vi, &viFT, &plan_vi
+      #endif
+      );
           str_filename =  "./output/pi_k_" + to_string(snapcount_b) + ".h5";
           str_filename2 = "./output/zeta_" + to_string(snapcount_b) + ".h5";
           str_filename3 = "./output/phi_" + to_string(snapcount_b) + ".h5";
