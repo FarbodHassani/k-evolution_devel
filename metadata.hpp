@@ -216,9 +216,7 @@ struct metadata
 	int fluid_flag=0;
 	int out_pk;
 	int out_snapshot;
-  int out_lightcone[MAX_OUTPUTS];
-  //Kessence
-  int num_snapshot_kess;
+	int out_lightcone[MAX_OUTPUTS];
 	int num_pk;
 	int numbins;
 	int num_snapshot;
