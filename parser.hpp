@@ -1157,7 +1157,7 @@ if (!parseParameter(params, numparam, "T_kessence file", ic.tk_kessence) && ic.g
   // kessence snapshots for blowup
   if (!parseParameter(params, numparam, "num_snapshot_kess",  sim.num_snapshot_kess))
   	{
-  			cosmo.num_snapshot_kess=0;
+  			sim.num_snapshot_kess=0;
   	}
 	parseParameter(params, numparam, "Pk redshifts", sim.z_pk, sim.num_pk);
 	if (sim.num_pk > 0)
