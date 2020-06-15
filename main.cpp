@@ -1221,13 +1221,12 @@ for (x.first(); x.test(); x.next())
         {
 					maxvel[i+1+sim.baryon_flag] = pcls_ncdm[i].updateVel(update_q, (dtau + dtau_old) / 2. / numsteps_ncdm[i], update_ncdm_fields, (1. / a < ic.z_relax + 1. ? 3 : 2), f_params);
             // Condition to break the code if the the particles move fast!
-          if ( maxvel[0] >= 0.8  || maxvel[1] >= 0.8 || maxvel[2] >= 0.8 )
-            {
-              cout<<"Particles moved too far and the simulaition is finished at z:"<<1./(1.+a) << endl;
-              // exit(-1000);
-              parallel.abortForce();
-              break;
-            }
+            if ( maxvel[0] >= 0.8  )
+              {
+                cout<<"Particles moved too far and the simulaition is finished at z:"<<1./(1.+a) << endl;
+                // exit(-1000);
+                parallel.abortForce();
+              }
 				}
 				else
         {
@@ -1237,7 +1236,6 @@ for (x.first(); x.test(); x.next())
               cout<<"Particles moved too far and the simulaition is finished at z:"<<1./(1.+a) << endl;
               // exit(-1000);
               parallel.abortForce();
-              break;
             }
         }
 
