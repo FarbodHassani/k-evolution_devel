@@ -4,16 +4,16 @@
 //
 // Constants and metadata structures
 //
-// Author: Julian Adamek (Université de Genève & Observatoire de Paris)
+// Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
-// Last modified: December 2016
+// Last modified: April 2019
 //
 //////////////////////////
 
 #ifndef METADATA_HEADER
 #define METADATA_HEADER
 
-#define GEVOLUTION_VERSION 1.1
+#define GEVOLUTION_VERSION 1.2
 
 #ifndef MAX_OUTPUTS
 #define MAX_OUTPUTS 32
@@ -26,6 +26,20 @@
 #ifndef PARAM_MAX_LINESIZE
 #define PARAM_MAX_LINESIZE 1024
 #endif
+
+#ifndef MAX_INTERSECTS
+#define MAX_INTERSECTS 12
+#endif
+
+#ifndef LIGHTCONE_IDCHECK_ZONE
+#define LIGHTCONE_IDCHECK_ZONE 0.05
+#endif
+
+#define LIGHTCONE_PHI_OFFSET 0
+#define LIGHTCONE_CHI_OFFSET 1
+#define LIGHTCONE_B_OFFSET   2
+#define LIGHTCONE_HIJ_OFFSET 5
+#define LIGHTCONE_MAX_FIELDS 10
 
 #ifndef MAX_PCL_SPECIES
 #define MAX_PCL_SPECIES 6
@@ -49,15 +63,15 @@
 #define MASK_XSPEC  2048
 #define MASK_DELTA  4096
 #define MASK_DBARE  8192
-//Kessence part
-#define MASK_PI_K   16384
-#define MASK_zeta 32768
-#define MASK_T_KESS 65536
-#define MASK_Delta_KESS 131072
-#define MASK_PHI_PRIME 262144
-#define MASK_DELTAKESS_DELTA 524288
+#define MASK_PI_K    16384
+#define MASK_zeta    32768
+#define MASK_MULTI  65536
+#define MASK_VEL    131072
+#define MASK_T_KESS 262144
+#define MASK_Delta_KESS 524288
+#define MASK_PHI_PRIME 1048576
+#define MASK_DELTAKESS_DELTA 2097152
 
-//Kessence end
 
 #define ICFLAG_CORRECT_DISPLACEMENT 1
 #define ICFLAG_KSPHERE              2
@@ -153,9 +167,41 @@ struct gadget2_header
 	double Omega0;
 	double OmegaLambda;
 	double HubbleParam;
-	char fill[256 - 6 * 4 - 6 * 8 - 2 * 8 - 2 * 4 - 6 * 4 - 2 * 4 - 4 * 8];   /* fills to 256 Bytes */
+	int32_t flag_age;
+	int32_t flag_metals;
+	uint32_t npartTotalHW[6];
+	char fill[256 - 6 * 4 - 6 * 8 - 2 * 8 - 2 * 4 - 6 * 4 - 2 * 4 - 4 * 8 - 2 * 4 - 6 * 4]; /* fills to 256 Bytes */
 };
 #endif
+
+#ifdef HAVE_HEALPIX
+#include "chealpix.h"
+#ifndef PIXBUFFER
+#define PIXBUFFER 1048576
+#endif
+
+struct healpix_header
+{
+	uint32_t Nside;
+	uint32_t Npix;
+	uint32_t precision;
+	uint32_t Ngrid;
+	double direction[3];
+	double distance;
+	double boxsize;
+	uint32_t Nside_ring;
+	char fill[256 - 5 * 4 - 5 * 8]; /* fills to 256 Bytes */
+};
+#endif
+
+struct lightcone_geometry
+{
+	double vertex[3];
+	double z;
+	double direction[3];
+	double opening;
+	double distance[2];
+};
 
 struct metadata
 {
@@ -167,19 +213,26 @@ struct metadata
 	int gr_flag;
 	int vector_flag;
 	int radiation_flag;
+	int fluid_flag=0;
 	int out_pk;
 	int out_snapshot;
+  int out_lightcone[MAX_OUTPUTS];
   //Kessence
   int num_snapshot_kess;
 	int num_pk;
 	int numbins;
 	int num_snapshot;
+	int num_lightcone;
 	int num_restart;
+	int Nside[MAX_OUTPUTS][2];
 	double Cf;
 	double movelimit;
 	double steplimit;
 	double boxsize;
 	double wallclocklimit;
+	double pixelfactor[MAX_OUTPUTS];
+	double shellfactor[MAX_OUTPUTS];
+	double covering[MAX_OUTPUTS];
 	double z_in;
 	double z_snapshot[MAX_OUTPUTS];
 	double z_pk[MAX_OUTPUTS];
@@ -188,6 +241,8 @@ struct metadata
 	double z_switch_linearchi;
 	double z_switch_deltancdm[MAX_PCL_SPECIES-2];
 	double z_switch_Bncdm[MAX_PCL_SPECIES-2];
+	lightcone_geometry lightcone[MAX_OUTPUTS];
+	char basename_lightcone[PARAM_MAX_LENGTH];
 	char basename_snapshot[PARAM_MAX_LENGTH];
 	char basename_pk[PARAM_MAX_LENGTH];
 	char basename_generic[PARAM_MAX_LENGTH];
@@ -208,6 +263,7 @@ struct icsettings
 	int flags;
 	int generator;
 	int restart_cycle;
+  int IC_kess ; // Initial conditions for kessence fields (pi,zeta); 0 is from CLASS and 1 is provided by hand
 	char pclfile[MAX_PCL_SPECIES][PARAM_MAX_LENGTH];
 	char pkfile[PARAM_MAX_LENGTH];
 	char tkfile[PARAM_MAX_LENGTH];
@@ -224,6 +280,7 @@ struct icsettings
 	double A_s;
 	double n_s;
 	double k_pivot;
+
 };
 
 struct cosmology
@@ -236,6 +293,11 @@ struct cosmology
 	double Omega_kessence;
   double w_kessence;
 	double cs2_kessence;
+  // fld CLASS
+  // double Omega_fld=0.0;
+	// double w0_fld=0.0;
+	// double wa_fld=0.0;
+	// double cs2_fld=1.0;
 	//kessence end
 	double Omega_g;
 	double Omega_ur;

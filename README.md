@@ -1,7 +1,7 @@
-# gevolution-1.1
+# gevolution-1.2
 
-Copyright (c) 2015-2016 Julian Adamek
-(Université de Genève & Observatoire de Paris)
+Copyright (c) 2015-2019 Julian Adamek
+(Université de Genève & Observatoire de Paris & Queen Mary University of London)
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -9,17 +9,17 @@ in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
-  
-The above copyright notice and this permission notice shall be included in
-all copies or substantial portions of the Software.
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
   
 **The Software is provided "as is", without warranty of any kind, expressed or
 implied, including but not limited to the warranties of merchantability,
 fitness for a particular purpose and noninfringement. In no event shall the
 authors or copyright holders be liable for any claim, damages or other
-liability, whether in an action of contact, tort or otherwise, arising from,
-out of or in connection with the Software or the use or other dealings in
-the Software.**
+liability, whether in an action of contract, tort or otherwise, arising from,
+out of or in connection with the Software or the use or other dealings in the
+Software.**
 
 ## Compilation and usage
 
@@ -50,6 +50,6 @@ If you use gevolution for scientific work, we kindly ask you to cite
 in your publications.
 
 For bug reports and other important feedback you can contact the authors,
-julian.adamek@obspm.fr (for queries related to gevolution)
+julian.adamek@qmul.ac.uk (for queries related to gevolution)
 developers@latfield.org (for queries related to the LATfield2 library)
 

@@ -4,9 +4,9 @@
 //
 // code components related to background evolution
 //
-// Author: Julian Adamek (Université de Genève & Observatoire de Paris)
+// Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
-// Last modified: October 2016
+// Last modified: September 2018
 //
 //////////////////////////
 
