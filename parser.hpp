@@ -1154,7 +1154,11 @@ if (!parseParameter(params, numparam, "T_kessence file", ic.tk_kessence) && ic.g
 	parseParameter(params, numparam, "snapshot redshifts", sim.z_snapshot, sim.num_snapshot);
 	if (sim.num_snapshot > 0)
 		qsort((void *) sim.z_snapshot, (size_t) sim.num_snapshot, sizeof(double), sort_descending);
-
+  // kessence snapshots for blowup
+  if (!parseParameter(params, numparam, "num_snapshot_kess",  sim.num_snapshot_kess))
+  	{
+  			cosmo.num_snapshot_kess=0;
+  	}
 	parseParameter(params, numparam, "Pk redshifts", sim.z_pk, sim.num_pk);
 	if (sim.num_pk > 0)
 		qsort((void *) sim.z_pk, (size_t) sim.num_pk, sizeof(double), sort_descending);

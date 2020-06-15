@@ -1084,7 +1084,7 @@ for (x.first(); x.test(); x.next())
 
       // avg_pi_old =average(  pi_k_old, 1., numpts3d ) ;
 
-      if ( avg_zeta > 1.e-7 && abs(avg_zeta/avg_zeta_old)>1.02 && snapcount_b<300 )
+      if ( avg_zeta > 1.e-7 && abs(avg_zeta/avg_zeta_old)>1.02 && snapcount_b< sim.num_snapshot_kess )
       {
 
 
