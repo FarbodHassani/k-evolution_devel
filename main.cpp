@@ -1226,6 +1226,7 @@ for (x.first(); x.test(); x.next())
               cout<<"Particles moved too far and the simulaition is finished at z:"<<1./(1.+a) << endl;
               // exit(-1000);
               parallel.abortForce();
+              break;
             }
 				}
 				else
@@ -1236,6 +1237,7 @@ for (x.first(); x.test(); x.next())
               cout<<"Particles moved too far and the simulaition is finished at z:"<<1./(1.+a) << endl;
               // exit(-1000);
               parallel.abortForce();
+              break;
             }
         }
 
