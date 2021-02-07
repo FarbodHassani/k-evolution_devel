@@ -1,5 +1,6 @@
 # k-evolution basen on gevolution N-body code
-## k-essence based the EFT framework is added into the gevolution
+
+k-essene based the EFT framework is added into the gevolution
 The free parameters to be chosen are w (the equation of state for dark energy) and c_s^2 (the speed of sound squared). 
 
 
