@@ -1,6 +1,6 @@
 # k-evolution
 
-k-evolution is basen on gevolution N-body code .
+k-evolution (arXiv:1910.01104) is basen on gevolution N-body code (Adamek J., Daverio D., Durrer R., and Kunz M., Nature Phys. 12, 346 (2016), arXiv: 1604.06065).
 
 k-essene based the EFT framework is added into the gevolution
 The free parameters to be chosen are w (the equation of state for dark energy) and c_s^2 (the speed of sound squared). 
