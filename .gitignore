@@ -15,3 +15,5 @@ output/kess_snap_cs_0_002_phi.h5
 output/kess_snap_cs_0_002_pi_k.h5
 gevolution
 .DS_Store
+*.h5
+*.txt

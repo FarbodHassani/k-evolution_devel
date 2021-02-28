@@ -36,7 +36,6 @@
 #include <set>
 #include <vector>
 #ifdef BACKREACTION_TEST
-cout << Backreaction test is activated!
 #include <iomanip>
 #include<fstream>
 #include<sstream>
@@ -102,7 +101,7 @@ int main(int argc, char **argv)
 	int io_size = 0;
 	int io_group_size = 0;
 
-	int i, j, cycle = 0, snapcount = 0, pkcount = 0, restartcount = 0, usedparams, numparam = 0, numsteps, numspecies, done_hij;
+	int i, j, cycle = 0, snapcount = 0, snapcount_b=1, pkcount = 0, restartcount = 0, usedparams, numparam = 0, numsteps, numspecies, done_hij;
 	int numsteps_ncdm[MAX_PCL_SPECIES-2];
 	long numpts3d;
 	int box[3];
@@ -304,6 +303,7 @@ int main(int argc, char **argv)
   	double a_old;
   #endif
   #ifdef BACKREACTION_TEST
+  if(parallel.isRoot()) cout << "\033[1;32m The blowup tests are requested\033[0m\n";
     pi_k_old.initialize(lat,1);
   	scalarFT_pi_old.initialize(latFT,1);
   	PlanFFT<Cplx> plan_pi_k_old(&pi_k_old, &scalarFT_pi_old);
@@ -501,18 +501,21 @@ for (x.first(); x.test(); x.next())
   FILE* Result_real;
   FILE* Result_fourier;
   FILE* Result_max;
-
+  FILE* Redshifts;
+  FILE* snapshots_file;
 
   char filename_avg[60];
   char filename_real[60];
   char filename_fourier[60];
   char filename_max[60];
-
+  char filename_redshift[60];
+  char filename_snapshot[60];
 
   snprintf(filename_avg, sizeof(filename_avg),"./output/Result_avg.txt");
   snprintf(filename_real, sizeof(filename_real),"./output/Result_real.txt");
   snprintf(filename_fourier, sizeof(filename_fourier),"./output/Result_fourier.txt");
   snprintf(filename_max, sizeof(filename_max),"./output/Results_max.txt");
+  snprintf(filename_snapshot, sizeof(filename_snapshot),"./output/snapshots.txt");
 
   // ofstream out(filename_avg,ios::out);
   ofstream out_avg(filename_avg,ios::out);
@@ -527,7 +530,7 @@ for (x.first(); x.test(); x.next())
   Result_real=fopen(filename_real,"w");
   Result_fourier=fopen(filename_fourier,"w");
   Result_max=fopen(filename_max,"w");
-
+  snapshots_file=fopen(filename_snapshot,"w");
 
   out_avg<<"### The result of the average over time \n### d tau = "<< dtau<<endl;
   out_avg<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
@@ -563,6 +566,9 @@ for (x.first(); x.test(); x.next())
 double avg_pi = 0.;
 double avg_zeta = 0.;
 double avg_phi = 0.;
+double max_zeta_old = 0.;
+double avg_zeta_old = 0.;
+double avg_pi_old = 0.;
 
 double max_pi = 0.;
 double max_zeta = 0.;
@@ -1150,8 +1156,7 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
 
       if ( avg_zeta > 1.e-7 && abs(avg_zeta/avg_zeta_old)>1.02 && snapcount_b< sim.num_snapshot_kess )
       {
-
-
+      if(parallel.isRoot())  cout << "\033[1;32mThe blowup criteria are met, the requested snapshots being produced\033[0m\n";
         writeSpectra(sim, cosmo, fourpiG, a, snapcount_b,
                   &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
           str_filename =  "./output/pi_k_" + to_string(snapcount_b) + ".h5";
