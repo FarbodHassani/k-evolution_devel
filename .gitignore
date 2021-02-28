@@ -1,10 +1,20 @@
 
+*.dat
 output/.DS_Store
-output/kess_cs_0_background.dat
 output/kess_cs_0_settings_used.ini
-output/kess_pk_cs_0_000_delta.dat
-output/kess_pk_cs_0_000_short_wave.dat
-output/kess_pk_cs_0_001_delta.dat
+output/kess_snap_cs_0_000_cdm.h5
+output/kess_snap_cs_0_000_phi.h5
+output/kess_snap_cs_0_000_pi_k.h5
+output/kess_snap_cs_0_000_T00_Kess.h5
+output/kess_snap_cs_0_001_cdm.h5
+output/kess_snap_cs_0_001_phi.h5
+output/kess_snap_cs_0_001_pi_k.h5
+output/kess_snap_cs_0_001_T00_Kess.h5
+output/kess_snap_cs_0_002_cdm.h5
+output/kess_snap_cs_0_002_phi.h5
+output/kess_snap_cs_0_002_pi_k.h5
+gevolution
+.DS_Store
 *.h5
 *.txt
-gevolution
+.DS_Store

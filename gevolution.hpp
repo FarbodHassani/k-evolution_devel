@@ -444,6 +444,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 			  {
         double Gradphi_Gradpi, Gradpsi_Gradpi, Gradpi_Gradpi, GradZeta_Gradpi, Gradi_nablai_pi_Grad_pi_squared, Dx_psi, Dy_psi, Dz_psi;
 			  double C1, C2, C3, psi, psi_old, psi_prime, phi_prime, Laplacian_pi, zeta_old_integer, zeta_old_half ;
+        double Emilio_term;
         //Since a_kess is at n so H_prime is at n which is needed to calculate zeta(n+1/2)
         //**************************************************************
         //Coefficient two, H(n), H_prime(n) since BG already updated
@@ -479,7 +480,10 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
           //***************************
           //Coefficient one, H( at n)
           //***************************
-          C1 = 1./(1. -  3. * Hcon * w  * dtau/2. -  non_linearity * (1. - cs2) *  Laplacian_pi * dtau/2.);
+          Emilio_term = 1. - 2.* (phi(x) - chi(x)) - (1. + 3.0 * w) * Hcon * pi_k (x);
+
+          C1 = 1./(1. - (1./Emilio_term) * (3. * Hcon * w  * dtau/2. -  non_linearity * (1. - cs2) *  Laplacian_pi * dtau/2.));
+
           //**********************************************
           //phi'(n)
           //**********************************************
@@ -591,7 +595,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
           //***************************************
           // zeta(n+1/2) = zeta(n-1/2) + zeta'(n)
           //***************************************
-          zeta_half(x) =         C1 * ( zeta_half(x) + dtau * (
+          zeta_half(x) =         C1 * ( zeta_half(x) +   (dtau / Emilio_term) * (
           /*Linear(1,2,3)*/      + 3. * Hcon * ( w * zeta_half(x)/2. + cs2 * psi ) - C2 * pi_k(x)
           /*Linear(4,5)*/        + 3. * cs2 * phi_prime + cs2 * Laplacian_pi
           /*Non-linear terms*/   + non_linearity * (
