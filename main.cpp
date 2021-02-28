@@ -36,6 +36,7 @@
 #include <set>
 #include <vector>
 #ifdef BACKREACTION_TEST
+cout << Backreaction test is activated!
 #include <iomanip>
 #include<fstream>
 #include<sstream>
@@ -250,6 +251,10 @@ int main(int argc, char **argv)
   Field<Real> short_wave;
   Field<Real> relativistic_term;
   Field<Real> stress_tensor;
+  Field<Real> pi_k_old;
+  Field<Real> zeta_half_old;
+  Field<Cplx> scalarFT_pi_old;
+  Field<Cplx> scalarFT_zeta_half_old;
   #endif
 	Field<Real> pi_k;
 	// Field<Real> zeta_integer;
@@ -297,6 +302,15 @@ int main(int argc, char **argv)
   	viFT.initialize(latFT,3);
   	PlanFFT<Cplx> plan_vi(&vi, &viFT);
   	double a_old;
+  #endif
+  #ifdef BACKREACTION_TEST
+    pi_k_old.initialize(lat,1);
+  	scalarFT_pi_old.initialize(latFT,1);
+  	PlanFFT<Cplx> plan_pi_k_old(&pi_k_old, &scalarFT_pi_old);
+    /// zeta
+    zeta_half_old.initialize(lat,1);
+    scalarFT_zeta_half_old.initialize(latFT,1);
+    PlanFFT<Cplx> plan_zeta_half_old(&zeta_half_old, &scalarFT_zeta_half_old);
   #endif
 	//Kessence part initializing
 	//Phi_old
@@ -466,18 +480,20 @@ int main(int argc, char **argv)
 	if (numparam > 0) free(params);
 #endif
 
-//INITIAL CONDITION If U wanna set it yourself
-// for (x.first(); x.test(); x.next())
-//   {
-//     zeta_half(x)=1.e-3;
-//     pi_k(x)=1.e-3;
-//   }
-// for (kFT.first(); kFT.test(); kFT.next())
-// {
-//   phi(k)=0;
-// }
 
 #ifdef BACKREACTION_TEST
+
+// In case we want to initialize the IC ourselves
+for (x.first(); x.test(); x.next())
+  {
+    zeta_half(x)=0.0;
+    zeta_half_old(x)=1.0;
+    pi_k(x)=0.0;
+  }
+  zeta_half.updateHalo();  // communicate halo values
+  pi_k.updateHalo();  // communicate halo values
+  zeta_half_old.updateHalo();
+
 //   //****************************
 //   //****SAVE DATA To test Backreaction
 //   //****************************
@@ -503,6 +519,8 @@ int main(int argc, char **argv)
   ofstream out_real(filename_real,ios::out);
   ofstream out_fourier(filename_fourier,ios::out);
   ofstream out_max(filename_max,ios::out);
+  ofstream out_snapshots(filename_snapshot,ios::out);
+  snapshots_file=fopen(filename_snapshot,"w");
 
 
   Result_avg=fopen(filename_avg,"w");
@@ -511,7 +529,7 @@ int main(int argc, char **argv)
   Result_max=fopen(filename_max,"w");
 
 
-  out_avg<<"### The result of the verage over time \n### d tau = "<< dtau<<endl;
+  out_avg<<"### The result of the average over time \n### d tau = "<< dtau<<endl;
   out_avg<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
   out_avg<<"### initial time = "<< tau <<endl;
   out_avg<<"### 1- tau\t2- average(H pi_k)\t3- average (zeta)\t 4- average (phi)\t5-z(redshift)   " <<endl;
@@ -529,10 +547,17 @@ int main(int argc, char **argv)
   out_real<<"### 1- tau\t2- pi_k(x)\t3-zeta(x)\t 4-x" <<endl;
 
 
-  out_fourier<<"### The result of the verage over time \n### d tau = "<< dtau<<endl;
+  out_fourier<<"### The result of the average over time \n### d tau = "<< dtau<<endl;
   out_fourier<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
   out_fourier<<"### initial time = "<< tau <<endl;
   out_fourier<<"### 1- tau\t 2- pi_k(k)\t\t3-zeta(k)\t\t4-|k|\t\t 5-vec{k} \t 6-|k|^2"<<endl;
+
+
+  out_snapshots<<"### The result of the snapshots produced over time for blow-up \n### d tau = "<< dtau<<endl;
+  out_snapshots<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
+  out_snapshots<<"### initial time = "<< tau <<endl;
+  out_snapshots<<"### 1- tau\t2- z \t3- a\t 4- zeta_avg\t 5- avg_pi\t 6- avg_phi\t 7- tau/boxsize\t 8- H_conf/H0 \t 9- snap_count"<<endl;
+
 
 //defining the average
 double avg_pi = 0.;
@@ -544,6 +569,11 @@ double max_zeta = 0.;
 double max_phi = 0.;
 
 int norm_kFT_squared = 0.;
+
+// HDF5 outputs!
+string str_filename ;
+string str_filename2 ;
+string str_filename3 ;
 #endif
 
 	//******************************************************************
@@ -1107,8 +1137,50 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
     // Now we have pi(n+1) and a_kess(n+1/2) so we update background by halfstep to have a_kess(n+1)
     //********************************************************************************
     rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0 );
+    #ifdef BACKREACTION_TEST
+      //   //Make snapshots and power arround blowup TIME
+      // // max_zeta =maximum(  zeta_half, Hconf(a, fourpiG, cosmo), numpts3d ) ;
+      // // max_zeta_old =maximum(  zeta_half_old, Hconf(a, fourpiG, cosmo), numpts3d ) ;
+      avg_zeta =average(  zeta_half,1., numpts3d ) ;
+      avg_zeta_old =average(  zeta_half_old,1., numpts3d ) ;
+      avg_pi =average(  pi_k,1., numpts3d ) ;
+      avg_phi =average(  phi , 1., numpts3d ) ;
 
-	}
+      // avg_pi_old =average(  pi_k_old, 1., numpts3d ) ;
+
+      if ( avg_zeta > 1.e-7 && abs(avg_zeta/avg_zeta_old)>1.02 && snapcount_b< sim.num_snapshot_kess )
+      {
+
+
+        writeSpectra(sim, cosmo, fourpiG, a, snapcount_b,
+                  &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
+          str_filename =  "./output/pi_k_" + to_string(snapcount_b) + ".h5";
+          str_filename2 = "./output/zeta_" + to_string(snapcount_b) + ".h5";
+          str_filename3 = "./output/phi_" + to_string(snapcount_b) + ".h5";
+          pi_k.saveHDF5(str_filename);
+          zeta_half.saveHDF5(str_filename2);
+          phi.saveHDF5(str_filename3);
+          // str_filename =  "./output/pi_k_" + to_string(snapcount_b-1) + ".h5";
+          // str_filename2 = "./output/zeta_" + to_string(snapcount_b-1) + ".h5";
+          // pi_k_old.saveHDF5(str_filename);
+          // zeta_half_old.saveHDF5(str_filename2);
+          snapcount_b++;
+
+        //****************************
+        //****PRINTING snapshots info
+        //****************************
+          // COUT << scientific << setprecision(8);
+          // if(parallel.isRoot())
+          // {
+          // out_snapshots<<"### 1- tau\t2- z \t3- a\t 4- zeta_avg\t 5- avg_pi\t 6- avg_phi\t 7- tau/boxsize\t 8- H_conf/H0 \t 9- snap_count"<<endl;
+
+          out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(a_kess) -1.0 <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << avg_zeta <<"\t"<< setw(9) << avg_pi <<"\t"<< setw(9) << avg_phi <<"\t"<< setw(9) <<tau <<"\t"<< setw(9) <<Hconf(a_kess, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo)<<"\t"<< setw(9) <<snapcount_b  <<endl;
+        }
+
+    #endif
+    }
+
+
 #ifdef BENCHMARK
     kessence_update_time += MPI_Wtime() - ref_time;
     ref_time = MPI_Wtime();

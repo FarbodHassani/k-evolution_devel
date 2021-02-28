@@ -217,6 +217,8 @@ struct metadata
 	int out_pk;
 	int out_snapshot;
 	int out_lightcone[MAX_OUTPUTS];
+  //Kessence
+  int num_snapshot_kess;
 	int num_pk;
 	int numbins;
 	int num_snapshot;
