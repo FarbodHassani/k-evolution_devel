@@ -477,13 +477,10 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
           //psi(n)
           //*********************************************
 					psi = phi(x) - chi(x);
-          //***************************
+
           //Coefficient one, H( at n)
           //***************************
-          Emilio_term = 1. - 2.* (phi(x) - chi(x)) - (1. + 3.0 * w) * Hcon * pi_k (x);
-
-          C1 = 1./(1. - (1./Emilio_term) * (3. * Hcon * w  * dtau/2. -  non_linearity * (1. - cs2) *  Laplacian_pi * dtau/2.));
-
+          C1 = 1./(1. -  3. * Hcon * w  * dtau/2. -  non_linearity * (1. - cs2) *  Laplacian_pi * dtau/2.);
           //**********************************************
           //phi'(n)
           //**********************************************
@@ -595,83 +592,19 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
           //***************************************
           // zeta(n+1/2) = zeta(n-1/2) + zeta'(n)
           //***************************************
-          zeta_half(x) =         C1 * ( zeta_half(x) +   (dtau / Emilio_term) * (
-          /*Linear(1,2,3)*/      + 3. * Hcon * ( w * zeta_half(x)/2. + cs2 * psi ) - C2 * pi_k(x)
-          /*Linear(4,5)*/        + 3. * cs2 * phi_prime + cs2 * Laplacian_pi
-          /*Non-linear terms*/   + non_linearity * (
-          /*First NL line*/      - 2. * (1. - cs2) * GradZeta_Gradpi
-                                 - cs2 * Gradphi_Gradpi + Gradpsi_Gradpi
-
-          /*second NL line*/     -((cs2 - 1.)* zeta_half(x)
-                                 - 2.0 * cs2 * phi(x)) * Laplacian_pi
-
-          /*third NL line*/      -(2. + 3. * w - cs2 ) *  (Hcon/2.) * Gradpi_Gradpi
-                                 - cs2 * (1.+3.*w)* Hcon * pi_k(x) * Laplacian_pi
-       /*Non-linear Higher order 9:*/   - (1. -cs2)/2. * Gradi_nablai_pi_Grad_pi_squared
-
+          zeta_half(x) =         C1 * ( zeta_half(x) + dtau * (
+         /*Linear(1,2,3)*/      + 3. * Hcon * ( w * zeta_half(x)/2. + cs2 * psi ) - C2 * pi_k(x)
+         /*Linear(4,5)*/        + 3. * cs2 * phi_prime + cs2 * Laplacian_pi
+         /*Non-linear terms*/   + non_linearity * (
+         /*Non-linear(1,2)*/    - cs2 * (phi(x) - psi) * Laplacian_pi
+         /*Non-linear(3)  */    - 3. * cs2 * Hcon * (1. + w) * pi_k(x) * Laplacian_pi
+         /*Non-linear(3)  */    + (1. - cs2) * (zeta_half(x) ) * Laplacian_pi
+          /*Non-linear(5,6,7)*/  - cs2 * Gradphi_Gradpi + Gradpsi_Gradpi - C3 * Gradpi_Gradpi
+         /*Non-linear(8)  */    + 2. * (1. - cs2) * GradZeta_Gradpi
+/*Non-linear Higher order 9:*/   - (1. -cs2)/2. * Gradi_nablai_pi_Grad_pi_squared
                                        )
                                          )
                                   );
-          // Old version which had a typo
-//           zeta_half(x) =         C1 * ( zeta_half(x) +   (dtau / Emilio_term) * (
-//           /*Linear(1,2,3)*/      + 3. * Hcon * ( w * zeta_half(x)/2. + cs2 * psi ) - C2 * pi_k(x)
-//           /*Linear(4,5)*/        + 3. * cs2 * phi_prime + cs2 * Laplacian_pi
-//           /*Non-linear terms*/   + non_linearity * (
-//           /*Non-linear(1,2)*/    - cs2 * (phi(x) - psi) * Laplacian_pi
-//           /*Non-linear(3)  */    - 3. * cs2 * Hcon * (1. + w) * pi_k(x) * Laplacian_pi
-//           /*Non-linear(3)  */    + (1. - cs2) * (zeta_half(x) ) * Laplacian_pi
-//            /*Non-linear(5,6,7)*/  - cs2 * Gradphi_Gradpi + Gradpsi_Gradpi - C3 * Gradpi_Gradpi
-//           /*Non-linear(8)  */    + 2. * (1. - cs2) * GradZeta_Gradpi
-// /*Non-linear Higher order 9:*/   - (1. -cs2)/2. * Gradi_nablai_pi_Grad_pi_squared
-
-            //
-            // cout<<"Linear terms= + 3. * Hcon * ( w * zeta_half(x)/2. + cs2 * psi ) - C2 * pi_k(x) + 3. * cs2 * phi_prime + cs2 * Laplacian_pi " <<+ 3. * Hcon * ( w * zeta_half(x)/2. + cs2 * psi ) - C2 * pi_k(x)
-            // /*Linear(4,5)*/        + 3. * cs2 * phi_prime + cs2 * Laplacian_pi
-            //
-            //    <<"zeta * Laplacian_pi= "<< (zeta_half(x) ) * Laplacian_pi
-            //
-            // <<" Gradpsi_Gradpi = "<<Gradpsi_Gradpi
-            //
-            //  <<" (2. + 3. * w + cs2 ) *  Hcon/2. * Gradpi_Gradpi= "<<
-            //  (2. + 3. * w  ) *  Hcon/2. * Gradpi_Gradpi<<endl;
-
-            //
-            // cout<<"(2. + 3. * w  ) *  Hcon/2.= "<< (2. + 3. * w  ) *  Hcon/2.<<endl;
-            // cout << " 3. * Hcon * ( w * zeta_half(x)/2. + cs2 * psi ) - C2 * pi_k(x)+ 3. * cs2 * phi_prime + cs2 * Laplacian_pi="
-            //  << 3. * Hcon * ( w * zeta_half(x)/2. + cs2 * psi ) - C2 * pi_k(x)  + 3. * cs2 * phi_prime + cs2 * Laplacian_pi
-            // <<"  2. * cs2 * phi(x) * Laplacian_pi = "<< 2. * cs2 * phi(x) * Laplacian_pi
-            // //
-            // <<" +(1. - cs2) * (zeta_half(x) ) * Laplacian_pi=  "<< +(1. - cs2) * (zeta_half(x) ) * Laplacian_pi
-            // //
-            // <<" Hcon * (1. + w) * pi_k(x) * Laplacian_pi "<<Hcon * (1. + w) * pi_k(x) * Laplacian_pi
-            // //
-            // <<" (zeta_half(x) ) * Laplacian_pi =   "<<(zeta_half(x) ) * Laplacian_pi
-            // <<endl;
-          //**********************************************************************
-          //Computing zeta(n+1)
-          //**********************************************************************
-          // double zeta_prime_int_n0 ;
-          //**********************************************
-          // zeta'(n) from the new values at n, zeta(n)...
-          // like zeta_integer(x) (n)
-          //**********************************************
-          //
-          // zeta_prime_int_n0 =
-          // /*Linear(1,2,3)*/      + 3. * Hcon * ( w * zeta_integer(x) + cs2 * psi ) - C2 * pi_k(x)
-          // /*Linear(4,5)*/        + 3. * cs2 * phi_prime + cs2 * Laplacian_pi
-          // /*Non-linear terms*/   + non_linearity * (
-          // /*Non-linear(1,2)*/    + 2. * cs2 * phi(x) * Laplacian_pi - (1. - cs2) * psi * Laplacian_pi
-          // /*Non-linear(3)  */    - 3. * cs2 * Hcon * (1. + w) * pi_k(x) * Laplacian_pi
-          // /*Non-linear(4)  */    +(1. - cs2) * (zeta_integer(x) + psi) * Laplacian_pi
-          // /*Non-linear(5,6,7)*/  - cs2 * Gradphi_Gradpi + (2. * cs2 -1.) * Gradpsi_Gradpi - C3 * Gradpi_Gradpi
-          // /*Non-linear(8)  */    + 2.* (1. - cs2) * GradPsiZeta_Gradpi );
-        //***********************************************************************************
-        // When we get the precision and it goes out of loop we need to update zeta_integer for
-        //being synched with particles and ....
-        //zeta(n+1) = zeta(n+1/2) + zeta'(n)dtau/2
-        //***********************************************************************************
-        // zeta_integer(x) = zeta_half(x) +  zeta_prime_int_n0 * dtau/2.;
-
         //**********************************************************************
         //**********************************************************************
         //PREDICTOR-CORRECTOR METHOD
