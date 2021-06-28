@@ -2031,14 +2031,14 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
       // The relation between pi_k and delta and theta!
       //\pi_conf in Newtonian in class : -(-\theta/k^2) pi here is pi_conf! k unit should be in 1/Mpc.
       // In the below by (tk_t_kess->y[i]/(tk_d_kess->x[i] * cosmo.h)/(tk_d_kess->x[i] * cosmo.h) we wasily make pi_k_Newtonian from theta_kess as we do to make initial condition in python from class data! The rest is what we do to the pi_k to make it ready for pi_k as initial condition in k-evolution
-      kess_field[i] =  - M_PI * (tk_t_kess->y[i]/(tk_t_kess->x[i] * cosmo.h)/(tk_t_kess->x[i] * cosmo.h)) * sqrt(  Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_t_kess->x[i])
+      kess_field[i] = 0;// - M_PI * (tk_t_kess->y[i]/(tk_t_kess->x[i] * cosmo.h)/(tk_t_kess->x[i] * cosmo.h)) * sqrt(  Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_t_kess->x[i])
        / tk_t_kess->x[i];
       // zeta according to the definitions below:
       // zeta = pi'(conformal_Newtonian) + H(conf)*pi - psi
       // pi'(conformal_Newtonian) = cs^2/(1+w) delta_fld + Psi + H(conf)*pi (3 cs^2 -1)
       // So zeta = cs^2/(1+w) delta + 3 cs^2 H(conf) * pi
       //
-      kess_field_prime[i] = - M_PI * ( (cosmo.cs2_kessence/(1.0+cosmo.w_kessence)) * tk_d_kess->y[i] + 3.0 * cosmo.cs2_kessence * Hconf(1./(1.+sim.z_in), fourpiG, cosmo) * tk_t_kess->y[i]/(tk_d_kess->x[i] * cosmo.h)/(tk_d_kess->x[i] * cosmo.h) )* sqrt( Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_t_kess->x[i])
+      kess_field_prime[i] =0 ; //- M_PI * ( (cosmo.cs2_kessence/(1.0+cosmo.w_kessence)) * tk_d_kess->y[i] + 3.0 * cosmo.cs2_kessence * Hconf(1./(1.+sim.z_in), fourpiG, cosmo) * tk_t_kess->y[i]/(tk_d_kess->x[i] * cosmo.h)/(tk_d_kess->x[i] * cosmo.h) )* sqrt( Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_t_kess->x[i])
        / tk_t_kess->x[i];
       k_ess[i] = tk_d_kess->x[i];
     }

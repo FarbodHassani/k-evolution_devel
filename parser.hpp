@@ -1673,6 +1673,22 @@ if (ic.IC_kess == 1)
 		cosmo.h = P_HUBBLE;
 	}
 	// K-essence  paramteres
+	if (!parseParameter(params, numparam, "X_hat",  cosmo.X_hat))
+	{
+			cosmo.X_hat=8;
+	}
+	if (!parseParameter(params, numparam, "g0",  cosmo.g0))
+	{
+			cosmo.g0=0.0;
+	}
+	if (!parseParameter(params, numparam, "g2",  cosmo.g2))
+	{
+			cosmo.g2=1.0;
+	}
+  if (!parseParameter(params, numparam, "g4",  cosmo.g4))
+	{
+			cosmo.g4=0.1;
+	}
 	if (!parseParameter(params, numparam, "cs2_kessence",  cosmo.cs2_kessence))
 	{
 			cosmo.cs2_kessence=1;

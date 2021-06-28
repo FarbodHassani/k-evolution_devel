@@ -293,6 +293,12 @@ struct cosmology
 	double Omega_kessence;
   double w_kessence;
 	double cs2_kessence;
+  // Fundamental k-essence
+  double X_hat;
+  double g0;
+  double g2;
+  double g4;
+  //
   // fld CLASS
   // double Omega_fld=0.0;
 	// double w0_fld=0.0;

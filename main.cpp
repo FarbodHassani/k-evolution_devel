@@ -486,9 +486,9 @@ int main(int argc, char **argv)
 // In case we want to initialize the IC ourselves
 for (x.first(); x.test(); x.next())
   {
-    zeta_half(x)=0.0;
-    zeta_half_old(x)=1.0;
-    pi_k(x)=0.0;
+    zeta_half(x)=phi(x);
+    zeta_half_old(x)=1.e-7;
+    pi_k(x)=0;
   }
   zeta_half.updateHalo();  // communicate halo values
   pi_k.updateHalo();  // communicate halo values
@@ -582,24 +582,6 @@ string str_filename2 ;
 string str_filename3 ;
 #endif
 
-	//******************************************************************
-	//Write spectra check!
-	// Kessence projection Tmunu Test IC
-	//******************************************************************
-	//  	if (sim.vector_flag == VECTOR_ELLIPTIC)
-	// 		{
-	// 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, chi, pi_k, zeta_integer_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 1 );
-	// 		}
-	//  	else
-	// 		{
-	// 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, chi, pi_k, zeta_integer_k, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, 0 );
-	// 		}
-	//
-// writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
-
-// writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
-
-// writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
 
 
 	while (true)    // main loop
@@ -757,35 +739,36 @@ string str_filename3 ;
 		ref_time = MPI_Wtime();
 #endif
 
-if (sim.Kess_source_gravity==1)
-{
-// Kessence projection Tmunu
-// In the projection zeta_integer comes, since synched with particles..
- 	if (sim.vector_flag == VECTOR_ELLIPTIC)
-		{
-			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, sim.NL_kessence ,1 );
-		}
- 	else
-		{
-			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, sim.NL_kessence, 0 );
-		}
-
-		for (x.first(); x.test(); x.next())
-		{
-       // if(x.coord(0)==32 && x.coord(1)==12 && x.coord(2)==32)cout<<"T00: "<< T00_Kess(x)<<" Phi:"<<phi(x)<<endl;
-			// The coefficient is because it wanted to to be source according to eq C.2 of Gevolution paper
-			// Note that it is multiplied to dx^2 and is divived by -a^3 because of definition of T00 which is scaled by a^3
-			// We have T00 and Tij according to code's units, but source is important to calculate potentials and moving particles.
-			// There is coefficient between Tij and Sij as source.
-			source(x) += T00_Kess(x);
-			if (sim.vector_flag == VECTOR_ELLIPTIC)for(int 	c=0;c<3;c++)Bi(x,c)+=  T0i_Kess(x,c);
-			for(int c=0;c<6;c++)Sij(x,c)+=(2.) * Tij_Kess(x,c);
-      // if(x.coord(0)==32 && x.coord(1)==20 && x.coord(2)==10)
-      // {
-      // cout<<"x"<<x<<"T00_Kess(x): "<<T00_Kess(x)<<endl;
-      // }
-		}
-}
+// NO k-essence projection
+// if (sim.Kess_source_gravity==1)
+// {
+// // Kessence projection Tmunu
+// // In the projection zeta_integer comes, since synched with particles..
+//  	if (sim.vector_flag == VECTOR_ELLIPTIC)
+// 		{
+// 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, sim.NL_kessence ,1 );
+// 		}
+//  	else
+// 		{
+// 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, sim.NL_kessence, 0 );
+// 		}
+//
+// 		for (x.first(); x.test(); x.next())
+// 		{
+//        // if(x.coord(0)==32 && x.coord(1)==12 && x.coord(2)==32)cout<<"T00: "<< T00_Kess(x)<<" Phi:"<<phi(x)<<endl;
+// 			// The coefficient is because it wanted to to be source according to eq C.2 of Gevolution paper
+// 			// Note that it is multiplied to dx^2 and is divived by -a^3 because of definition of T00 which is scaled by a^3
+// 			// We have T00 and Tij according to code's units, but source is important to calculate potentials and moving particles.
+// 			// There is coefficient between Tij and Sij as source.
+// 			source(x) += T00_Kess(x);
+// 			if (sim.vector_flag == VECTOR_ELLIPTIC)for(int 	c=0;c<3;c++)Bi(x,c)+=  T0i_Kess(x,c);
+// 			for(int c=0;c<6;c++)Sij(x,c)+=(2.) * Tij_Kess(x,c);
+//       // if(x.coord(0)==32 && x.coord(1)==20 && x.coord(2)==10)
+//       // {
+//       // cout<<"x"<<x<<"T00_Kess(x): "<<T00_Kess(x)<<endl;
+//       // }
+// 		}
+// }
 #ifdef BENCHMARK
 		kessence_update_time += MPI_Wtime() - ref_time;
 		ref_time = MPI_Wtime();
@@ -1102,46 +1085,18 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
 //Kessence - LeapFrog:START
 //**********************
   double a_kess=a;
-  //First we update zeta_half to have it at -1/2 just in the first loop
-  if(cycle==0)
-  {
-    for (i=0;i<sim.nKe_numsteps;i++)
-    {
-      //computing zeta_half(-1/2) and zeta_int(-1) but we do not work with zeta(-1)
-      update_zeta(-dtau/ (2. * sim.nKe_numsteps) , dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_prime(a_kess, fourpiG, cosmo), sim.NL_kessence);
-      // zeta_integer.updateHalo();
-      zeta_half.updateHalo();
-    }
-  }
 
  //Then fwe start the main loop zeta is updated to get zeta(n+1/2) from pi(n) and zeta(n-1/2)
 	for (i=0;i<sim.nKe_numsteps;i++)
 	{
     //********************************************************************************
-    //Updating zeta_integer to get zeta_integer(n+1/2) and zeta_integer(n+1), in the first loop is getting zeta_integer(1/2) and zeta_integer(1)
-    // In sum: zeta_integer(n+1/2) = zeta_integer(n-1/2)+ zeta_integer'(n)dtau which needs background to be at n with then
-    //Note that here for zeta_integer'(n) we need background to be at n and no need to update it.
-    //\zeta_integer(n+1/2) = \zeta_integer(n-1/2) + \zeta_integer'(n)  dtau
-    //We also update zeta_int from n to n+1
+    // Euler algorithm
     //********************************************************************************
-    update_zeta(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_prime(a_kess, fourpiG, cosmo), sim.NL_kessence);
-    // zeta_integer.updateHalo();
+    update_pi_dot(dtau/ sim.nKe_numsteps, dx, a_kess,pi_k, zeta_half, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4, Hconf(a_kess, fourpiG, cosmo);
     zeta_half.updateHalo();
-    //********************************************************************************
-    //Since we have pi(n+1)=pi(n) + pi'(n+1/2), and in pi'(n+1/2) we have H(n+1/2) we update the background before updating the pi to have H(n+1/2), Moreover zeta(n+1) = zeta(n+1/2) + zeta'(n+1/2), so we put zeta_int updating in the pi updating!
-    //********************************************************************************
     rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0);
-    //********************************************************************************
-    //we update pi to have it at n+1 (at first loop from the value at (0) and the value of zeta_integer at 1/2 and H(n+1/2) we update pi at (1))
-    //In the pi update we also update zeta_int because we need the values of a_kess and H_kess at step n+1/2
-    //By the below update we get pi(n+1) and zeta(n+1)
-    //********************************************************************************
-    update_pi_k(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, cosmo), Hconf_prime(a_kess, fourpiG, cosmo), sim.NL_kessence); // H_old is updated here in the function
+    update_pi(dtau/ sim.nKe_numsteps, pi_k, zeta_half); // H_old is updated here in the function
 		pi_k.updateHalo();
-
-    //********************************************************************************
-    // Now we have pi(n+1) and a_kess(n+1/2) so we update background by halfstep to have a_kess(n+1)
-    //********************************************************************************
     rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0 );
     #ifdef BACKREACTION_TEST
       //   //Make snapshots and power arround blowup TIME
