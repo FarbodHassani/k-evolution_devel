@@ -251,9 +251,9 @@ int main(int argc, char **argv)
   Field<Real> relativistic_term;
   Field<Real> stress_tensor;
   Field<Real> pi_k_old;
-  Field<Real> zeta_half_old;
+  Field<Real> det_gamma;
   Field<Cplx> scalarFT_pi_old;
-  Field<Cplx> scalarFT_zeta_half_old;
+  Field<Cplx> scalarFT_det_gamma;
   #endif
 	Field<Real> pi_k;
 	// Field<Real> zeta_integer;
@@ -308,9 +308,9 @@ int main(int argc, char **argv)
   	scalarFT_pi_old.initialize(latFT,1);
   	PlanFFT<Cplx> plan_pi_k_old(&pi_k_old, &scalarFT_pi_old);
     /// zeta
-    zeta_half_old.initialize(lat,1);
-    scalarFT_zeta_half_old.initialize(latFT,1);
-    PlanFFT<Cplx> plan_zeta_half_old(&zeta_half_old, &scalarFT_zeta_half_old);
+    det_gamma.initialize(lat,1);
+    scalarFT_det_gamma.initialize(latFT,1);
+    PlanFFT<Cplx> plan_det_gamma(&det_gamma, &scalarFT_det_gamma);
   #endif
 	//Kessence part initializing
 	//Phi_old
@@ -487,12 +487,10 @@ int main(int argc, char **argv)
 for (x.first(); x.test(); x.next())
   {
     zeta_half(x)=phi(x);
-    zeta_half_old(x)=1.e-7;
-    pi_k(x)=0;
+    pi_k(x)=0.0;
   }
   zeta_half.updateHalo();  // communicate halo values
   pi_k.updateHalo();  // communicate halo values
-  zeta_half_old.updateHalo();
 
 //   //****************************
 //   //****SAVE DATA To test Backreaction
@@ -535,7 +533,7 @@ for (x.first(); x.test(); x.next())
   out_avg<<"### The result of the average over time \n### d tau = "<< dtau<<endl;
   out_avg<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
   out_avg<<"### initial time = "<< tau <<endl;
-  out_avg<<"### 1- tau\t2- average(H pi_k)\t3- average (zeta)\t 4- average (phi)\t5-z(redshift)   " <<endl;
+  out_avg<<"### 1- tau\t2- average(H pi_k)\t3- average (zeta)\t 4- average (deta_gamma)\t 5- average (phi)\t6-z(redshift)   " <<endl;
 
 
   out_max<<"### The result of the maximum over time \n### d tau = "<< dtau<<endl;
@@ -559,15 +557,14 @@ for (x.first(); x.test(); x.next())
   out_snapshots<<"### The result of the snapshots produced over time for blow-up \n### d tau = "<< dtau<<endl;
   out_snapshots<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
   out_snapshots<<"### initial time = "<< tau <<endl;
-  out_snapshots<<"### 1- tau\t2- z \t3- a\t 4- zeta_avg\t 5- avg_pi\t 6- avg_phi\t 7- tau/boxsize\t 8- H_conf/H0 \t 9- snap_count"<<endl;
+  out_snapshots<<"### 1- tau\t2- z \t3- a\t 4- zeta_avg\t 5- avg_pi\t 6- avg_phi\t 7- avg_det_gamma\t 8- H_conf/H0 \t 9- snap_count"<<endl;
 
 
 //defining the average
 double avg_pi = 0.;
 double avg_zeta = 0.;
 double avg_phi = 0.;
-double max_zeta_old = 0.;
-double avg_zeta_old = 0.;
+double avg_det_gamma = 0.;
 double avg_pi_old = 0.;
 
 double max_pi = 0.;
@@ -580,6 +577,8 @@ int norm_kFT_squared = 0.;
 string str_filename ;
 string str_filename2 ;
 string str_filename3 ;
+string str_filename4 ;
+
 #endif
 
 
@@ -587,18 +586,14 @@ string str_filename3 ;
 	while (true)    // main loop
 	{
     //Kessence
-    // if (a > 1./(1.+0.1) )
-    //   {
-    //     // dtau = dtau/4;
-    //   }
   	for (x.first(); x.test(); x.next())
   		{
         // cout<<"tau: "<<tau<<" z: "<<1./(a) -1.<<endl;
         //\Phi(n-1) = \Phi(old) and \Phi(n) which will be updated in this loops
-        // Just note that in the first 2-3 steps it does not work since we
-  			phi_old(x) =phi(x);
-  			chi_old(x) =chi(x);
-         // if(x.coord(0)==32 && x.coord(1)==12 && x.coord(2)==32) cout<<"zeta_half: "<<zeta_half(x)<<endl;
+        // // Just note that in the first 2-3 steps it does not work since we
+  			// phi_old(x) =phi(x);
+  			// chi_old(x) =chi(x);
+        pi_k_old(x) = pi_k(x);
   		}
 #ifdef BACKREACTION_TEST
       //****************************
@@ -606,9 +601,9 @@ string str_filename3 ;
       //****************************
       // check_field(  zeta_half, 1. , " H pi_k", numpts3d);
       avg_pi =average(  pi_k, Hconf(a, fourpiG, cosmo), numpts3d ) ;
-      avg_zeta =average(  zeta_half,1., numpts3d ) ;
+      avg_zeta =average( zeta_half,1., numpts3d ) ;
       avg_phi =average(  phi , 1., numpts3d ) ;
-
+      avg_det_gamma =average(  det_gamma , 1., numpts3d ) ;
       max_pi =maximum(  pi_k, Hconf(a, fourpiG, cosmo), numpts3d ) ;
       max_zeta =maximum(  zeta_half,1., numpts3d ) ;
       max_phi =maximum(  phi , 1., numpts3d ) ;
@@ -617,7 +612,7 @@ string str_filename3 ;
       // if(parallel.isRoot())
       // {
         // fprintf(Result_avg,"\n %20.20e %20.20e ", tau, avg ) ;
-      out_avg<<setw(9) << tau <<"\t"<< setw(9) << avg_pi<<"\t"<< setw(9) << avg_zeta<<"\t"<< setw(9) << avg_phi<<"\t"<< setw(9) << 1./a -1.<<endl;
+      out_avg<<setw(9) << tau <<"\t"<< setw(9) << avg_pi<<"\t"<< setw(9) << avg_zeta<<"\t"<< setw(9) << avg_det_gamma<<"\t"<< setw(9) << avg_phi<<"\t"<< setw(9) << 1./a -1.<<endl;
 
         out_max<<setw(9) << tau <<"\t"<< setw(9) << max_pi<<"\t"<< setw(9) << max_zeta<<"\t"<< setw(9) << max_phi<<endl;
 
@@ -1092,7 +1087,7 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
     //********************************************************************************
     // Euler algorithm
     //********************************************************************************
-    update_pi_dot(dtau/ sim.nKe_numsteps, dx, a_kess,pi_k, zeta_half, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4, Hconf(a_kess, fourpiG, cosmo);
+    update_pi_dot(dtau/ sim.nKe_numsteps, dx, a_kess,pi_k, zeta_half, det_gamma, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4, Hconf(a_kess, fourpiG, cosmo));
     zeta_half.updateHalo();
     rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0);
     update_pi(dtau/ sim.nKe_numsteps, pi_k, zeta_half); // H_old is updated here in the function
@@ -1101,29 +1096,27 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
     #ifdef BACKREACTION_TEST
       //   //Make snapshots and power arround blowup TIME
       // // max_zeta =maximum(  zeta_half, Hconf(a, fourpiG, cosmo), numpts3d ) ;
-      // // max_zeta_old =maximum(  zeta_half_old, Hconf(a, fourpiG, cosmo), numpts3d ) ;
+      // max_zeta_old =maximum(  zeta_half_old, Hconf(a, fourpiG, cosmo), numpts3d ) ;
       avg_zeta =average(  zeta_half,1., numpts3d ) ;
-      avg_zeta_old =average(  zeta_half_old,1., numpts3d ) ;
       avg_pi =average(  pi_k,1., numpts3d ) ;
+      avg_det_gamma =average(  det_gamma , 1., numpts3d ) ;
       avg_phi =average(  phi , 1., numpts3d ) ;
+      avg_pi_old =average(  pi_k_old, 1., numpts3d ) ;
 
-      // avg_pi_old =average(  pi_k_old, 1., numpts3d ) ;
-
-      if ( avg_zeta > 1.e-7 && abs(avg_zeta/avg_zeta_old)>1.02 && snapcount_b< sim.num_snapshot_kess )
+      if (avg_zeta > 1.e-7 && abs(avg_pi/avg_pi_old)>1.02 && snapcount_b< sim.num_snapshot_kess )
       {
       if(parallel.isRoot())  cout << "\033[1;32mThe blowup criteria are met, the requested snapshots being produced\033[0m\n";
         writeSpectra(sim, cosmo, fourpiG, a, snapcount_b,
                   &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
           str_filename =  "./output/pi_k_" + to_string(snapcount_b) + ".h5";
           str_filename2 = "./output/zeta_" + to_string(snapcount_b) + ".h5";
-          str_filename3 = "./output/phi_" + to_string(snapcount_b) + ".h5";
+          str_filename3 = "./output/det_gamma_" + to_string(snapcount_b) + ".h5";
+          str_filename4 = "./output/phi_" + to_string(snapcount_b) + ".h5";
           pi_k.saveHDF5(str_filename);
           zeta_half.saveHDF5(str_filename2);
-          phi.saveHDF5(str_filename3);
-          // str_filename =  "./output/pi_k_" + to_string(snapcount_b-1) + ".h5";
-          // str_filename2 = "./output/zeta_" + to_string(snapcount_b-1) + ".h5";
-          // pi_k_old.saveHDF5(str_filename);
-          // zeta_half_old.saveHDF5(str_filename2);
+          det_gamma.saveHDF5(str_filename3);
+          phi.saveHDF5(str_filename4);
+
           snapcount_b++;
 
         //****************************
@@ -1132,9 +1125,9 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
           // COUT << scientific << setprecision(8);
           // if(parallel.isRoot())
           // {
-          // out_snapshots<<"### 1- tau\t2- z \t3- a\t 4- zeta_avg\t 5- avg_pi\t 6- avg_phi\t 7- tau/boxsize\t 8- H_conf/H0 \t 9- snap_count"<<endl;
+          // out_snapshots<<"### 1- tau\t2- z \t3- a\t 4- zeta_avg\t 5- avg_pi\t 6- avg_phi\t 7- avg(det)\t 8- H_conf/H0 \t 9- snap_count"<<endl;
 
-          out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(a_kess) -1.0 <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << avg_zeta <<"\t"<< setw(9) << avg_pi <<"\t"<< setw(9) << avg_phi <<"\t"<< setw(9) <<tau <<"\t"<< setw(9) <<Hconf(a_kess, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo)<<"\t"<< setw(9) <<snapcount_b  <<endl;
+          out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(a_kess) -1.0 <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << avg_zeta <<"\t"<< setw(9) << avg_pi <<"\t"<< setw(9) << avg_phi <<"\t"<< setw(9) << avg_det_gamma <<"\t"<< setw(9) <<Hconf(a_kess, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo)<<"\t"<< setw(9) <<snapcount_b  <<endl;
         }
 
     #endif
