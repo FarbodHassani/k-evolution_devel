@@ -1,0 +1,14 @@
+\providecommand{\href}[2]{#2}\begingroup\raggedright\begin{thebibliography}{1}
+
+\bibitem{Hassani_2019}
+F.~Hassani, J.~Adamek, M.~Kunz, and F.~Vernizzi, {\it k-evolution: a
+  relativistic n-body code for clustering dark energy},  {\em Journal of
+  Cosmology and Astroparticle Physics} {\bf 2019} (Dec, 2019) 011?011.
+
+\bibitem{Lewandowski:2016yce}
+M.~Lewandowski, A.~Maleknejad, and L.~Senatore, {\it {An effective description
+  of dark matter and dark energy in the mildly non-linear regime}},  {\em JCAP}
+  {\bf 05} (2017) 038, [\href{http://arxiv.org/abs/1611.07966}{{\tt
+  arXiv:1611.07966}}].
+
+\end{thebibliography}\endgroup

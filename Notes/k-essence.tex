@@ -1,0 +1,323 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   DRAFT - Kevolution
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[a4paper,11pt]{article}
+\pdfoutput=1
+\usepackage{jcappub}
+\usepackage{bbold}
+\usepackage[x11names]{xcolor}
+\usepackage{colortbl,hhline}
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{color}
+\usepackage{amsfonts}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{eufrak}
+\usepackage{etoolbox}
+\usepackage{amsmath}
+\usepackage{empheq}
+\usepackage{cancel}
+\usepackage[most]{tcolorbox}
+\usepackage{float}              % Activate [H] option to place figure HERE
+\usepackage{subcaption}
+\usepackage[normalem]{ulem}
+\usepackage{xspace}
+\usepackage{adjustbox}
+\newtcbox{\mymath}[1][]{%
+    nobeforeafter, math upper, tcbox raise base,
+    enhanced, colframe=yellow!30!black,
+    colback=yellow!30, boxrule=1pt,
+    #1}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\def\be{\begin{equation}}
+\def\ee{\end{equation}}
+\def\bea{\begin{eqnarray}}
+\def\eea{\end{eqnarray}}
+\def\bean{\begin{eqnarray*}}
+\def\eean{\end{eqnarray*}}
+\def\cd{\cdot}
+\def\vp{\varphi}
+\def\l {\langle}
+\def\re {\rangle}
+\def \dd {\partial}
+\def \ra {\rightarrow}
+\def \la {\lambda}
+\def \La {\Lambda}
+\def \De {\Delta}
+\def \DH {\Delta_{\rm HI}}
+\newcommand{\de}{\delta}
+\def \b {\beta}
+\def \al {\alpha}
+\def \ka {\kappa}
+\def \Ga {\Gamma}
+\def \ga {\gamma}
+\def \si {\sigma}
+\def \Si {\Sigma}
+\def \ep {\epsilon}
+\def \om {\omega}
+\def \Om {\Omega}
+\def \lap {\triangle}
+\def \ep {\epsilon}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Special definitions for this paper
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\MyRed}{\color [rgb]{0.8,0,0}}
+\newcommand{\MyGreen}{\color [rgb]{0,0.7,0}}
+\newcommand{\MyBlue}{\color [rgb]{0,0,0.8}}
+\newcommand{\MyBrown}{\color [rgb]{0.8,0.4,0.1}}
+\newcommand{\MyPurple}{\color [rgb]{0.6,0.0,0.6}}
+\def\GV#1{{\MyRed [GV: #1]}}
+\def\RD#1{{\MyGreen [RD:  {\tt #1}]}} 
+\def\RDt#1{{\MyGreen #1}}   
+\def\mkt#1{{\MyBlue #1}}  
+\def\mkr#1{{\MyBlue [MK: #1]}}  
+\def\GF#1{{\MyPurple [GF: #1]}} 
+\newcommand{\jat}[1]{{\color[rgb]{0,0.6,0}#1}}
+\newcommand{\jar}[1]{{\color[rgb]{0,0.7,0} {\sf[#1]}}}
+\newcommand{\FV}[1]{{\color[rgb]{0.8,0.33,0.13}#1}}
+
+\newcommand{\ie}{\emph{i.e.}\xspace}
+\newcommand{\cf}{\emph{cf.}\xspace}
+\newcommand{\etal}{\emph{et al.}\xspace}
+\newcommand{\eg}{\emph{e.g.}\xspace}
+
+\newcommand{\Scal}{\mathcal S}
+\newcommand{\DD}{\mathcal D}
+\newcommand{\EE}{\mathcal E}
+\newcommand{\MM}{\mathcal M}
+\newcommand{\HH}{\mathcal H}
+
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\bn}{\boldsymbol{n}}
+\newcommand{\bv}{\boldsymbol{v}}
+\newcommand{\bx}{\boldsymbol{x}}
+\newcommand{\bnabla}{\boldsymbol{\nabla}}
+\newcommand{\bell}{\boldsymbol{\ell}}
+\newcommand{\bal}{\boldsymbol{\alpha}}
+
+\definecolor{bittersweet}{rgb}{1.0, 0.44, 0.37}
+\newcommand{\fhc}[1]{{\textcolor{bittersweet}{\sf[#1]}}}
+\newcommand{\fh}[1]{\textcolor{purple}{#1}}
+\newcommand{\edit}[2]{\textcolor{red}{\sout{#1} {#2}}}  
+
+\setlength{\arrayrulewidth}{.6mm}
+\setlength{\tabcolsep}{7pt}
+\renewcommand{\arraystretch}{1.8}
+
+%Filippos commands
+\newcommand{\MP}{M_{\rm Pl}}
+\newcommand{\zetaf}{\zeta}
+
+%Farbod
+\newcommand{\lat}{{\mathrm i,\mathrm j,\mathrm k}}
+\newcommand {\mf}{\mathrm}
+\newcommand {\sn}{\mathrm n}
+\newcommand {\gev}{\textit{gevolution}\xspace}
+\newcommand {\kev}{{$k$-evolution}\xspace}
+\newcommand{\class}{\texttt{CLASS}\xspace}
+\newcommand{\hiclass}{\texttt{hi\_class}\xspace}
+
+% for orcid
+\usepackage{scalerel,tikz}
+\usetikzlibrary{svg.path}
+\definecolor{orcidlogocol}{HTML}{A6CE39}
+\tikzset{orcidlogo/.pic={
+ \fill[orcidlogocol] svg{M256,128c0,70.7-57.3,128-128,128C57.3,256,0,198.7,0,128C0,57.3,57.3,0,128,0C198.7,0,256,57.3,256,128z};
+ \fill[white] svg{M86.3,186.2H70.9V79.1h15.4v48.4V186.2z}
+ svg{M108.9,79.1h41.6c39.6,0,57,28.3,57,53.6c0,27.5-21.5,53.6-56.8,53.6h-41.8V79.1z M124.3,172.4h24.5c34.9,0,42.9-26.5,42.9-39.7c0-21.5-13.7-39.7-43.7-39.7h-23.7V172.4z}
+ svg{M88.7,56.8c0,5.5-4.5,10.1-10.1,10.1c-5.6,0-10.1-4.6-10.1-10.1c0-5.6,4.5-10.1,10.1-10.1C84.2,46.7,88.7,51.3,88.7,56.8z};
+}}
+\newcommand\orcidicon[1]{\href{https://orcid.org/#1}{\mbox{\scalerel*{
+\begin{tikzpicture}[yscale=-1,transform shape]
+\pic{orcidlogo};
+\end{tikzpicture}
+}{|}}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\title{$k$-essence}
+\abstract{
+}
+\graphicspath{Images/}
+\begin{document}
+\maketitle
+%%%%%%%%%%%%%%%%%
+%%%INTRODUCTION
+%%%%%%%%%%%%%%%%%
+
+\section{Introduction}
+
+
+\section{Action}
+
+Starting from the covariant action of $k$-essence,
+\be
+S_{\mathrm{DE}}=\int d^{4} x \sqrt{-g} P(X, \phi)
+\ee
+Where the scalar field could be written as $\phi(t, \vec{x})=\bar{\phi}(t)+\delta \phi(t, \vec{x})$. Now we choose the time coordinate  such that $\delta \phi = 0$ and thus $t$ becomes a function of $\phi$. As a result, we have
+\begin{align}
+& X = - g^{\mu \nu} \partial_{\mu} \phi \partial_{\nu} \phi \to -g^{00} \dot{\bar{\phi}}(t)^2 \\ \nonumber &
+\phi \to \bar{\phi}(t)
+\end{align}
+So the action is written as,
+\be
+S_{\mathrm{DE}}=\int d^{4} x \sqrt{-g} P(-g^{00} \dot{\bar{\phi}}(t)^2, \bar{\phi}(t))
+\ee
+where $g^{00} = -1 + \delta g^{00} $. So we can write the Lagrangian as,
+\begin{align}
+P \Big( \dot{\bar{\phi}}(t)^2 (1 - \delta g^{00}), \bar{\phi}(t) \Big)  & = P( \bar{X}, \bar{\phi}(t)) -  \bar{X} \frac{\partial P} {\partial \bar{X}}\bigg|_{X=\bar{X}}  \delta g^{00}  + \frac{ \bar{X}^2}{2!}\frac{\partial^2 P} {\partial \bar{X}^2}\bigg|_{X=\bar{X}}  ( \delta g^{00} )^2 \nonumber  \\ &  -  \frac{ \bar{X}^3}{3!}\frac{\partial^3 P} {\partial \bar{X}^3}\bigg|_{X=\bar{X}}  ( \delta g^{00} )^3 + \cdot \cdot \cdot
+\end{align}
+where we have defined $\bar{X} =\dot{\bar{\phi}}(t)^2 $. As a result the action could be written in the following form:
+\be
+S=\int d^{4} x \sqrt{-g}\left[\frac{M_{\mathrm{Pl}}^{2}}{2} R-\Lambda(t)-c(t) g^{00}+\frac{M_{2}^{4}(t)}{2}\left(\delta g^{00}\right)^{2}  +\frac{M_{3}^{4}(t)}{3!}\left(\delta g^{00}\right)^{3} + \cdot \cdot \cdot  \right].
+\ee
+
+%We want to add the $k$-essence to the EFT action, i.e.~we want to include terms linear in $\delta K$, which is at least of order $\epsilon^0$. Since we are going to keep in the action all terms of order $\epsilon^2$ and since  $\delta g^{00}$ is at least of order $\epsilon$, then we need only to include $\delta K \delta g^{00}$ and $\delta K (\delta g^{00})^2$ because $\delta K (\delta g^{00})^n$ with $n>2$ will be higher order than ${\cal O}(\epsilon^2)$. in conclusion, the action is
+%\be
+%\begin{split}
+%\label{EFTaction}
+%S=\int d^4 x \sqrt{-g} \bigg[ & \frac{\MP^2}{2} R -\Lambda (t) -c(t) g^{00} +\frac{M_2^4(t)}{2} \left (\delta g^{00}  \right )^2  \\
+%  & - \frac{m_3^3(t)}{2}  \delta K \delta g^{00} - \frac{M_3^3(t)}{2} \delta K (\delta g^{00})^2 + ... \bigg] \;,
+%\end{split}
+%\ee
+\subsection{Stueckelberg trick}
+We want to make the scalar field perturbation explicit. We follow \cite{Hassani_2019} and perform  a diffeomorphism,  
+\be
+\label{time_diff}
+t \to \tilde t(\eta) = t(\eta)+ \xi^0 (t (\eta) , \vec x) \;, \qquad \vec x \to \vec {\tilde x} = \vec x  \; ,
+\ee
+where
+
+\be
+\pi(t(\eta),\vec x) \doteq \xi^0 (t(\eta),\vec x) /a (t(\eta)) \;.
+\ee 
+Where $\eta$ is the conformal time,
+\be
+\eta:=\int \frac{d t}{a (t)}
+\ee
+
+\begin{equation}
+g^{00} \rightarrow a^2 (1+ \HH \pi +  \pi')^2 g^{00}+2 a^2 (1+  \HH \pi +  \pi')  \partial_{\mu} \pi  g^{0 \mu}+ a(\eta)^2 g^{\mu \nu} \partial_{\mu} \pi \partial_{\nu} \pi
+\end{equation}
+
+
+We have to pay attention to expressing the cosmic time quantities in terms of conformal time when changing coordinates.
+For instance,
+\begin{align}
+f(t) & \to \tilde f(\tilde t) = f(t(\eta) + a(\eta) \pi(\eta ,\vec x)) \\ \nonumber & 
+ = f(\eta)+f^{\prime}(\eta) \pi(\eta, \vec{x})+\frac{1}{2} \Big(f^{\prime \prime}(\eta)- \HH(\eta) f^{\prime}(\eta)  \Big) \pi(\eta,\vec x)^{2} + ...
+\end{align}
+
+
+On the other hand, since the geometric quantities $g^{00}$ and $\delta K$ are constructed based on the metric in conformal time (based on our notation), so in order to perform the transformation on the vector $A^{\mu}$ we have
+% Remember that although $\Lambda (t)$ quantities are expressed in terms of physical time. But our metric is defined (because of our definition) in terms of conformal time. That is why we have $g^{00}$ written in conformal time, so now we want to go from the conformal time to our new coordinate which is $\tilde t (\eta)$, i.e.,
+% $\eta \to \eta + a(\eta) \pi (\eta, \vec x)$
+\begin{equation}
+A^{\mu} \rightarrow \tilde{A}^{\mu}=\frac{\partial  \tilde{x}^{\mu}}{\partial   x^{\nu}} A^{\nu}
+\end{equation}
+where results in,
+\begin{align}
+A^{0} \rightarrow \tilde{A}^{0}& =\frac{\partial  \tilde{x}^{0}}{\partial   x^{0}} A^{0}  + \frac{\partial  \tilde{x}^{0}}{\partial   x^{i}} A^{i} = \frac{\partial  (t(\eta) + a(\eta) \pi (\eta, \vec x))}{\partial   \eta} A^0 +  \frac{\partial  (t(\eta) + a(\eta) \pi (\eta, \vec x))}{\partial   x^i} A^i \\ \nonumber &=a(\eta) \big( 1 + \HH \pi(\eta,\vec x) + \pi'(\eta, \vec x) \Big) A^0 + a(\eta) \partial_i \pi(\eta, \vec x) A^i
+\end{align}
+In order to transform the vectors and convectors it is convenient to define the following matrices  \cite{Lewandowski:2016yce},
+\begin{equation}
+R_{\nu}^{\mu} \doteq \frac{\partial \tilde{x}^{\mu}}{\partial x^{\nu}}, \; \; (R^{-1})_{\nu}^{\mu} \doteq \frac{\partial \tilde{x}_{\mu}}{\partial x_{\nu}}
+\end{equation}
+where $R$ and $R^{-1}$ read as,
+\begin{equation}
+R_{\nu}^{\mu}=\left(\begin{array}{cc}
+a(1+\HH \pi+\pi^{\prime}) & a \partial_{i} \pi \\
+0 & \delta_{j}^{i}
+\end{array}\right)_{\mu \nu}
+\end{equation}
+\begin{equation}
+(R^{-1})_{\nu}^{\mu} =
+\left(\begin{array}{cc}
+  \frac{1}{a(1+\HH \pi+\pi^{\prime})} & - \frac{ \partial_{i} \pi}{1+ \HH \pi+\pi^{\prime}} \\
+0 & \delta_{i}^{j}
+\end{array}\right)_{\mu \nu}
+\end{equation}
+Since the scalar $A^{\mu} A_{\mu}$ should be invariant under the coordinate transformation,
+\be
+A^{\mu} A_{\mu} \rightarrow  (R^{-1})_{\mu}^{\nu} R_{\rho}^{\mu} A^{\rho} A_{\nu}
+\ee
+As expected we can easily verify that,
+\be
+(R^{-1})_{\mu}^{\nu} R_{\rho}^{\mu} = I
+\ee
+As a result in order to perform gauge transformation, for any upper and lower-index we need to apply $R$  and $R^{-1}$ respectively. So we have the following relations,
+\begin{equation}
+g^{\mu \nu} \rightarrow R_{\rho}^{\mu} R_{\sigma}^{\nu} g^{\rho \sigma}
+\end{equation}
+\begin{equation}
+g_{\mu \nu} \rightarrow (R^{-1})^{\rho}_{\mu}(R^{-1})^{\sigma}_{\nu} g^{\rho \sigma}
+\end{equation}
+\begin{equation}
+g^{00} \rightarrow a^2 (1+ \HH \pi +  \pi')^2 g^{00}+2 a^2 (1+  \HH \pi +  \pi')  \partial_{\mu} \pi  g^{0 \mu}+ a(\eta)^2 g^{\mu \nu} \partial_{\mu} \pi \partial_{\nu} \pi
+\end{equation}
+\begin{equation}
+g^{0i} \rightarrow a(1+\HH \pi + \pi') g^{0i}+a(\eta) \partial_{j} \pi  g^{i j}
+\end{equation}
+\begin{equation}
+g^{ij} \rightarrow g^{ij}
+\end{equation}
+\subsection{Action}
+The cpvariant action after the Stueckelberg trick reads,
+\be
+\label{EFTaction_cov}
+\begin{split}
+S=\int d^4 x \sqrt{-g} \bigg\{ & \frac{\MP^2}{2} R -  \Lambda \left[ t(\eta)+ a(\eta) \pi \right] - c \left[ t(\eta)+ a(\eta) \pi \right]  a^2(\eta)  \big[ (1+ \HH \pi + \pi')^2 g^{00} \\
+&+ 2 (1+\HH \pi + \pi') g^{0 \mu} \partial_\mu \pi + g^{\mu \nu} \partial_\mu \pi \partial_\nu \pi  \big]  +\frac{M_2^4 \left[ t(\eta)+ a(\eta) \pi \right]}{2}  \\
+& \times a^4 (\eta)  \big[ (1+ \HH \pi + \pi')^2 g^{00} + 2 (1+\HH \pi + \pi') g^{0 \mu} \partial_\mu \pi + g^{\mu \nu} \partial_\mu \pi \partial_\nu \pi  - \bar g^{00}\big]^2 
+\\ +\frac{M_3^4 \left[ t(\eta)+ a(\eta) \pi \right]}{3!}  
+& \times a^6 (\eta)  \big[ (1+ \HH \pi + \pi')^2 g^{00} + 2 (1+\HH \pi + \pi') g^{0 \mu} \partial_\mu \pi + g^{\mu \nu} \partial_\mu \pi \partial_\nu \pi  - \bar g^{00}\big]^3      \bigg\} \;,
+\end{split}
+\ee
+Here, we only focus on the last term in the EFT expansion, i.e.,
+\be
+\begin{split}
+S=\int d^4 x \sqrt{-g} \bigg\{ & \frac{M_3^4 \left[ t(\eta)+ a(\eta) \pi \right]}{3!}  \\ & \times a^6 (\eta)  \big[ (1+ \HH \pi + \pi')^2 g^{00} + 2 (1+\HH \pi + \pi') g^{0 \mu} \partial_\mu \pi + g^{\mu \nu} \partial_\mu \pi \partial_\nu \pi  - \bar g^{00}\big]^3      \bigg\} \;,
+\end{split}
+\ee
+
+%\begin{equation}
+%g_{00} \rightarrow \frac{g_{00}}{a^2 (1+\HH \pi + \pi')^2} 
+%\end{equation}
+%\begin{equation}
+%g_{0i} \rightarrow \frac{-\partial_i \pi g_{00}}{a(1+\HH \pi + \pi')^2}  +  \frac{ g_{0i}}{a(1+\HH \pi + \pi')}
+%\end{equation}
+%\begin{equation}
+%g_{ij} \rightarrow  \frac{ \partial_{i} \pi \partial_{j} \pi}{(1+\HH \pi + \pi') ^2}\, g_{00} - \frac{a(\eta) \partial_{i} \pi  }{1+\HH \pi + \pi'} \, g_{j0}  +g_{ij} 
+%\end{equation}
+%The ADM quantities:
+%
+%\begin{equation}
+%\begin{array}{c}
+%g^{00}=-\frac{1}{N^{2}}, \quad g^{0 i}=\frac{N^{i}}{N^{2}}, \quad h^{i j}=g^{i j}+\frac{N^{i} N^{j}}{N^{2}} \\
+%g_{00}=-N^{2}+h_{i j} N^{i} N^{j}, \quad N_{i}=h_{i j} N^{j}, \quad h_{i j}=g_{i j}
+%\end{array}
+%\end{equation}
+%Here we only keep the relevant terms:
+%\begin{equation}
+%N^{i} \rightarrow N^{i}a (1-\HH{\pi} - \pi')+ a   N^{2} h^{i k} \partial_{k} \pi + \cdot \cdot \cdot
+%\end{equation}
+%\begin{equation}
+%N \rightarrow N a \left(1- \HH{\pi} - \pi' + N^{i} \partial_{i} \pi+\frac{1}{2} a(\eta) N^{2} h^{i j} \partial_{i} \pi \partial_{i} \pi\right) + \cdot \cdot \cdot
+%\end{equation}
+%\begin{equation}
+%h_{i j} \rightarrow h_{i j}-a(\eta) N_{i} \partial_{j} \pi- a(\eta) N_{j} \partial_{i} \pi- a(\eta)^2 N^{2} \partial_{i} \pi \partial_{j} \pi
+%\end{equation}
+%Now we are going to use the extrinsic curvature definition written in terms of the geometric objects on 3D hypersurfaces,
+%
+
+%
+\bibliographystyle{JHEP}
+\bibliography{Biblio}
+
+\end{document}

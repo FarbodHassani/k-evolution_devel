@@ -1,0 +1,51 @@
+This is BibTeX, Version 0.99d (TeX Live 2020)
+Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
+The top-level auxiliary file: k-essence.aux
+The style file: JHEP.bst
+Database file #1: Biblio.bib
+Repeated entry---line 258 of file Biblio.bib
+ : @article{Lewandowski:2016yce
+ :                             ,
+I'm skipping whatever remains of this entry
+You've used 2 entries,
+            2195 wiz_defined-function locations,
+            529 strings with 3882 characters,
+and the built_in function-call counts, 690 in all, are:
+= -- 68
+> -- 25
+< -- 0
++ -- 9
+- -- 7
+* -- 51
+:= -- 101
+add.period$ -- 2
+call.type$ -- 2
+change.case$ -- 2
+chr.to.int$ -- 0
+cite$ -- 2
+duplicate$ -- 41
+empty$ -- 57
+format.name$ -- 7
+if$ -- 175
+int.to.chr$ -- 0
+int.to.str$ -- 2
+missing$ -- 8
+newline$ -- 9
+num.names$ -- 2
+pop$ -- 9
+preamble$ -- 1
+purify$ -- 0
+quote$ -- 0
+skip$ -- 33
+stack$ -- 0
+substring$ -- 25
+swap$ -- 22
+text.length$ -- 0
+text.prefix$ -- 0
+top$ -- 0
+type$ -- 0
+warning$ -- 0
+while$ -- 4
+width$ -- 3
+write$ -- 23
+(There was 1 error message)
