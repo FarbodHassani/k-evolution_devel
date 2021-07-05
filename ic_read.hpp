@@ -55,7 +55,7 @@
 //
 //////////////////////////
 
-void readIC(metadata & sim, icsettings & ic, cosmology & cosmo, const double fourpiG, double & a, double & tau, double & dtau, double & dtau_old, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, double * maxvel, Field<Real> * phi, Field<Real> * chi, Field<Real> * Bi, Field<Real> * source, Field<Real> * Sij, Field<Cplx> * scalarFT, Field<Cplx> * BiFT, Field<Cplx> * SijFT, PlanFFT<Cplx> * plan_phi, PlanFFT<Cplx> * plan_chi, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_source, PlanFFT<Cplx> * plan_Sij, int & cycle, int & snapcount, int & pkcount, int & restartcount, set<long> * IDbacklog)
+void readIC(metadata & sim, icsettings & ic, cosmology & cosmo, const double fourpiG, double & a, double & tau, double & dtau, double & dtau_old, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, double * maxvel, Field<Real> * phi, Field<Real> * chi, Field<Real> * Bi, Field<Real> * source, Field<Real> * Sij, Field<Cplx> * scalarFT, Field<Cplx> * BiFT, Field<Cplx> * SijFT, PlanFFT<Cplx> * plan_phi, PlanFFT<Cplx> * plan_chi, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_source, PlanFFT<Cplx> * plan_Sij, int & cycle, int & snapcount, int & pkcount, int & restartcount, set<long> * IDbacklog, parameter * params, int & numparam)
 {
 	part_simple_info pcls_cdm_info;
 	part_simple_dataType pcls_cdm_dataType;
@@ -84,6 +84,26 @@ void readIC(metadata & sim, icsettings & ic, cosmology & cosmo, const double fou
 	void * IDbuffer;
 	void * buf2;
 	set<long> IDlookup;
+
+	#ifdef HAVE_CLASS_BG
+	background class_background;
+  thermo class_thermo;
+  perturbs class_perturbs;
+	gsl_interp_accel * acc = gsl_interp_accel_alloc();
+	//Background variables EFTevolution //TODO_EB: add as many as necessary
+	gsl_spline * H_spline = NULL;
+	//TODO_EB:add BG functions here
+	initializeCLASSstructures(sim, ic, cosmo, class_background, class_thermo, class_perturbs, params, numparam);
+	loadBGFunctions(class_background, H_spline, "H [1/Mpc]", sim.z_in);
+	#endif
+
+	double Hc = Hconf(a, fourpiG,//TODO_EB
+		#ifdef HAVE_CLASS_BG
+			H_spline, acc
+		#else
+			cosmo
+		#endif
+		);
 
 	filename.reserve(PARAM_MAX_LENGTH);
 	hdr.npart[1] = 0;
@@ -281,7 +301,7 @@ void readIC(metadata & sim, icsettings & ic, cosmology & cosmo, const double fou
 		if (kFT.coord(0) == 0 && kFT.coord(1) == 0 && kFT.coord(2) == 0)
 			(*scalarFT)(kFT) = Cplx(0.,0.);
 
-		solveModifiedPoissonFT(*scalarFT, *scalarFT, fourpiG / a, 3. * sim.gr_flag * (Hconf(a, fourpiG, cosmo) * Hconf(a, fourpiG, cosmo) + fourpiG * cosmo.Omega_m / a));
+		solveModifiedPoissonFT(*scalarFT, *scalarFT, fourpiG / a, 3. * sim.gr_flag * (Hc * Hc + fourpiG * cosmo.Omega_m / a));
 		plan_phi->execute(FFT_BACKWARD);
 	}
 
@@ -290,15 +310,21 @@ void readIC(metadata & sim, icsettings & ic, cosmology & cosmo, const double fou
 	if (ic.restart_tau > 0.)
 		tau = ic.restart_tau;
 	else
-		tau = particleHorizon(a, fourpiG, cosmo);
+		tau = particleHorizon(a, fourpiG,
+			#ifdef HAVE_CLASS_BG
+			gsl_spline_eval(H_spline, 1., acc), class_background
+			#else
+			cosmo
+			#endif
+		);
 
 	if (ic.restart_dtau > 0.)
 		dtau_old = ic.restart_dtau;
 
-	if (sim.Cf / (double) sim.numpts < sim.steplimit / Hconf(a, fourpiG, cosmo))
+	if (sim.Cf / (double) sim.numpts < sim.steplimit / Hc)
 		dtau = sim.Cf / (double) sim.numpts;
 	else
-		dtau = sim.steplimit / Hconf(a, fourpiG, cosmo);
+		dtau = sim.steplimit / Hc;
 
 	if (ic.restart_cycle >= 0)
 	{
@@ -540,7 +566,13 @@ void readIC(metadata & sim, icsettings & ic, cosmology & cosmo, const double fou
 				}
 			}
 
-			d = particleHorizon(1. / (1. + sim.lightcone[i].z), fourpiG, cosmo);
+			d = particleHorizon(1. / (1. + sim.lightcone[i].z), fourpiG,
+				#ifdef HAVE_CLASS_BG
+				gsl_spline_eval(H_spline, 1., acc), class_background
+				#else
+				cosmo
+				#endif
+			);
 			if (sim.out_lightcone[i] & MASK_GADGET && sim.lightcone[i].distance[0] > d - tau + 0.5 * dtau_old && sim.lightcone[i].distance[1] <= d - tau + 0.5 * dtau_old && d - tau + 0.5 * dtau_old > 0.)
 			{
 				for (p = 0; p < 1 + sim.baryon_flag + cosmo.num_ncdm; p++)

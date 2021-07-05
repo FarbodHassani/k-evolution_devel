@@ -36,6 +36,9 @@ static double g1(double a, void *p)
 
 double D1_prime(
     struct cosmology par, double a
+    #ifdef HAVE_CLASS_BG
+    , gsl_spline * H_spline, gsl_interp_accel * acc
+    #endif
 )
 {
     gsl_function G1;
@@ -60,12 +63,17 @@ double D1_prime(
 
     double result_der = (result_plus -  result_minus)/(2*delta_a*a);
 
+    #ifdef HAVE_CLASS_BG
+    result = result_der*Hconf(a, 1, , H_spline, acc)*a;
+    #else
     result = result_der*Hconf(a, 1, par)*a;
+    #endif
 
     gsl_integration_workspace_free(w);
 
     return result;
 }
+
 
 //////////////////////////
 // compute_vi_rescaled
@@ -88,11 +96,19 @@ double D1_prime(
 //
 //////////////////////////
 
-void compute_vi_rescaled(cosmology & cosmo, Field<Real> * vi, Field<Real> * source, Field<Real> * Ti0, double a = 1., double a_old = 1.)
+void compute_vi_rescaled(cosmology & cosmo, Field<Real> * vi, Field<Real> * source, Field<Real> * Ti0, double a = 1., double a_old = 1.
+#ifdef HAVE_CLASS_BG
+, gsl_spline * H_spline, gsl_interp_accel * acc
+#endif
+)
 {
 	Site xvi(vi->lattice());
 
-	Real rescale = D1_prime(cosmo, a)/D1_prime(cosmo, a_old)*a/a_old;
+  #ifdef HAVE_CLASS_BG
+  Real rescale = D1_prime(cosmo, a, H_spline, acc)/D1_prime(cosmo, a_old, H_spline, acc)*a/a_old;
+  #else
+  Real rescale = D1_prime(cosmo, a)/D1_prime(cosmo, a_old)*a/a_old;
+  #endif
 
 	for(xvi.first(); xvi.test(); xvi.next())
 	{
@@ -112,4 +128,3 @@ void compute_vi_rescaled(cosmology & cosmo, Field<Real> * vi, Field<Real> * sour
 }
 
 #endif
-

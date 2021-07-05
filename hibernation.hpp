@@ -136,6 +136,7 @@ void writeRestartSettings(metadata & sim, icsettings & ic, cosmology & cosmo, co
 		fprintf(outfile, "Omega_kessence   = %.15le\n", cosmo.w_kessence);
 		fprintf(outfile, "w_kessence   = %.15le\n", cosmo.Omega_b);
 		fprintf(outfile, "cs2_kessence   = %.15le\n", cosmo.cs2_kessence);
+		//TODO: change this with background integration (hi_class)
 
 		if (cosmo.num_ncdm > 0)
 		{

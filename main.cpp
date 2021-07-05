@@ -93,6 +93,7 @@ int main(int argc, char **argv)
 	int  moveParts_count =0;
 	//kessence
 	double a_kess;
+  double Hc;
 
 
 #endif  //BENCHMARK
@@ -117,6 +118,15 @@ int main(int argc, char **argv)
 	cosmology cosmo;
 	icsettings ic;
 	double T00hom;
+  #ifdef HAVE_CLASS_BG
+	gsl_interp_accel * acc = gsl_interp_accel_alloc();
+	//Background variables EFTevolution //TODO_EB: add as many as necessary
+	gsl_spline * H_spline = NULL;
+	gsl_spline * cs2_spline = NULL;
+	gsl_spline * rho_smg_spline = NULL;
+	gsl_spline * p_smg_spline = NULL;
+	gsl_spline * rho_crit_spline = NULL;
+	#endif
 
 #ifndef H5_DEBUG
 	H5Eset_auto2 (H5E_DEFAULT, NULL, NULL);
@@ -200,15 +210,25 @@ int main(int argc, char **argv)
 	free(params);
 
 #ifdef HAVE_CLASS
-	background class_background;
-  	perturbs class_perturbs;
-  	spectra class_spectra;
+  background class_background;
+  thermo class_thermo;
+  perturbs class_perturbs;
 
   	if (precisionfile != NULL)
 	  	numparam = loadParameterFile(precisionfile, params);
 	else
 #endif
 		numparam = 0;
+
+#ifdef HAVE_CLASS_BG
+  //TODO_EB:add BG functions here
+  initializeCLASSstructures(sim, ic, cosmo, class_background, class_thermo, class_perturbs, params, numparam);
+  loadBGFunctions(class_background, H_spline, "H [1/Mpc]", sim.z_in);
+  loadBGFunctions(class_background, cs2_spline, "c_s^2", sim.z_in);
+  loadBGFunctions(class_background, rho_smg_spline, "(.)rho_smg", sim.z_in);
+  loadBGFunctions(class_background, p_smg_spline, "(.)p_smg", sim.z_in);
+  loadBGFunctions(class_background, rho_crit_spline, "(.)rho_crit", sim.z_in);
+#endif
 
 	h5filename.reserve(2*PARAM_MAX_LENGTH);
 	h5filename.assign(sim.output_path);
@@ -245,7 +265,6 @@ int main(int argc, char **argv)
 	//kessence
 	Field<Real> phi_old;
   //phi at two step before to compute phi'(n+1/2)
-	Field<Real> phi_prime;
   #ifdef BACKREACTION_TEST
   Field<Real> short_wave;
   Field<Real> relativistic_term;
@@ -262,7 +281,6 @@ int main(int argc, char **argv)
 	Field<Real> T0i_Kess;
 	Field<Real> Tij_Kess;
 	Field<Cplx> scalarFT_phi_old;
-	Field<Cplx> phi_prime_scalarFT;
   #ifdef BACKREACTION_TEST
   Field<Cplx> short_wave_scalarFT;
   Field<Cplx> relativistic_term_scalarFT;
@@ -317,10 +335,6 @@ int main(int argc, char **argv)
 	phi_old.initialize(lat,1);
 	scalarFT_phi_old.initialize(latFT,1);
 	PlanFFT<Cplx> plan_phi_old(&phi_old, &scalarFT_phi_old);
-	//Phi'
-	phi_prime.initialize(lat,1);
-	phi_prime_scalarFT.initialize(latFT,1);
-	PlanFFT<Cplx> phi_prime_plan(&phi_prime, &phi_prime_scalarFT);
   //Relativistic corrections
   #ifdef BACKREACTION_TEST
   short_wave.initialize(lat,1);
@@ -393,15 +407,39 @@ int main(int argc, char **argv)
   // cout<<"Gevolution H0: "<<sqrt(2. * fourpiG / 3.)<<endl;
   // cout<<"Box: "<<sim.boxsize<<endl;
 	a = 1. / (1. + sim.z_in);
-	tau = particleHorizon(a, fourpiG, cosmo);
+  tau = particleHorizon(a, fourpiG,
+    #ifdef HAVE_CLASS_BG
+    gsl_spline_eval(H_spline, 1., acc), class_background
+    #else
+    cosmo
+    #endif
+  );
 
-	if (sim.Cf * dx < sim.steplimit / Hconf(a, fourpiG, cosmo))
+  if (sim.Cf * dx < sim.steplimit / Hconf(a, fourpiG,//TODO_EB
+		#ifdef HAVE_CLASS_BG
+			H_spline, acc
+		#else
+			cosmo
+		#endif
+	) )
 		// dtau = sim.Cf * dx / sim.nKe_numsteps;
     dtau = sim.Cf * dx;
 
 	else
-		// dtau = sim.steplimit / Hconf(a, fourpiG, cosmo) / sim.nKe_numsteps;
-    dtau = sim.steplimit / Hconf(a, fourpiG, cosmo);
+		// dtau = sim.steplimit / sim.nKe_numsteps / Hconf(a, fourpiG,//TODO_EB
+		// 	#ifdef HAVE_CLASS_BG
+		// 		H_spline, acc
+		// 	#else
+		// 		cosmo
+		// 	#endif
+		// );
+    dtau = sim.steplimit / 	Hconf(a, fourpiG,//TODO_EB
+			#ifdef HAVE_CLASS_BG
+				H_spline, acc
+			#else
+				cosmo
+			#endif
+			);
 
 
 	dtau_old = 0.;
@@ -410,7 +448,7 @@ int main(int argc, char **argv)
 		generateIC_basic(sim, ic, cosmo, fourpiG, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &pi_k, &zeta_half, &chi, &Bi, &source, &Sij, &scalarFT, &scalarFT_pi, &scalarFT_zeta_half, &BiFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, params, numparam);
 	// generates ICs on the fly
 	else if (ic.generator == ICGEN_READ_FROM_DISK)
-		readIC(sim, ic, cosmo, fourpiG, a, tau, dtau, dtau_old, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, cycle, snapcount, pkcount, restartcount, IDbacklog);
+    readIC(sim, ic, cosmo, fourpiG, a, tau, dtau, dtau_old, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, cycle, snapcount, pkcount, restartcount, IDbacklog, params, numparam);
 #ifdef ICGEN_PREVOLUTION
 	else if (ic.generator == ICGEN_PREVOLUTION)
 		generateIC_prevolution(sim, ic, cosmo, fourpiG, a, tau, dtau, dtau_old, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, params, numparam);
@@ -467,10 +505,10 @@ int main(int argc, char **argv)
 #ifdef HAVE_CLASS
 	if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
 	{
-		initializeCLASSstructures(sim, ic, cosmo, class_background, class_perturbs, class_spectra, params, numparam);
+    initializeCLASSstructures(sim, ic, cosmo, class_background, class_thermo, class_perturbs, params, numparam);
 		if (sim.gr_flag > 0 && a < 1. / (sim.z_switch_linearchi + 1.) && (ic.generator == ICGEN_BASIC || (ic.generator == ICGEN_READ_FROM_DISK && cycle == 0)))
 		{
-			prepareFTchiLinear(class_background, class_perturbs, class_spectra, scalarFT, sim, ic, cosmo, fourpiG, a);
+			prepareFTchiLinear(class_background, class_perturbs, scalarFT, sim, ic, cosmo, fourpiG, a);
 			plan_source.execute(FFT_BACKWARD);
 			for (x.first(); x.test(); x.next())
 				chi(x) += source(x);
@@ -600,11 +638,23 @@ string str_filename4 ;
       //****PRINTING AVERAGE OVER TIME
       //****************************
       // check_field(  zeta_half, 1. , " H pi_k", numpts3d);
-      avg_pi =average(  pi_k, Hconf(a, fourpiG, cosmo), numpts3d ) ;
+      avg_pi =average(  pi_k, Hconf(a, fourpiG,//TODO_EB
+			#ifdef HAVE_CLASS_BG
+				H_spline, acc
+			#else
+				cosmo
+			#endif
+				), numpts3d ) ;
       avg_zeta =average( zeta_half,1., numpts3d ) ;
       avg_phi =average(  phi , 1., numpts3d ) ;
       avg_det_gamma =average(  det_gamma , 1., numpts3d ) ;
-      max_pi =maximum(  pi_k, Hconf(a, fourpiG, cosmo), numpts3d ) ;
+      max_pi =maximum(  pi_k, Hconf(a, fourpiG,//TODO_EB
+			#ifdef HAVE_CLASS_BG
+				H_spline, acc
+			#else
+				cosmo
+			#endif
+				), numpts3d ) ;
       max_zeta =maximum(  zeta_half,1., numpts3d ) ;
       max_phi =maximum(  phi , 1., numpts3d ) ;
 
@@ -654,7 +704,7 @@ string str_filename4 ;
 		projection_init(&source);
 #ifdef HAVE_CLASS
 		if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
-			projection_T00_project(class_background, class_perturbs, class_spectra, source, scalarFT, &plan_source, sim, ic, cosmo, fourpiG, a);
+			projection_T00_project(class_background, class_perturbs, source, scalarFT, &plan_source, sim, ic, cosmo, fourpiG, a);
 #endif
 		if (sim.gr_flag > 0)
 		{
@@ -690,16 +740,20 @@ string str_filename4 ;
 		}
 		projection_T00_comm(&source);
 
-#ifdef VELOCITY
-		if ((sim.out_pk & MASK_VEL) || (sim.out_snapshot & MASK_VEL))
-		{
-			projection_init(&Bi);
-            projection_Ti0_project(&pcls_cdm, &Bi, &phi, &chi);
-            vertexProjectionCIC_comm(&Bi);
-            compute_vi_rescaled(cosmo, &vi, &source, &Bi, a, a_old);
-            a_old = a;
-		}
-#endif
+    #ifdef VELOCITY
+    		if ((sim.out_pk & MASK_VEL) || (sim.out_snapshot & MASK_VEL))
+    		{
+    			projection_init(&Bi);
+                projection_Ti0_project(&pcls_cdm, &Bi, &phi, &chi);
+                vertexProjectionCIC_comm(&Bi);
+    						compute_vi_rescaled(cosmo, &vi, &source, &Bi, a, a_old
+    							#ifdef HAVE_CLASS_BG
+    							, H_spline, acc
+    							#endif
+    						);
+                a_old = a;
+    		}
+    #endif
 
 		if (sim.vector_flag == VECTOR_ELLIPTIC)
 		{
@@ -741,11 +795,35 @@ string str_filename4 ;
 // // In the projection zeta_integer comes, since synched with particles..
 //  	if (sim.vector_flag == VECTOR_ELLIPTIC)
 // 		{
-// 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, sim.NL_kessence ,1 );
+// 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_half,
+// 				#ifdef HAVE_CLASS_BG
+// 				gsl_spline_eval(rho_smg_spline, a, acc)/gsl_spline_eval(rho_crit_spline, a, acc),
+// 				gsl_spline_eval(p_smg_spline, a, acc)/gsl_spline_eval(rho_smg_spline, a, acc),
+// 				gsl_spline_eval(cs2_spline, a, acc),
+// 				Hconf(a, fourpiG, H_spline, acc)
+// 				#else
+// 				cosmo.Omega_kessence,
+// 				cosmo.w_kessence,
+// 				cosmo.cs2_kessence,
+// 				Hconf(a, fourpiG, cosmo)
+// 				#endif
+// 				, fourpiG, sim.NL_kessence ,1 );
 // 		}
 //  	else
 // 		{
-// 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a, fourpiG, cosmo), fourpiG, sim.NL_kessence, 0 );
+// 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_half,
+// 				#ifdef HAVE_CLASS_BG
+// 				gsl_spline_eval(rho_smg_spline, a, acc)/gsl_spline_eval(rho_crit_spline, a, acc),
+// 				gsl_spline_eval(p_smg_spline, a, acc)/gsl_spline_eval(rho_smg_spline, a, acc),
+// 				gsl_spline_eval(cs2_spline, a, acc),
+// 				Hconf(a, fourpiG, H_spline, acc)
+// 				#else
+// 				cosmo.Omega_kessence,
+// 				cosmo.w_kessence,
+// 				cosmo.cs2_kessence,
+// 				Hconf(a, fourpiG, cosmo)
+// 				#endif
+// 				, fourpiG, sim.NL_kessence, 0 );
 // 		}
 //
 // 		for (x.first(); x.test(); x.next())
@@ -785,11 +863,19 @@ string str_filename4 ;
 
 			if (dtau_old > 0.)
 			{
+        Hc = Hconf(a, fourpiG,//TODO_EB
+        #ifdef HAVE_CLASS_BG
+          H_spline, acc
+        #else
+          cosmo
+        #endif
+          );
+
         #ifdef BACKREACTION_TEST
 
-				prepareFTsource_BackReactionTest<Real>(short_wave, dx, phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hconf(a, fourpiG, cosmo) * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hconf(a, fourpiG, cosmo) * Hconf(a, fourpiG, cosmo) * dx * dx, sim.boxsize);  // prepare nonlinear source for phi update
+        prepareFTsource_BackReactionTest<Real>(short_wave, dx, phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hc * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hc * Hc * dx * dx, sim.boxsize);  // prepare nonlinear source for phi update
         #else
-        prepareFTsource<Real>(phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hconf(a, fourpiG, cosmo) * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hconf(a, fourpiG, cosmo) * Hconf(a, fourpiG, cosmo) * dx * dx);  // prepare nonlinear source for phi update
+        prepareFTsource<Real>(phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hc * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hc * Hc * dx * dx);  // prepare nonlinear source for phi update
         #endif
 
 #ifdef BENCHMARK
@@ -801,7 +887,7 @@ string str_filename4 ;
 				fft_count++;
 #endif
 
-				solveModifiedPoissonFT(scalarFT, scalarFT, 1. / (dx * dx), 3. * Hconf(a, fourpiG, cosmo) / dtau_old);  // phi update (k-space)
+    solveModifiedPoissonFT(scalarFT, scalarFT, 1. / (dx * dx), 3. * Hc / dtau_old);  // phi update (k-space)
 
 
 
@@ -853,11 +939,43 @@ string str_filename4 ;
 			{
         if (cycle == 0)
           fprintf(outfile, "# background statistics\n# cycle   tau/boxsize    a             conformal H/H0  phi(k=0)       T00(k=0)\n");
-        fprintf(outfile, " %6d   %e   %e   %e   %e   %e\n", cycle, tau, a, Hconf(a, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo), scalarFT(kFT).real(), T00hom);
+        fprintf(outfile, " %6d   %e   %e   %e   %e   %e\n", cycle, tau, a, Hconf(a, fourpiG,//TODO_EB
+        #ifdef HAVE_CLASS_BG
+          H_spline, acc
+        #else
+          cosmo
+        #endif
+        ) /
+        Hconf(1., fourpiG,//TODO_EB
+        #ifdef HAVE_CLASS_BG
+          H_spline, acc
+        #else
+          cosmo
+        #endif
+        ), scalarFT(kFT).real(), T00hom);
         fclose(outfile);
-				// if (cycle == 0)
+        // if (cycle == 0)
 				// 	fprintf(outfile, "# background statistics\n# cycle   tau/boxsize    a             conformal H/H0         Hconf_prime       phi(k=0)       T00(k=0)\n");
-				// fprintf(outfile, " %6d   %e   %e   %e   %e   %e   %e\n", cycle, tau, a, Hconf(a, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo),Hconf_prime(a_kess, fourpiG, cosmo), scalarFT(kFT).real(), T00hom);
+				// fprintf(outfile, " %6d   %e   %e   %e   %e   %e   %e\n", cycle, tau, a, Hconf(a, fourpiG,//TODO_EB
+				// #ifdef HAVE_CLASS_BG
+				// 	H_spline, acc
+				// #else
+				// 	cosmo
+				// #endif
+				// ) /
+				// Hconf(1., fourpiG,//TODO_EB
+				// #ifdef HAVE_CLASS_BG
+				// 	H_spline, acc
+				// #else
+				// 	cosmo
+				// #endif
+				// ),Hconf_prime(a_kess, fourpiG,//TODO_EB
+				// #ifdef HAVE_CLASS_BG
+				// 	H_spline, acc
+				// #else
+				// 	cosmo
+				// #endif
+				// ), scalarFT(kFT).real(), T00hom);
 				// fclose(outfile);
 			}
 		}
@@ -877,7 +995,7 @@ string str_filename4 ;
 #ifdef HAVE_CLASS
 		if (sim.radiation_flag > 0 && a < 1. / (sim.z_switch_linearchi + 1.))
 		{
-			prepareFTchiLinear(class_background, class_perturbs, class_spectra, scalarFT, sim, ic, cosmo, fourpiG, a);
+			prepareFTchiLinear(class_background, class_perturbs, scalarFT, sim, ic, cosmo, fourpiG, a);
 			projectFTscalar(SijFT, scalarFT, 1);
 		}
 		else
@@ -933,7 +1051,11 @@ string str_filename4 ;
 
 // lightcone output
 if (sim.num_lightcone > 0)
-  writeLightcones(sim, cosmo, fourpiG, a, tau, dtau, dtau_old, maxvel[0], cycle, h5filename + sim.basename_lightcone, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &chi, &Bi, &Sij, &BiFT, &SijFT, &plan_Bi, &plan_Sij, done_hij, IDbacklog);
+  writeLightcones(sim, cosmo, fourpiG, a, tau, dtau, dtau_old, maxvel[0], cycle, h5filename + sim.basename_lightcone,
+		#ifdef HAVE_CLASS_BG
+		class_background, H_spline, acc,
+		#endif
+		&pcls_cdm, &pcls_b, pcls_ncdm, &phi, &chi, &Bi, &Sij, &BiFT, &SijFT, &plan_Bi, &plan_Sij, done_hij, IDbacklog);
 else done_hij = 0;
 
 #ifdef BENCHMARK
@@ -941,17 +1063,16 @@ lightcone_output_time += MPI_Wtime() - ref_time;
 ref_time = MPI_Wtime();
 #endif
 
-for (x.first(); x.test(); x.next())
-{
-  phi_prime(x) =(phi(x)-phi_old(x))/(dtau);
-}
-
 		// snapshot output
 		if (snapcount < sim.num_snapshot && 1. / a < sim.z_snapshot[snapcount] + 1.)
 		{
 			COUT << COLORTEXT_CYAN << " writing snapshot" << COLORTEXT_RESET << " at z = " << ((1./a) - 1.) <<  " (cycle " << cycle << "), tau/boxsize = " << tau << endl;
 
-			writeSnapshots(sim, cosmo, fourpiG, a, dtau_old, done_hij, snapcount, h5filename + sim.basename_snapshot, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k,&zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij
+      writeSnapshots(sim, cosmo, fourpiG, a, dtau_old, done_hij, snapcount, h5filename + sim.basename_snapshot,
+        #ifdef HAVE_CLASS_BG
+        H_spline, acc,
+        #endif
+        &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k,&zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij
 #ifdef CHECK_B
 				, &Bi_check, &BiFT_check, &plan_Bi_check
 #endif
@@ -973,14 +1094,9 @@ for (x.first(); x.test(); x.next())
 		{
 			COUT << COLORTEXT_CYAN << " writing power spectra" << COLORTEXT_RESET << " at z = " << ((1./a) - 1.) <<  " (cycle " << cycle << "), tau/boxsize = " << tau << endl;
 
-#ifdef BACKREACTION_TEST
-      writeSpectra_PoissonTerms(sim,  cosmo,  fourpiG,  a, pkcount, &short_wave, &short_wave_scalarFT , &short_wave_plan);
-#endif
-writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
-
 			writeSpectra(sim, cosmo, fourpiG, a, pkcount,
 #ifdef HAVE_CLASS
-				class_background, class_perturbs, class_spectra, ic,
+				class_background, class_perturbs, ic,
 #endif
 				&pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k,&zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess ,&source, &Sij, &scalarFT, &scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k , &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij
 #ifdef CHECK_B
@@ -997,14 +1113,26 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
     // cout<<"EXACT_OUTPUT_REDSHIFTS: "<<EXACT_OUTPUT_REDSHIFTS<<endl;
     #ifdef EXACT_OUTPUT_REDSHIFTS
     		tmp = a;
-    		rungekutta4bg(tmp, fourpiG, cosmo, 0.5 * dtau);
-    		rungekutta4bg(tmp, fourpiG, cosmo, 0.5 * dtau);
+				rungekutta4bg(tmp, fourpiG,
+					#ifdef HAVE_CLASS_BG
+						H_spline, acc,
+					#else
+						cosmo,
+					#endif
+					0.5 * dtau);
+				rungekutta4bg(tmp, fourpiG,
+					#ifdef HAVE_CLASS_BG
+						H_spline, acc,
+					#else
+						cosmo,
+					#endif
+					0.5 * dtau);
 
     		if (pkcount < sim.num_pk && 1. / tmp < sim.z_pk[pkcount] + 1.)
     		{
     			writeSpectra(sim, cosmo, fourpiG, a, pkcount,
     #ifdef HAVE_CLASS
-    					class_background, class_perturbs, class_spectra, ic,
+    					class_background, class_perturbs, ic,
     #endif
     					&pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij
     #ifdef CHECK_B
@@ -1014,10 +1142,6 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
     				, &vi, &viFT, &plan_vi
     #endif
 		    );
-    writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
-    #ifdef BACKREACTION_TEST
-    writeSpectra_PoissonTerms(sim,  cosmo,  fourpiG,  a, pkcount, &short_wave, &short_wave_scalarFT , &short_wave_plan);
-    #endif
     		}
     #endif // EXACT_OUTPUT_REDSHIFTS
 
@@ -1052,7 +1176,14 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
 				COUT << "), baryon max |v| = " << maxvel[1] << " (Courant factor = " << maxvel[1] * dtau / dx;
 			}
 
-			COUT << "), time step / Hubble time = " << Hconf(a, fourpiG, cosmo) * dtau;
+      COUT << "), time step / Hubble time = " << Hconf(a, fourpiG,//TODO_EB
+			#ifdef HAVE_CLASS_BG
+				H_spline, acc
+			#else
+				cosmo
+			#endif
+			) * dtau;
+
 
 			for (i = 0; i < cosmo.num_ncdm; i++)
 			{
@@ -1087,13 +1218,33 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
     //********************************************************************************
     // Euler algorithm
     //********************************************************************************
-    update_pi_dot(dtau/ sim.nKe_numsteps, dx, a_kess,pi_k, zeta_half, det_gamma, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4, Hconf(a_kess, fourpiG, cosmo));
+    update_pi_dot(dtau/ sim.nKe_numsteps, dx, a_kess,pi_k, zeta_half, det_gamma, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
+     #ifdef HAVE_CLASS_BG
+     Hconf(a_kess, fourpiG, H_spline, acc)
+     #else
+     Hconf(a_kess, fourpiG, cosmo)
+     #endif
+      );
     zeta_half.updateHalo();
-    rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0);
+    // Although it's an Euler algorithm we can update the BG part twice in each step to increase the precision!
+    rungekutta4bg(a_kess, fourpiG,
+			#ifdef HAVE_CLASS_BG
+				H_spline, acc,
+			#else
+				cosmo,
+			#endif
+			dtau  / sim.nKe_numsteps / 2.0);
+
     update_pi(dtau/ sim.nKe_numsteps, pi_k, zeta_half); // H_old is updated here in the function
 		pi_k.updateHalo();
-    rungekutta4bg(a_kess, fourpiG, cosmo,  dtau  / sim.nKe_numsteps / 2.0 );
-    #ifdef BACKREACTION_TEST
+    rungekutta4bg(a_kess, fourpiG,
+      #ifdef HAVE_CLASS_BG
+        H_spline, acc,
+      #else
+        cosmo,
+      #endif
+      dtau  / sim.nKe_numsteps / 2.0);
+      #ifdef BACKREACTION_TEST
       //   //Make snapshots and power arround blowup TIME
       // // max_zeta =maximum(  zeta_half, Hconf(a, fourpiG, cosmo), numpts3d ) ;
       // max_zeta_old =maximum(  zeta_half_old, Hconf(a, fourpiG, cosmo), numpts3d ) ;
@@ -1106,8 +1257,11 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
       if (avg_zeta > 1.e-7 && abs(avg_pi/avg_pi_old)>1.02 && snapcount_b< sim.num_snapshot_kess )
       {
       if(parallel.isRoot())  cout << "\033[1;32mThe blowup criteria are met, the requested snapshots being produced\033[0m\n";
-        writeSpectra(sim, cosmo, fourpiG, a, snapcount_b,
-                  &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
+                writeSpectra(sim, cosmo, fourpiG, a, snapcount_b,
+                #ifdef HAVE_CLASS
+                class_background, class_perturbs, ic,
+                #endif
+                &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
           str_filename =  "./output/pi_k_" + to_string(snapcount_b) + ".h5";
           str_filename2 = "./output/zeta_" + to_string(snapcount_b) + ".h5";
           str_filename3 = "./output/det_gamma_" + to_string(snapcount_b) + ".h5";
@@ -1127,8 +1281,20 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
           // {
           // out_snapshots<<"### 1- tau\t2- z \t3- a\t 4- zeta_avg\t 5- avg_pi\t 6- avg_phi\t 7- avg(det)\t 8- H_conf/H0 \t 9- snap_count"<<endl;
 
-          out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(a_kess) -1.0 <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << avg_zeta <<"\t"<< setw(9) << avg_pi <<"\t"<< setw(9) << avg_phi <<"\t"<< setw(9) << avg_det_gamma <<"\t"<< setw(9) <<Hconf(a_kess, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo)<<"\t"<< setw(9) <<snapcount_b  <<endl;
-        }
+          out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(a_kess) -1.0 <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << avg_zeta <<"\t"<< setw(9) << avg_pi <<"\t"<< setw(9) << avg_phi <<"\t"<< setw(9) <<tau <<"\t"<< setw(9) << Hconf(a_kess, fourpiG,//TODO_EB
+          #ifdef HAVE_CLASS_BG
+            H_spline, acc
+          #else
+            cosmo
+          #endif
+          ) / Hconf(1., fourpiG,//TODO_EB
+          #ifdef HAVE_CLASS_BG
+            H_spline, acc
+          #else
+            cosmo
+          #endif
+          ) <<"\t"<< setw(9) <<snapcount_b  <<endl;
+          }
 
     #endif
     }
@@ -1169,9 +1335,15 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
 				ref2_time = MPI_Wtime();
 #endif
 
-				rungekutta4bg(tmp, fourpiG, cosmo, 0.5 * dtau / numsteps_ncdm[i]);
-				f_params[0] = tmp;
-				f_params[1] = tmp * tmp * sim.numpts;
+        rungekutta4bg(tmp, fourpiG,
+          #ifdef HAVE_CLASS_BG
+            H_spline, acc,
+          #else
+            cosmo,
+          #endif
+          0.5 * dtau / numsteps_ncdm[i]);
+        f_params[0] = tmp;
+        f_params[1] = tmp * tmp * sim.numpts;
 
 				if (sim.gr_flag > 0)
 					pcls_ncdm[i].moveParticles(update_pos, dtau / numsteps_ncdm[i], update_ncdm_fields, (1. / a < ic.z_relax + 1. ? 3 : 2), f_params);
@@ -1182,7 +1354,13 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
 				moveParts_time += MPI_Wtime() - ref2_time;
 				ref2_time = MPI_Wtime();
 #endif
-				rungekutta4bg(tmp, fourpiG, cosmo, 0.5 * dtau / numsteps_ncdm[i]);
+      rungekutta4bg(tmp, fourpiG,
+        #ifdef HAVE_CLASS_BG
+          H_spline, acc,
+        #else
+          cosmo,
+        #endif
+        0.5 * dtau / numsteps_ncdm[i]);
 			}
 		}
 
@@ -1208,7 +1386,14 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
 		ref2_time = MPI_Wtime();
 #endif
 
-		rungekutta4bg(a, fourpiG, cosmo, 0.5 * dtau);  // evolve background by half a time step
+        rungekutta4bg(a, fourpiG,
+        #ifdef HAVE_CLASS_BG
+          H_spline, acc,
+        #else
+          cosmo,
+        #endif
+        0.5 * dtau);  // evolve background by half a time step
+
 
 		f_params[0] = a;
 		f_params[1] = a * a * sim.numpts;
@@ -1230,7 +1415,13 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
 		moveParts_time += MPI_Wtime() - ref2_time;
 #endif
 
-		rungekutta4bg(a, fourpiG, cosmo, 0.5 * dtau);  // evolve background by half a time step
+  rungekutta4bg(a, fourpiG,
+    #ifdef HAVE_CLASS_BG
+      H_spline, acc,
+    #else
+      cosmo,
+    #endif
+    0.5 * dtau);  // evolve background by half a time step
 
 		parallel.max<double>(maxvel, numspecies);
 
@@ -1283,12 +1474,24 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
 			restartcount++;
 		}
 
-		dtau_old = dtau;
+    dtau_old = dtau;
 
-		if (sim.Cf * dx < sim.steplimit / Hconf(a, fourpiG, cosmo))
+		if (sim.Cf * dx < sim.steplimit / Hconf(a, fourpiG,//TODO_EB
+		#ifdef HAVE_CLASS_BG
+			H_spline, acc
+		#else
+			cosmo
+		#endif
+		))
 			dtau = sim.Cf * dx;
 		else
-			dtau = sim.steplimit / Hconf(a, fourpiG, cosmo);
+			dtau = sim.steplimit / Hconf(a, fourpiG,//TODO_EB
+			#ifdef HAVE_CLASS_BG
+				H_spline, acc
+			#else
+				cosmo
+			#endif
+			);
 
 		cycle++;
 
@@ -1305,7 +1508,7 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
 
 #ifdef HAVE_CLASS
 	if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
-		freeCLASSstructures(class_background, class_perturbs, class_spectra);
+    freeCLASSstructures(class_background, class_thermo, class_perturbs);
 #endif
 
 #ifdef BENCHMARK

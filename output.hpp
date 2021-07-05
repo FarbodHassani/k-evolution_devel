@@ -64,7 +64,11 @@ using namespace std;
 //
 //////////////////////////
 
-void writeSnapshots(metadata & sim, cosmology & cosmo, const double fourpiG, const double a, const double dtau_old, const int done_hij, const int snapcount, string h5filename, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, Field<Real> * phi, Field<Real> * pi_k, Field<Real> * zeta, Field<Real> * chi, Field<Real> * Bi, Field<Real> * T00_Kess, Field<Real> * T0i_Kess, Field<Real> * Tij_Kess, Field<Real> * source, Field<Real> * Sij, Field<Cplx> * scalarFT, Field<Cplx> * BiFT, Field<Cplx> * SijFT, PlanFFT<Cplx> * plan_phi, PlanFFT<Cplx> * plan_chi, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_source, PlanFFT<Cplx> * plan_Sij
+void writeSnapshots(metadata & sim, cosmology & cosmo, const double fourpiG, const double a, const double dtau_old, const int done_hij, const int snapcount, string h5filename,
+#ifdef HAVE_CLASS_BG
+gsl_spline * H_spline, gsl_interp_accel * acc,
+#endif
+Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, Field<Real> * phi, Field<Real> * pi_k, Field<Real> * zeta, Field<Real> * chi, Field<Real> * Bi, Field<Real> * T00_Kess, Field<Real> * T0i_Kess, Field<Real> * Tij_Kess, Field<Real> * source, Field<Real> * Sij, Field<Cplx> * scalarFT, Field<Cplx> * BiFT, Field<Cplx> * SijFT, PlanFFT<Cplx> * plan_phi, PlanFFT<Cplx> * plan_chi, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_source, PlanFFT<Cplx> * plan_Sij
 #ifdef CHECK_B
 , Field<Real> * Bi_check, Field<Cplx> * BiFT_check, PlanFFT<Cplx> * plan_Bi_check
 #endif
@@ -432,7 +436,13 @@ if (sim.out_snapshot & MASK_T_KESS)
 #ifdef EXACT_OUTPUT_REDSHIFTS
 		hdr.time = 1. / (sim.z_snapshot[snapcount] + 1.);
 		hdr.redshift = sim.z_snapshot[snapcount];
-		dtau_pos = (hdr.time - a) / a / Hconf(a, fourpiG, cosmo);
+		dtau_pos = (hdr.time - a) / a / Hconf(a, fourpiG,//TODO_EB
+		#ifdef HAVE_CLASS_BG
+			H_spline, acc
+		#else
+			cosmo
+		#endif
+		);
 #else
 		hdr.time = a;
 		hdr.redshift = (1./a) - 1.;
@@ -553,7 +563,11 @@ if (sim.out_snapshot & MASK_T_KESS)
 //
 //////////////////////////
 
-void writeLightcones(metadata & sim, cosmology & cosmo, const double fourpiG, const double a, const double tau, const double dtau, const double dtau_old, const double maxvel, const int cycle, string h5filename, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, Field<Real> * phi, Field<Real> * chi, Field<Real> * Bi, Field<Real> * Sij, Field<Cplx> * BiFT, Field<Cplx> * SijFT, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_Sij, int & done_hij, set<long> * IDbacklog)
+void writeLightcones(metadata & sim, cosmology & cosmo, const double fourpiG, const double a, const double tau, const double dtau, const double dtau_old, const double maxvel, const int cycle, string h5filename,
+#ifdef HAVE_CLASS_BG
+background & class_background, gsl_spline * H_spline, gsl_interp_accel * acc,
+#endif
+Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, Field<Real> * phi, Field<Real> * chi, Field<Real> * Bi, Field<Real> * Sij, Field<Cplx> * BiFT, Field<Cplx> * SijFT, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_Sij, int & done_hij, set<long> * IDbacklog)
 {
 	int i, j, n, p;
 	double d;
@@ -639,7 +653,13 @@ void writeLightcones(metadata & sim, cosmology & cosmo, const double fourpiG, co
 			}
 		}
 
-		d = particleHorizon(1. / (1. + sim.lightcone[i].z), fourpiG, cosmo);
+		d = particleHorizon(1. / (1. + sim.lightcone[i].z), fourpiG,
+			#ifdef HAVE_CLASS_BG
+			gsl_spline_eval(H_spline, 1., acc), class_background
+			#else
+			cosmo
+			#endif
+		);
 
 		s[0] = d - tau - 0.5 * sim.covering[i] * dtau;
 		s[1] = d - tau + 0.5 * sim.covering[i] * dtau_old;
@@ -1615,12 +1635,24 @@ void writeLightcones(metadata & sim, cosmology & cosmo, const double fourpiG, co
 				sprintf(filename, "_%04d", cycle);
 
 			if (sim.tracer_factor[0] > 0)
-				pcls_cdm->saveGadget2(h5filename + filename + "_cdm", hdr, sim.lightcone[i], d - tau, dtau, dtau_old, a * Hconf(a, fourpiG, cosmo), vertex, n, IDbacklog[0], IDprelog[0], phi, sim.tracer_factor[0]);
+				pcls_cdm->saveGadget2(h5filename + filename + "_cdm", hdr, sim.lightcone[i], d - tau, dtau, dtau_old, a * Hconf(a, fourpiG,//TODO_EB
+				#ifdef HAVE_CLASS_BG
+					H_spline, acc
+				#else
+					cosmo
+				#endif
+				), vertex, n, IDbacklog[0], IDprelog[0], phi, sim.tracer_factor[0]);
 
 			if (sim.baryon_flag && sim.tracer_factor[1] > 0)
 			{
 				hdr.mass[1] = (double) sim.tracer_factor[1] * C_RHO_CRIT * cosmo.Omega_b * sim.boxsize * sim.boxsize * sim.boxsize / sim.numpcl[1] / GADGET_MASS_CONVERSION;
-        pcls_b->saveGadget2(h5filename + filename + "_b", hdr, sim.lightcone[i], d - tau, dtau, dtau_old, a * Hconf(a, fourpiG, cosmo), vertex, n, IDbacklog[1], IDprelog[1], phi, sim.tracer_factor[1]);
+        pcls_b->saveGadget2(h5filename + filename + "_b", hdr, sim.lightcone[i], d - tau, dtau, dtau_old, a * Hconf(a, fourpiG,//TODO_EB
+				#ifdef HAVE_CLASS_BG
+					H_spline, acc
+				#else
+					cosmo
+				#endif
+				), vertex, n, IDbacklog[1], IDprelog[1], phi, sim.tracer_factor[1]);
 			}
 
 			for (p = 0; p < cosmo.num_ncdm; p++)
@@ -1628,7 +1660,13 @@ void writeLightcones(metadata & sim, cosmology & cosmo, const double fourpiG, co
 				if (sim.numpcl[1+sim.baryon_flag+p] == 0 || sim.tracer_factor[p+1+sim.baryon_flag] == 0) continue;
 				sprintf(buffer, "_ncdm%d", p);
 				hdr.mass[1] = (double) sim.tracer_factor[p+1+sim.baryon_flag] * C_RHO_CRIT * cosmo.Omega_ncdm[p] * sim.boxsize * sim.boxsize * sim.boxsize / sim.numpcl[p+1+sim.baryon_flag] / GADGET_MASS_CONVERSION;
-        pcls_ncdm[p].saveGadget2(h5filename + filename + buffer, hdr, sim.lightcone[i], d - tau, dtau, dtau_old, a * Hconf(a, fourpiG, cosmo), vertex, n, IDbacklog[p+1+sim.baryon_flag], IDprelog[p+1+sim.baryon_flag], phi, sim.tracer_factor[p+1+sim.baryon_flag]);
+        pcls_ncdm[p].saveGadget2(h5filename + filename + buffer, hdr, sim.lightcone[i], d - tau, dtau, dtau_old, a * Hconf(a, fourpiG,//TODO_EB
+				#ifdef HAVE_CLASS_BG
+					H_spline, acc
+				#else
+					cosmo
+				#endif
+				), vertex, n, IDbacklog[p+1+sim.baryon_flag], IDprelog[p+1+sim.baryon_flag], phi, sim.tracer_factor[p+1+sim.baryon_flag]);
 			}
 		}
 	}
@@ -1809,7 +1847,7 @@ void writeLightcones(metadata & sim, cosmology & cosmo, const double fourpiG, co
 
 void writeSpectra(metadata & sim, cosmology & cosmo, const double fourpiG, const double a, const int pkcount,
 #ifdef HAVE_CLASS
-background & class_background, perturbs & class_perturbs, spectra & class_spectra, icsettings & ic,
+background & class_background, perturbs & class_perturbs, icsettings & ic,
 #endif
 Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, Field<Real> * phi, Field<Real> * pi_k ,Field<Real> * zeta, Field<Real> * chi, Field<Real> * Bi,  Field<Real> * T00_Kess, Field<Real> * T0i_Kess, Field<Real> * Tij_Kess, Field<Real> * source, Field<Real> * Sij, Field<Cplx> * scalarFT, Field<Cplx> * scalarFT_pi, Field<Cplx> * scalarFT_zeta, Field<Cplx> * BiFT, Field<Cplx> * T00_KessFT, Field<Cplx> * T0i_KessFT, Field<Cplx> * Tij_KessFT, Field<Cplx> * SijFT, PlanFFT<Cplx> * plan_phi, PlanFFT<Cplx> * plan_pi_k , PlanFFT<Cplx> * plan_zeta, PlanFFT<Cplx> * plan_chi, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_T00_Kess, PlanFFT<Cplx> * plan_T0i_Kess, PlanFFT<Cplx> * plan_Tij_Kess, PlanFFT<Cplx> * plan_source, PlanFFT<Cplx> * plan_Sij
 #ifdef CHECK_B
@@ -1847,7 +1885,7 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 #ifdef HAVE_CLASS
 		if ((sim.radiation_flag > 0 || sim.fluid_flag > 0) && sim.gr_flag == 0)
 		{
-			projection_T00_project(class_background, class_perturbs, class_spectra, *source, *scalarFT, plan_source, sim, ic, cosmo, fourpiG, a);
+			projection_T00_project(class_background, class_perturbs, *source, *scalarFT, plan_source, sim, ic, cosmo, fourpiG, a);
 			if (sim.out_pk & MASK_DELTA)
 			{
 				Omega_ncdm = 0;
@@ -2009,7 +2047,7 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 			plan_pi_k->execute(FFT_FORWARD);
 			extractPowerSpectrum(*scalarFT_pi , kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
 			sprintf(filename, "%s%s%03d_pi_k.dat", sim.output_path, sim.basename_pk, pkcount);
-			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI/(Hconf(a,fourpiG,cosmo) * Hconf(a,fourpiG,cosmo)), filename, "power spectrum of pi_k * H (dimensionless)", a, sim.z_pk[pkcount]);
+			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of pi_k  (dimensionless)", a, sim.z_pk[pkcount]);
 		}
 
 	     if (sim.out_pk & MASK_zeta)
@@ -2038,6 +2076,7 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
      //     sprintf(filename, "%s%s%03d_phi_prime.dat", sim.output_path, sim.basename_pk, pkcount);
      //     writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * (Hconf(a,fourpiG,cosmo) * Hconf(a,fourpiG,cosmo)), filename, "power spectrum of phi_prime/H (dimensionless)", a);
      //   }
+		 //TODO_EB:here I did not change Hconf (in this function it appears only commented)
 
 	   //KESSENCE END
 
@@ -2077,7 +2116,7 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 #ifdef HAVE_CLASS
 		if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
 		{
-			projection_T00_project(class_background, class_perturbs, class_spectra, *source, *scalarFT, plan_source, sim, ic, cosmo, fourpiG, a);
+			projection_T00_project(class_background, class_perturbs, *source, *scalarFT, plan_source, sim, ic, cosmo, fourpiG, a);
 			if (sim.out_pk & MASK_DELTA)
 			{
 				Omega_ncdm = 0;
@@ -2311,7 +2350,11 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 #endif
 
 
-void writeSpectra_phi_prime(metadata & sim, cosmology & cosmo, const double fourpiG, const double a, const int pkcount, Field<Real> * phi_prime ,Field<Cplx> * phi_prime_scalarFT , PlanFFT<Cplx> * phi_prime_plan)
+void writeSpectra_phi_prime(metadata & sim, cosmology & cosmo, const double fourpiG, const double a, const int pkcount,
+	#ifdef HAVE_CLASS_BG
+	gsl_spline * H_spline, gsl_interp_accel * acc,
+	#endif
+	Field<Real> * phi_prime ,Field<Cplx> * phi_prime_scalarFT , PlanFFT<Cplx> * phi_prime_plan)
 {
 char filename[2*PARAM_MAX_LENGTH+24];
 char buffer[64];
@@ -2333,6 +2376,13 @@ kscatter = (Real *) malloc(sim.numbins * sizeof(Real));
 pscatter = (Real *) malloc(sim.numbins * sizeof(Real));
 occupation = (int *) malloc(sim.numbins * sizeof(int));
 
+double Hc = Hconf(a, fourpiG,//TODO_EB
+	#ifdef HAVE_CLASS_BG
+		H_spline, acc
+	#else
+		cosmo
+	#endif
+	);
 
 // Phi_prime is dimensionful so we divide  to Hconf to make dimensionless!
 if (sim.out_pk & MASK_PHI_PRIME)
@@ -2340,7 +2390,7 @@ if (sim.out_pk & MASK_PHI_PRIME)
     phi_prime_plan->execute(FFT_FORWARD);
     extractPowerSpectrum(*phi_prime_scalarFT , kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
     sprintf(filename, "%s%s%03d_phi_prime.dat", sim.output_path, sim.basename_pk, pkcount);
-    writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * (Hconf(a,fourpiG,cosmo) * Hconf(a,fourpiG,cosmo)), filename, "power spectrum of phi_prime/H (dimensionless)", a, sim.z_pk[pkcount]);
+    writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * (Hc * Hc), filename, "power spectrum of phi_prime/H (dimensionless)", a, sim.z_pk[pkcount]);
   }
 
 free(kbin);
@@ -2352,7 +2402,11 @@ free(occupation);
 
 
 // Modified Poisson equation terms- TESTS
-void writeSpectra_PoissonTerms(metadata & sim, cosmology & cosmo, const double fourpiG, const double a, const int pkcount, Field<Real> * short_wave ,Field<Cplx> * short_wave_scalarFT , PlanFFT<Cplx> * short_wave_plan)
+void writeSpectra_PoissonTerms(metadata & sim, cosmology & cosmo, const double fourpiG, const double a, const int pkcount,
+	#ifdef HAVE_CLASS_BG
+	gsl_spline * H_spline, gsl_interp_accel * acc,
+	#endif
+	Field<Real> * short_wave ,Field<Cplx> * short_wave_scalarFT , PlanFFT<Cplx> * short_wave_plan)
 {
 char filename[2*PARAM_MAX_LENGTH+24];
 char buffer[64];
@@ -2374,6 +2428,14 @@ kscatter = (Real *) malloc(sim.numbins * sizeof(Real));
 pscatter = (Real *) malloc(sim.numbins * sizeof(Real));
 occupation = (int *) malloc(sim.numbins * sizeof(int));
 
+double Hc = Hconf(a, fourpiG,//TODO_EB
+	#ifdef HAVE_CLASS_BG
+		H_spline, acc
+	#else
+		cosmo
+	#endif
+	);
+
     // It's dimensionless
     // relativistic_term_plan->execute(FFT_FORWARD);
     // extractPowerSpectrum(*relativistic_term_scalarFT , kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
@@ -2385,7 +2447,7 @@ occupation = (int *) malloc(sim.numbins * sizeof(int));
     short_wave_plan->execute(FFT_FORWARD);
     extractPowerSpectrum(*short_wave_scalarFT , kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
     sprintf(filename, "%s%s%03d_short_wave.dat", sim.output_path, sim.basename_pk, pkcount);
-    writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * (Hconf(a,fourpiG,cosmo) * Hconf(a,fourpiG,cosmo),  Hconf(a,fourpiG,cosmo),  Hconf(a,fourpiG,cosmo)) , filename, "power spectrum of short wave correction (dimensionless)", a, sim.z_pk[pkcount]);
+    writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * (Hc * Hc,  Hc,  Hc) , filename, "power spectrum of short wave correction (dimensionless)", a, sim.z_pk[pkcount]);
 
 
     // stress_tensor_plan->execute(FFT_FORWARD);

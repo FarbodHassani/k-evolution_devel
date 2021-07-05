@@ -124,12 +124,35 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 	pscatter = (Real *) malloc(sim.numbins * sizeof(Real));
 	occupation = (int *) malloc(sim.numbins * sizeof(int));
 
+	initializeCLASSstructures(sim, ic, cosmo, class_background, class_perturbs, class_spectra, params, numparam);
+
+	#ifdef HAVE_CLASS_BG
+	gsl_interp_accel * acc = gsl_interp_accel_alloc();
+	//Background variables EFTevolution //TODO_EB: add as many as necessary
+	gsl_spline * H_spline = NULL;
+	//TODO_EB:add BG functions here
+	loadBGFunctions(class_background, H_spline, "H [1/Mpc]", sim.z_in);
+	#endif
+
 	a = 1. / (1. + ic.z_ic);
-	tau = particleHorizon(a, fourpiG, cosmo);
+	tau = particleHorizon(a, fourpiG,
+		#ifdef HAVE_CLASS_BG
+		gsl_spline_eval(H_spline, 1., acc), class_background
+		#else
+		cosmo
+		#endif
+	);
 
 	COUT << " initial particle horizon tau = " << tau * sim.numpts << " lattice units." << endl;
 
-	initializeCLASSstructures(sim, ic, cosmo, class_background, class_perturbs, class_spectra, params, numparam);
+	double Hc = Hconf(a, fourpiG,//TODO_EB
+		#ifdef HAVE_CLASS_BG
+			H_spline, acc
+		#else
+			cosmo
+		#endif
+		);
+
 
 	loadTransferFunctions(class_background, class_perturbs, class_spectra, tk_d1, tk_d2, NULL, sim.boxsize, ic.z_ic, cosmo.h);
 
@@ -545,9 +568,9 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 				projection_T00_project(pcls_b, source, a, phi);
 	        projection_T00_comm(source);
 
-	        prepareFTsource<Real>(*phi, *chi, *source, cosmo.Omega_cdm + cosmo.Omega_b, *source, 3. * Hconf(a, fourpiG, cosmo) * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hconf(a, fourpiG, cosmo) * Hconf(a, fourpiG, cosmo) * dx * dx);
+	        prepareFTsource<Real>(*phi, *chi, *source, cosmo.Omega_cdm + cosmo.Omega_b, *source, 3. * Hc * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hc * Hc * dx * dx);
 	        plan_source->execute(FFT_FORWARD);
-	        solveModifiedPoissonFT(*scalarFT, *scalarFT, 1. / (dx * dx), 3. * Hconf(a, fourpiG, cosmo) / dtau_old);
+	        solveModifiedPoissonFT(*scalarFT, *scalarFT, 1. / (dx * dx), 3. * Hc / dtau_old);
 	        plan_chi->execute(FFT_BACKWARD);     // nonlinear phi temporarily stored in chi
 
 			relax_cycles++;
@@ -636,7 +659,13 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 			else maxvel[((sim.baryon_flag == 1) ? 2 : 1)+p] = pcls_ncdm[p].updateVel(update_q, (dtau + dtau_old) / 2., ic_fields, 2, &a);
 		}
 
-		rungekutta4bg(a, fourpiG, cosmo, 0.5 * dtau);
+		rungekutta4bg(a, fourpiG,
+			#ifdef HAVE_CLASS_BG
+				H_spline, acc,
+			#else
+				cosmo,
+			#endif
+			0.5 * dtau);
 
 		if (relax_cycles > 0)
 		{
@@ -651,15 +680,29 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 		        pcls_ncdm[p].moveParticles(update_pos, dtau, ic_fields, 2, &a);
 		}
 
-		rungekutta4bg(a, fourpiG, cosmo, 0.5 * dtau);
+		rungekutta4bg(a, fourpiG,
+			#ifdef HAVE_CLASS_BG
+				H_spline, acc,
+			#else
+				cosmo,
+			#endif
+			0.5 * dtau);
 	    tau += dtau;
+
+			Hc = Hconf(a, fourpiG,//TODO_EB
+				#ifdef HAVE_CLASS_BG
+					H_spline, acc
+				#else
+					cosmo
+				#endif
+				);
 
 	    dtau_old = dtau;
 
 		if (relax_cycles > 0 && ic.Cf > sim.Cf)
-	        dtau = (((1. / (sim.z_in + 1.)) - a) * ic.Cf * dx + (a - (1. / (ic.z_relax + 1.))) * ((sim.Cf * dx < sim.steplimit / Hconf(a, fourpiG, cosmo)) ? (sim.Cf * dx) : (sim.steplimit / Hconf(a, fourpiG, cosmo)))) / ((1. / (sim.z_in + 1.)) - (1. / (ic.z_relax + 1.)));
-		else if (relax_cycles > 0 && ic.Cf * dx > sim.steplimit / Hconf(a, fourpiG, cosmo))
-	        dtau = (((1. / (sim.z_in + 1.)) - a) * ic.Cf * dx + (a - (1. / (ic.z_relax + 1.))) * sim.steplimit / Hconf(a, fourpiG, cosmo)) / ((1. / (sim.z_in + 1.)) - (1. / (ic.z_relax + 1.)));
+	        dtau = (((1. / (sim.z_in + 1.)) - a) * ic.Cf * dx + (a - (1. / (ic.z_relax + 1.))) * ((sim.Cf * dx < sim.steplimit / Hc) ? (sim.Cf * dx) : (sim.steplimit / Hc))) / ((1. / (sim.z_in + 1.)) - (1. / (ic.z_relax + 1.)));
+		else if (relax_cycles > 0 && ic.Cf * dx > sim.steplimit / Hc)
+	        dtau = (((1. / (sim.z_in + 1.)) - a) * ic.Cf * dx + (a - (1. / (ic.z_relax + 1.))) * sim.steplimit / Hc) / ((1. / (sim.z_in + 1.)) - (1. / (ic.z_relax + 1.)));
 		else
 			dtau = ic.Cf * dx;
 
@@ -684,7 +727,7 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 		gsl_spline_free(tk_d2);
 		gsl_spline_free(tk_t2);
 
-		rescale = 3. * Hconf(a, fourpiG, cosmo)  * M_PI;
+		rescale = 3. * Hc  * M_PI;
 
 		for (i = 0; i < tk_d1->size; i++)
 			temp1[i] = 3. * phispline->y[i] - rescale * tk_t1->y[i] * sqrt(Pk_primordial(tk_d1->x[i] * cosmo.h / sim.boxsize, ic) / tk_d1->x[i]) / tk_d1->x[i] / tk_d1->x[i] / tk_d1->x[i];
@@ -751,8 +794,20 @@ void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, 
 
 		loadTransferFunctions(class_background, class_perturbs, class_spectra, tk_d2, tk_t2, "tot", sim.boxsize, (1. / (0.99 * a)) - 1., cosmo.h);
 
-		rescale = 3. * Hconf(0.99 * a, fourpiG, cosmo) * M_PI;
-		mean_q = -99.5 * Hconf(0.995 * a, fourpiG, cosmo);
+		rescale = 3. * Hconf(0.99 * a, fourpiG,//TODO_EB
+			#ifdef HAVE_CLASS_BG
+				H_spline, acc
+			#else
+				cosmo
+			#endif
+			) * M_PI;
+		mean_q = -99.5 * Hconf(0.995 * a, fourpiG,//TODO_EB
+			#ifdef HAVE_CLASS_BG
+				H_spline, acc
+			#else
+				cosmo
+			#endif
+			);
 
 		for (i = 0; i < tk_d2->size; i++)
 			temp1[i] = mean_q * (tk_d1->y[i] - (3. * phispline2->y[i] - rescale * tk_t2->y[i] * sqrt(Pk_primordial(tk_d2->x[i] * cosmo.h / sim.boxsize, ic) / tk_d2->x[i]) / tk_d2->x[i] / tk_d2->x[i] / tk_d2->x[i]));

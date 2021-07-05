@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 	{
 		cout << COLORTEXT_WHITE << " LCARS tools: lcmap" << COLORTEXT_RESET << endl;
 		cout << " extracts local and integrated potential terms from metric light-cone output" << endl << endl;
-		
+
 		cout << " List of command-line options:" << endl;
 		cout << " -s <filename>       : gevolution settings file of the simulation (mandatory)" << endl;
 		cout << " -d <distance>[,...] : conformal distance to source field [Mpc/h] (alternative 1)" << endl;
@@ -122,7 +122,7 @@ int main(int argc, char **argv)
 			continue;
 		switch(argv[i][1]) {
 			case 'z':
-				redshiftparam = argv[++i]; //redshifts for calculation 
+				redshiftparam = argv[++i]; //redshifts for calculation
 				break;
 			case 's':
 				settingsfile = argv[++i]; //settings file name
@@ -158,9 +158,34 @@ int main(int argc, char **argv)
 		cout << "  opening half-angle = " << ((sim.lightcone[i].opening > -1.) ? acos(sim.lightcone[i].opening) * 180. / M_PI : 180.) << " degrees" << endl;
 		cout << "  distance interval = " << sim.lightcone[i].distance[0] << ", " << sim.lightcone[i].distance[1] << endl << endl;
 	}
-	
-	double tauobs = particleHorizon(1, 1.5 * sim.boxsize * sim.boxsize / C_SPEED_OF_LIGHT / C_SPEED_OF_LIGHT, cosmo);
-	
+
+	#ifdef HAVE_CLASS
+	int numparam = 0;
+	background class_background;
+	thermo class_thermo;
+	perturbs class_perturbs;
+
+	  	if (precisionfile != NULL)
+		  	numparam = loadParameterFile(precisionfile, params);
+		else
+	#endif
+			numparam = 0;
+
+	#ifdef HAVE_CLASS_BG
+	gsl_interp_accel * acc = gsl_interp_accel_alloc();
+	gsl_spline * H_spline = NULL;
+	initializeCLASSstructures(sim, ic, cosmo, class_background, class_thermo, class_perturbs, params, numparam);
+	loadBGFunctions(class_background, H_spline, "H [1/Mpc]", sim.z_in);
+	#endif
+
+	double tauobs = particleHorizon(1, 1.5 * sim.boxsize * sim.boxsize / C_SPEED_OF_LIGHT / C_SPEED_OF_LIGHT,
+		#ifdef HAVE_CLASS_BG
+		gsl_spline_eval(H_spline, 1., acc), class_background
+		#else
+		cosmo
+		#endif
+	);
+
 	FILE * background_file;
 	char * buffer;
 
@@ -210,7 +235,7 @@ int main(int argc, char **argv)
 	}
 
 	fclose(background_file);
-	
+
 	double maxredshift = (1./back[numlines-1].a) - 1.;
 	double maxdistance = (tauobs - back[numlines-1].tau) * sim.boxsize;;
 
@@ -224,7 +249,7 @@ int main(int argc, char **argv)
 	else if(redshiftparam == NULL && distanceparam == NULL)
 	{
 		cout << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": please specify redshift (parameter -z) OR distance (parameter -d) to source field!" << endl;
-		return 0;		
+		return 0;
 	}
 	else if(redshiftparam == NULL && distanceparam != NULL)
 	{
@@ -236,7 +261,7 @@ int main(int argc, char **argv)
 		{
 			numoutputs++;
 			token = strtok(NULL, ",");
-		}		
+		}
 	}
 	else if(redshiftparam != NULL && distanceparam == NULL)
 	{
@@ -248,7 +273,7 @@ int main(int argc, char **argv)
 		{
 			numoutputs++;
 			token = strtok(NULL, ",");
-		}		
+		}
 	}
 
 
@@ -276,7 +301,7 @@ int main(int argc, char **argv)
 			n++;
 			token = strtok(NULL, ",");
 		}
-		
+
 		qsort((void *) distances, numoutputs, sizeof(double), [](const void * a, const void * b)->int{ return (int) (*((double*) a) > *((double*) b)); });
 
 		cout << " distances (Mpc/h) chosen are: ";
@@ -307,7 +332,7 @@ int main(int argc, char **argv)
 			n++;
 			token = strtok(NULL, ",");
 		}
-		
+
 		qsort((void *) redshifts, numoutputs, sizeof(double), [](const void * a, const void * b)->int{ return (int) (*((double*) a) > *((double*) b)); });
 
 		cout << " redshifts chosen are: ";
@@ -325,7 +350,7 @@ int main(int argc, char **argv)
 			}
 			distances[i] = ((redshifts[i]+1.-1./back[step-1].a)*back[step].tau - (redshifts[i]+1.-1./back[step].a)*back[step-1].tau) / (1./back[step].a - 1./back[step-1].a);
 			distances[i] = tauobs - distances[i];
-			
+
 			if(i!=0) cout << ", ";
 			cout << redshifts[i];
 		}
@@ -363,7 +388,7 @@ int main(int argc, char **argv)
 
 	std::map<int,metric_data>::iterator it0;
 	std::map<int,metric_data>::iterator it1;
- 	
+
 	cout << COLORTEXT_YELLOW << " processing light-cone output..." << COLORTEXT_RESET << endl << endl;
 
 
@@ -376,7 +401,7 @@ int main(int argc, char **argv)
 
 		for (it0 = phi0.healpix_data.begin(); it0 != phi0.healpix_data.end() && it0->second.hdr.distance < tauobs - back[step].tau; it0++);
 		for (it1 = phi1.healpix_data.begin(); it1 != phi1.healpix_data.end() && it1->second.hdr.distance < tauobs - back[step].tau; it1++);
-		
+
 		if (it0 == phi0.healpix_data.end() || it1 == phi0.healpix_data.end())
 		{
 			cout << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": missing HEALPix data beyond " << dist * sim.boxsize << " Mpc/h!" << endl;
@@ -392,15 +417,15 @@ int main(int argc, char **argv)
 				map_phi_final[m] = (float *) malloc(Nside_final * Nside_final * 12 * sizeof(float));
 			map_isw_final = (float *) malloc(Nside_final * Nside_final * 12 * sizeof(float));
 			map_shapiro_final = (float *) malloc(Nside_final * Nside_final * 12 * sizeof(float));
-			
+
 			monopole = 0.;
 
 #pragma omp parallel for reduction(+:monopole)
 			for (int l = 0; l < it0->second.hdr.Npix; l++)
 				monopole += lin_int(it0->second.pixel[l], it1->second.pixel[l], (it0->second.hdr.distance - (tauobs - back[step].tau))/((back[step].tau - back[step+1].tau)));
-				
+
 			pot_obs = monopole / it0->second.hdr.Npix;
-			
+
 #pragma omp parallel for
 			for(int i = 0; i < (Nside_final * Nside_final * 12); i++)
 			{
@@ -423,8 +448,8 @@ int main(int argc, char **argv)
 			{
 				cout << COLORTEXT_CYAN << " map resolution change" << COLORTEXT_RESET;
 				cout << ": from Nside of " << COLORTEXT_WHITE << Nside_final << COLORTEXT_RESET << " to " << COLORTEXT_WHITE <<  it0->second.hdr.Nside << COLORTEXT_RESET << "." << endl << endl;
-					 
-#pragma omp parallel for	
+
+#pragma omp parallel for
 				for (long l = Npix_final + pixoffset; l < pixoffset + 12l * Nside_final * Nside_final; l++)
 				{
 					for (int m = outcnt; m < numoutputs; m++)
@@ -432,19 +457,19 @@ int main(int argc, char **argv)
 					map_isw_final[l] = -1.6375e30;
 					map_shapiro_final[l] = -1.6375e30;
 				}
-				
+
 				Npix_interp.push_back(Npix_final);
-				
+
 				Nside_final = it0->second.hdr.Nside;
-					 
+
 				for (int m = outcnt; m < numoutputs; m++)
 					map_phi_final[m] = (float *) realloc(map_phi_final[m], (16l * Nside_final * Nside_final - 4l * Nside_initial * Nside_initial) * sizeof(float));
-				
+
 				map_isw_final = (float *) realloc(map_isw_final, (16l * Nside_final * Nside_final - 4l * Nside_initial * Nside_initial) * sizeof(float));
 				map_shapiro_final = (float *) realloc(map_shapiro_final, (16l * Nside_final * Nside_final - 4l * Nside_initial * Nside_initial) * sizeof(float));
-				
+
 				pixoffset = 4l * (Nside_final * Nside_final - Nside_initial * Nside_initial);
-				
+
 #pragma omp parallel for
 				for(long l = pixoffset; l < pixoffset + (Nside_final * Nside_final * 12); l++)
 				{
@@ -459,13 +484,13 @@ int main(int argc, char **argv)
 			{
 				continue;
 			}
-			
+
 			if (it0->second.hdr.distance != it1->second.hdr.distance || it0->second.hdr.Nside != it1->second.hdr.Nside || it0->second.hdr.Npix != it1->second.hdr.Npix)
 			{
 				cout << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": map properties do not match on iteration " << cnt << "! distances: " << it0->second.hdr.distance << ", " << it1->second.hdr.distance << "; Nside: " << it0->second.hdr.Nside << ", " << it1->second.hdr.Nside << "; Npix: " << it0->second.hdr.Npix << ", " << it1->second.hdr.Npix << endl << endl;
 				return -1;
 			}
-			
+
 			Npix_final = it0->second.hdr.Npix;
 
 #pragma omp parallel for
@@ -497,66 +522,66 @@ int main(int argc, char **argv)
 					map_shapiro_final[l+pixoffset] += 2.*sim.boxsize*(it0->second.hdr.distance - dist) * lin_int(it0->second.pixel[l],it1->second.pixel[l], (it0->second.hdr.distance - (tauobs - back[step].tau))/((back[step].tau - back[step+1].tau)));
 				}
 			}
-			
+
 			if (it0->second.hdr.distance >= distances[outcnt])
 			{
 				cout << " source distance reached of " << distances[outcnt]*sim.boxsize << " Mpc/h!" << endl << endl;
 
-#pragma omp parallel for	
+#pragma omp parallel for
 				for (long l = Npix_final; l < 12l * Nside_final * Nside_final; l++)
 					map_phi_final[outcnt][l+pixoffset] = -1.6375e30;
-					
+
 				cout << " computing convergence..." << endl << endl;
-				
+
 				map_kappa_final = (float *) malloc((16l * Nside_final * Nside_final - 4l * Nside_initial * Nside_initial) * sizeof(float));
 
-#pragma omp parallel for				
+#pragma omp parallel for
 				for (long l = 0; l < Npix_final; l++)
-				{	
+				{
 					if(!kappa(map_phi_final[outcnt]+pixoffset, Nside_final, l, map_kappa_final[l+pixoffset]))
 						map_kappa_final[l+pixoffset] = -1.6375e30;
 				}
-				
-#pragma omp parallel for	
+
+#pragma omp parallel for
 				for (long l = Npix_final; l < 12l * Nside_final * Nside_final; l++)
 					map_kappa_final[l+pixoffset] = -1.6375e30;
-				
+
 				if (Nside_final > Nside_initial)
 				{
 					itNpix = Npix_interp.begin();
-					
+
 					for (uint32_t Nside_interp = Nside_initial; Nside_interp < Nside_final; Nside_interp <<= 1)
 					{
 						p = 4l * (Nside_interp * Nside_interp - Nside_initial * Nside_initial);
-						
+
 #pragma omp parallel for
 						for (long l = 0; l < *itNpix; l++)
-						{	
+						{
 							if(!kappa(map_phi_final[outcnt]+p, Nside_interp, l, map_kappa_final[l+p]))
 								map_kappa_final[l+p] = -1.6375e30;
 						}
-						
-#pragma omp parallel for	
+
+#pragma omp parallel for
 						for (long l = *itNpix; l < 12l * Nside_interp * Nside_interp; l++)
 							map_kappa_final[l+p] = -1.6375e30;
-						
+
 						itNpix++;
 					}
-					
+
 					for (long l = 0; l < Npix_final; l++)
 					{
 						pix2vec_ring64(Nside_final, l, v1);
-						
+
 						helper.SetNside(Nside_final, RING);
 						ptg = helper.pix2ang(l);
-						
+
 						for (uint32_t Nside_interp = Nside_initial; Nside_interp < Nside_final; Nside_interp <<= 1)
 						{
 							helper.SetNside(Nside_interp, RING);
 							helper.get_interpol(ptg, nnpix, nnwgt);
-							
+
 							p = 4l * (Nside_interp * Nside_interp - Nside_initial * Nside_initial);
-							
+
 							for (int nn = 0; nn < nnpix.size(); nn++)
 							{
 								if (map_kappa_final[nnpix[nn]+p] > -1e30)
@@ -567,7 +592,7 @@ int main(int argc, char **argv)
 									break;
 								}
 							}
-							
+
 							for (int nn = 0; nn < nnpix.size(); nn++)
 							{
 								if (map_phi_final[outcnt][nnpix[nn]+p] > -1e30)
@@ -581,25 +606,25 @@ int main(int argc, char **argv)
 						}
 					}
 				}
-	
+
 				if (numoutputs > 1)
-					sprintf(outputfile, "%s%s_kappa_%d.fits", sim.output_path, sim.basename_lightcone, outcnt);	
+					sprintf(outputfile, "%s%s_kappa_%d.fits", sim.output_path, sim.basename_lightcone, outcnt);
 				else
-					sprintf(outputfile, "%s%s_kappa.fits", sim.output_path, sim.basename_lightcone);	
+					sprintf(outputfile, "%s%s_kappa.fits", sim.output_path, sim.basename_lightcone);
 				write_healpix_map(map_kappa_final+pixoffset, Nside_final, outputfile, 0, &coordsys);
-				
+
 				free(map_kappa_final);
-				
+
 				if (numoutputs > 1)
-					sprintf(outputfile, "%s%s_lensingphi_%d.fits", sim.output_path, sim.basename_lightcone, outcnt);	
+					sprintf(outputfile, "%s%s_lensingphi_%d.fits", sim.output_path, sim.basename_lightcone, outcnt);
 				else
-					sprintf(outputfile, "%s%s_lensingphi.fits", sim.output_path, sim.basename_lightcone);	
+					sprintf(outputfile, "%s%s_lensingphi.fits", sim.output_path, sim.basename_lightcone);
 				write_healpix_map(map_phi_final[outcnt]+pixoffset, Nside_final, outputfile, 0, &coordsys);
-	
+
 #pragma omp parallel for
 				for (long l = 0; l < Npix_final; l++)
 					map_phi_final[outcnt][l+pixoffset] = (map_isw_final[l+pixoffset] < -1.5e29) ? map_isw_final[l+pixoffset] : map_isw_final[l+pixoffset] - 2.*(distances[outcnt]+0.5*dist-1.5*it0->second.hdr.distance) * (it0->second.pixel[l] - it1->second.pixel[l]) / (back[step].tau - back[step+1].tau);
-				
+
 				if (Nside_final > Nside_initial)
 				{
 					for (long l = 0; l < Npix_final; l++)
@@ -610,9 +635,9 @@ int main(int argc, char **argv)
 						{
 							helper.SetNside(Nside_interp, RING);
 							helper.get_interpol(ptg, nnpix, nnwgt);
-							
+
 							q = 4l * (Nside_interp * Nside_interp - Nside_initial * Nside_initial);
-							
+
 							for (int nn = 0; nn < nnpix.size(); nn++)
 							{
 								if (map_isw_final[nnpix[nn]+q] > -1e30)
@@ -626,11 +651,11 @@ int main(int argc, char **argv)
 						}
 					}
 				}
-	
+
 				if (numoutputs > 1)
 					sprintf(outputfile, "%s%s_isw_%d.fits", sim.output_path, sim.basename_lightcone, outcnt);
 				else
-					sprintf(outputfile, "%s%s_isw.fits", sim.output_path, sim.basename_lightcone);	
+					sprintf(outputfile, "%s%s_isw.fits", sim.output_path, sim.basename_lightcone);
 				write_healpix_map(map_phi_final[outcnt]+pixoffset, Nside_final, outputfile, 0, &coordsys);
 
 				if (it0 == phi0.healpix_data.begin() || it1 == phi1.healpix_data.begin())
@@ -656,17 +681,17 @@ int main(int argc, char **argv)
 					for (long l = 0; l < Npix_final; l++)
 						map_phi_final[outcnt][l+pixoffset] = (map_isw_final[l+pixoffset] < -1.5e29) ? map_isw_final[l+pixoffset] : pot_obs - ((it0->second.hdr.distance-distances[outcnt]) * lin_int(it0->second.pixel[l],it1->second.pixel[l], (distances[outcnt] - (tauobs - back[step].tau))/((back[step].tau - back[step+1].tau))) + (distances[outcnt]-dist) * lin_int(std::prev(it0)->second.pixel[l],std::prev(it1)->second.pixel[l], (distances[outcnt] - (tauobs - back[step].tau))/((back[step].tau - back[step+1].tau)))) / (it0->second.hdr.distance - dist);
 				}
-	
+
 				if (numoutputs > 1)
 					sprintf(outputfile, "%s%s_potential_%d.fits", sim.output_path, sim.basename_lightcone, outcnt);
 				else
-					sprintf(outputfile, "%s%s_potential.fits", sim.output_path, sim.basename_lightcone);	
+					sprintf(outputfile, "%s%s_potential.fits", sim.output_path, sim.basename_lightcone);
 				write_healpix_map(map_phi_final[outcnt]+pixoffset, Nside_final, outputfile, 0, &coordsys);
-	
+
 				#pragma omp parallel for
 				for (long l = 0; l < Npix_final; l++)
 					map_phi_final[outcnt][l+pixoffset] = (map_shapiro_final[l+pixoffset] < -1.5e29) ? map_shapiro_final[l+pixoffset] : map_shapiro_final[l+pixoffset] + 2.*sim.boxsize*(distances[outcnt]+0.5*dist-1.5*it0->second.hdr.distance) * lin_int(it0->second.pixel[l],it1->second.pixel[l], (it0->second.hdr.distance - (tauobs - back[step].tau))/((back[step].tau - back[step+1].tau)));
-					
+
 				if (Nside_final > Nside_initial)
 				{
 					for (long l = 0; l < Npix_final; l++)
@@ -677,9 +702,9 @@ int main(int argc, char **argv)
 						{
 							helper.SetNside(Nside_interp, RING);
 							helper.get_interpol(ptg, nnpix, nnwgt);
-							
+
 							q = 4l * (Nside_interp * Nside_interp - Nside_initial * Nside_initial);
-							
+
 							for (int nn = 0; nn < nnpix.size(); nn++)
 							{
 								if (map_shapiro_final[nnpix[nn]+q] > -1e30)
@@ -693,42 +718,42 @@ int main(int argc, char **argv)
 						}
 					}
 				}
-				
+
 				if (numoutputs > 1)
-					sprintf(outputfile, "%s%s_shapiro_%d.fits", sim.output_path, sim.basename_lightcone, outcnt);	
+					sprintf(outputfile, "%s%s_shapiro_%d.fits", sim.output_path, sim.basename_lightcone, outcnt);
 				else
 					sprintf(outputfile, "%s%s_shapiro.fits", sim.output_path, sim.basename_lightcone);
 				write_healpix_map(map_phi_final[outcnt]+pixoffset, Nside_final, outputfile, 0, &coordsys);
 				free(map_phi_final[outcnt]);
-			
+
 				outcnt++;
 			}
-			
+
 			dist = it0->second.hdr.distance;
-			
+
 			if (cnt == thresh && it0->second.hdr.Npix == 12 * it0->second.hdr.Nside * it0->second.hdr.Nside)
 			{
 				for (int m = outcnt; m < numoutputs; m++)
 				{
 					monopole = 0;
-				
-#pragma omp parallel for reduction(+:monopole)			
+
+#pragma omp parallel for reduction(+:monopole)
 					for (int l = pixoffset; l < pixoffset + it0->second.hdr.Npix; l++)
 					{
 						if (map_phi_final[m][l] > -1.5e29)
 							monopole += map_phi_final[m][l];
 					}
-					
+
 					monopole /= (double) it0->second.hdr.Npix;
 
-#pragma omp parallel for				
+#pragma omp parallel for
 					for (int l = pixoffset; l < pixoffset + it0->second.hdr.Npix; l++)
 						map_phi_final[m][l] -= monopole;
 				}
-				
+
 				thresh *= 2;
 			}
-			
+
 			cnt++;
 		}
 
@@ -736,20 +761,20 @@ int main(int argc, char **argv)
 		phi1.clear();
 
 		step++;
-		
+
 		if (step > numlines-2)
 		{
 			cout << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": reached cycle " << back[step].cycle << ", no further integration steps possible!" << endl;
 			return -1;
 		}
-		
+
 		phi0.cinfo = back[step];
 		phi1.cinfo = back[step+1];
 	}
-	
+
 	free(map_isw_final);
 	free(map_shapiro_final);
-	
+
 	cout << COLORTEXT_GREEN << " normal completion." << COLORTEXT_RESET << endl;
 
 	return 0;
@@ -782,11 +807,11 @@ int loadHealpixData(metric_container * field, double min_dist, double max_dist, 
 		{
 			if ((min_dist = field->healpix_data.rbegin()->second.hdr.distance) > max_dist)
 				return field->healpix_data.rbegin()->first;
-		}	
+		}
 		else if (field->healpix_data.begin()->second.hdr.distance > max_dist)
 			max_dist = field->healpix_data.begin()->second.hdr.distance;
 	}
-	
+
 	if (lightconeparam != NULL)
 	{
 		strcpy(tokens, lightconeparam);
@@ -832,7 +857,7 @@ int loadHealpixData(metric_container * field, double min_dist, double max_dist, 
 			cout << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": unable to read header block in map file " << filename << "!" << endl;
 			return -1;
 		}
-		
+
 		if (fread(blocksize, sizeof(uint32_t), 2, infile) != 2)
 		{
 			fclose(infile);
@@ -857,7 +882,7 @@ int loadHealpixData(metric_container * field, double min_dist, double max_dist, 
 		if (metric.hdr.distance > min_dist) break;
 
 		backtrack = ftell(infile) - (256 + 2 * sizeof(uint32_t));
-		
+
 		if (infile2 != NULL)
 		{
 			fclose(infile2);
@@ -872,7 +897,7 @@ int loadHealpixData(metric_container * field, double min_dist, double max_dist, 
 		}
 
 		if (fread(blocksize, sizeof(uint32_t), 2, infile) != 2)
-		{	
+		{
 			if (token != NULL && feof(infile))
 			{
 				infile2 = infile;
@@ -912,7 +937,7 @@ int loadHealpixData(metric_container * field, double min_dist, double max_dist, 
 			fclose(infile);
 			infile = infile2;
 		}
-		
+
 		if (fseek(infile, backtrack, SEEK_SET))
 		{
 			cout << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": unable to backtrack in map file " << filename << "!" << endl;
@@ -926,7 +951,7 @@ int loadHealpixData(metric_container * field, double min_dist, double max_dist, 
 			cout << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": unable to read header block in map file " << filename << "!" << endl;
 			return -1;
 		}
-		
+
 		if (fread(blocksize, sizeof(uint32_t), 2, infile) != 2)
 		{
 			fclose(infile);
@@ -972,7 +997,7 @@ int loadHealpixData(metric_container * field, double min_dist, double max_dist, 
 			metric.pixel = (float *) malloc(metric.hdr.Npix * sizeof(float));
 
 			if (metric.hdr.Nside_ring > 0 && metric.hdr.Nside_ring < metric.hdr.Nside)
-			{	
+			{
 				if ((long) metric.hdr.Npix <= 2 * (long) metric.hdr.Nside * (metric.hdr.Nside + 1))
 					ring = (int) floor((sqrt(2. * metric.hdr.Npix + 1.01) - 1.) / 2.);
 				else if ((long) metric.hdr.Npix <= 2 * (long) metric.hdr.Nside * (metric.hdr.Nside + 1) + 4 * (2 * metric.hdr.Nside - 1) * (long) metric.hdr.Nside)
@@ -985,9 +1010,9 @@ int loadHealpixData(metric_container * field, double min_dist, double max_dist, 
 				}
 				else
 					ring = 4 * metric.hdr.Nside - 1;
-					
+
 				pixbatch_size[0] = (metric.hdr.Nside / metric.hdr.Nside_ring);
-						
+
 				pixbatch_delim[1] = ring / pixbatch_size[0];
 				pixbatch_delim[0] = (pixbatch_delim[1] > 0) ? pixbatch_delim[1]-1 : 0;
 				pixbatch_delim[2] = pixbatch_delim[1]+1;
@@ -1005,7 +1030,7 @@ int loadHealpixData(metric_container * field, double min_dist, double max_dist, 
 					else
 						pixbatch_delim[p] = 12 * metric.hdr.Nside_ring * metric.hdr.Nside_ring;
 				}
-					
+
 				if (metric.hdr.precision == 4)
 				{
 					float * fpix = (float *) malloc (metric.hdr.Npix * sizeof(float));
@@ -1060,7 +1085,7 @@ int loadHealpixData(metric_container * field, double min_dist, double max_dist, 
 							}
 						}
 					}
-	
+
 					free(fpix);
 				}
 				else if (metric.hdr.precision == 8)
@@ -1073,7 +1098,7 @@ int loadHealpixData(metric_container * field, double min_dist, double max_dist, 
 						free(metric.pixel);
 						return -1;
 					}
-	
+
 #pragma omp parallel for private(j) collapse(2)
 					for (int p = 0; p < pixbatch_delim[0]; p++)
 					{
@@ -1117,7 +1142,7 @@ int loadHealpixData(metric_container * field, double min_dist, double max_dist, 
 							}
 						}
 					}
-	
+
 					free(dpix);
 				}
 				else
@@ -1158,14 +1183,14 @@ int loadHealpixData(metric_container * field, double min_dist, double max_dist, 
 					free(metric.pixel);
 				}
 			}
-			
+
 			while (metric.hdr.Nside > 8192)
 			{
 				float * fpix = (float *) malloc (metric.hdr.Npix * sizeof(float) / 4);
 #pragma omp parallel for
 				for (int p = 0; p < metric.hdr.Npix/4; p++)
 					fpix[p] = 0.;
-					
+
 #pragma omp parallel for private(j)
 				for (int p = 0; p < metric.hdr.Npix; p++)
 				{
@@ -1180,7 +1205,7 @@ int loadHealpixData(metric_container * field, double min_dist, double max_dist, 
 							fpix[j] = -1.6375e30;
 					}
 				}
-				
+
 				free(metric.pixel);
 				metric.pixel = fpix;
 				metric.hdr.Nside /= 2;
@@ -1256,7 +1281,7 @@ int loadHealpixData(metric_container * field, double min_dist, double max_dist, 
 			cout << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": unable to read header block in map file " << filename << "!" << endl;
 			return -1;
 		}
-		
+
 		if (fread(blocksize, sizeof(uint32_t), 2, infile) != 2)
 		{
 			fclose(infile);
@@ -1299,7 +1324,7 @@ bool kappa(float * pixel, const int64_t Nside, int64_t ipix, float & result)
 		j = ipix - 2 * ring * (ring-1);
 		q = j / ring;
 		j %= ring;
-		
+
 		// phi-derivative
 		k = ipix+1;
 		l = ipix-1;
@@ -1307,22 +1332,22 @@ bool kappa(float * pixel, const int64_t Nside, int64_t ipix, float & result)
 			k -= 4*ring;
 		if (q == 0 && j == 0)
 			l += 4*ring;
-		
+
 		if (pixel[k] < -1e30 || pixel[l] < -1e30) return false;
-	
+
 		temp2 = (pixel[k] + pixel[l] - 2. * pixel[ipix]);
-		
+
 		// ring derivative
 		if (ring == Nside)
 		{
 			k = ring * (ring+1) * 2l + q * ring + j;
 			l = k+1;
-			
+
 			if (q == 3 && j == Nside-1)
 				l -= 4*Nside;
-		
+
 			if (pixel[k] < -1e30 || pixel[l] < -1e30) return false;
-		
+
 			result = (0.5 * (pixel[k] + pixel[l]) - pixel[ipix]) * 8. / 3.;
 			temp = (0.5 * (pixel[k] + pixel[l]));
 			w1 = 0.125;
@@ -1331,18 +1356,18 @@ bool kappa(float * pixel, const int64_t Nside, int64_t ipix, float & result)
 		{
 			k = ring * (ring+1) * 2l + q * (ring+1) + j;
 			l = k+1;
-		
+
 			if (pixel[k] < -1e30 || pixel[l] < -1e30) return false;
-		
+
 			result = (1. - (j+0.5)/ring) * pixel[k] + ((j+0.5)/ring) * pixel[l];
 			temp = result;
 			w1 = (ring-j-0.5) * (j+0.5) * 0.5 / (ring+1) / (ring+1);
 		}
-	
+
 		if (ring == 1)
 		{
 			if (pixel[0] < -1e30 || pixel[1] < -1e30 || pixel[2] < -1e30 || pixel[3] < -1e30) return false;
-				
+
 			result -= 0.25 * (pixel[0] + pixel[1] + pixel[2] + pixel[3]);
 			temp += 0.25 * (pixel[0] + pixel[1] + pixel[2] + pixel[3]);
 			w2 = 0;
@@ -1355,72 +1380,72 @@ bool kappa(float * pixel, const int64_t Nside, int64_t ipix, float & result)
 				l += 4*(ring-1);
 			if (q == 3 && j == ring-1)
 				k -= 4*(ring-1);
-				
+
 			if (pixel[k] < -1e30 || pixel[l] < -1e30) return false;
-			
+
 			if (ring == Nside)
 				result += pixel[ipix] - ((1. - (j+0.5)/ring) * pixel[k] + ((j+0.5)/ring) * pixel[l]);
 			else
 				result -= (1. - (j+0.5)/ring) * pixel[k] + ((j+0.5)/ring) * pixel[l];
 			temp += (1. - (j+0.5)/ring) * pixel[k] + ((j+0.5)/ring) * pixel[l];
-			
+
 			w2 = (ring-j-0.5) * (j+0.5) * 0.5 / (ring-1) / (ring-1);
 		}
-		
+
 		result -= (w1 - w2) * temp2;
-	
+
 		result *= (6 * Nside * Nside - 3 * ring * ring) / 8. / ring;
 		result += (6 * Nside * Nside - ring * ring) * (temp - 2. * pixel[ipix] - (w1 + w2) * temp2) / 4.;
-	
+
 		result += 36. * Nside * Nside * Nside * Nside * temp2 / M_PI / M_PI / (6 * Nside * Nside - ring * ring);
 	}
 	else if (ipix < 2l * Nside * (5l * Nside - 1l)) // equatorial region
 	{
 		ring = (ipix - 2l * Nside * (Nside-1)) / (4l * Nside); // + Nside
 		j = ipix - 2l * Nside * (Nside-1) - 4l * Nside * ring;
-		
+
 		k = (j == 4l*Nside-1) ? ipix+1-4l*Nside : ipix+1;
 		l = (j == 0) ? ipix+4l*Nside-1 : ipix-1;
-		
+
 		if (pixel[k] < -1e30 || pixel[l] < -1e30) return false;
-		
+
 		temp2 = (pixel[k] + pixel[l] - 2.*pixel[ipix]);
-		
+
 		k = ipix + 4l * Nside;
-		
+
 		if (ring % 2)
 		{
 			l = (j == 0) ? k+(4l*Nside-1) : k-1;
-			
+
 			if (pixel[k] < -1e30 || pixel[l] < -1e30) return false;
-			
+
 			result = 0.5 * (pixel[k] + pixel[l]);
 			temp = result;
-			
+
 			k = ipix - 4l * Nside;
 			l = (j == 0) ? ipix-1 : k-1;
 		}
 		else
 		{
 			l = (j == 4l*Nside-1) ? ipix+1 : k+1;
-			
+
 			if (pixel[k] < -1e30 || pixel[l] < -1e30) return false;
-			
+
 			result = 0.5 * (pixel[k] + pixel[l]);
 			temp = result;
-			
+
 			k = ipix - 4l * Nside;
 			l = (j == 4l*Nside-1) ? k+1-4l*Nside : k+1;
 		}
-		
+
 		if (pixel[k] < -1e30 || pixel[l] < -1e30) return false;
-			
+
 		result -= 0.5 * (pixel[k] + pixel[l]);
 		temp += 0.5 * (pixel[k] + pixel[l]);
-		
+
 		result *= Nside-ring;
 		result += (temp - 2.*pixel[ipix] - 0.25 * temp2) * (2.25*Nside*Nside - (Nside-ring)*(Nside-ring));
-		
+
 		result += temp2 * 4. * Nside * Nside / M_PI / M_PI / (1. - (Nside-ring)*(Nside-ring)/2.25/Nside/Nside);
 	}
 	else // south polar cap
@@ -1429,7 +1454,7 @@ bool kappa(float * pixel, const int64_t Nside, int64_t ipix, float & result)
 		j = 12l*Nside*Nside-1 - ipix - 2 * ring * (ring-1);
 		q = j / ring;
 		j %= ring;
-		
+
 		// phi-derivative
 		k = ipix+1;
 		l = ipix-1;
@@ -1437,11 +1462,11 @@ bool kappa(float * pixel, const int64_t Nside, int64_t ipix, float & result)
 			l += 4*ring;
 		if (q == 0 && j == 0)
 			k -= 4*ring;
-		
+
 		if (pixel[k] < -1e30 || pixel[l] < -1e30) return false;
-	
+
 		temp2 = (pixel[k] + pixel[l] - 2. * pixel[ipix]);
-		
+
 		// ring derivative
 		if (ring == Nside)
 		{
@@ -1449,9 +1474,9 @@ bool kappa(float * pixel, const int64_t Nside, int64_t ipix, float & result)
 			l = k-1;
 			if (q == 0 && j == 0)
 				l += 4*Nside;
-		
+
 			if (pixel[12l*Nside*Nside-1-k] < -1e30 || pixel[12l*Nside*Nside-1-l] < -1e30) return false;
-		
+
 			result = (0.5 * (pixel[12l*Nside*Nside-1-k] + pixel[12l*Nside*Nside-1-l]) - pixel[ipix]) * 8. / 3.;
 			temp = (0.5 * (pixel[12l*Nside*Nside-1-k] + pixel[12l*Nside*Nside-1-l]));
 			w1 = 0.125;
@@ -1460,18 +1485,18 @@ bool kappa(float * pixel, const int64_t Nside, int64_t ipix, float & result)
 		{
 			k = ring * (ring+1) * 2l + q * (ring+1) + j;
 			l = k+1;
-		
+
 			if (pixel[12l*Nside*Nside-1-k] < -1e30 || pixel[12l*Nside*Nside-1-l] < -1e30) return false;
-		
+
 			result = (1. - (j+0.5)/ring) * pixel[12l*Nside*Nside-1-k] + ((j+0.5)/ring) * pixel[12l*Nside*Nside-1-l];
 			temp = result;
 			w1 = (ring-j-0.5) * (j+0.5) * 0.5 / (ring+1) / (ring+1);
 		}
-	
+
 		if (ring == 1)
 		{
 			if (pixel[12l*Nside*Nside-1] < -1e30 || pixel[12l*Nside*Nside-2] < -1e30 || pixel[12l*Nside*Nside-3] < -1e30 || pixel[12l*Nside*Nside-4] < -1e30) return false;
-				
+
 			result -= 0.25 * (pixel[12l*Nside*Nside-1] + pixel[12l*Nside*Nside-2] + pixel[12l*Nside*Nside-3] + pixel[12l*Nside*Nside-4]);
 			temp += 0.25 * (pixel[12l*Nside*Nside-1] + pixel[12l*Nside*Nside-2] + pixel[12l*Nside*Nside-3] + pixel[12l*Nside*Nside-4]);
 			w2 = 0;
@@ -1484,9 +1509,9 @@ bool kappa(float * pixel, const int64_t Nside, int64_t ipix, float & result)
 				l += 4*(ring-1);
 			if (q == 3 && j == ring-1)
 				k -= 4*(ring-1);
-				
+
 			if (pixel[12l*Nside*Nside-1-k] < -1e30 || pixel[12l*Nside*Nside-1-l] < -1e30) return false;
-			
+
 			if (ring == Nside)
 				result += pixel[ipix] - ((1. - (j+0.5)/ring) * pixel[12l*Nside*Nside-1-k] + ((j+0.5)/ring) * pixel[12l*Nside*Nside-1-l]);
 			else
@@ -1498,14 +1523,11 @@ bool kappa(float * pixel, const int64_t Nside, int64_t ipix, float & result)
 		result -= (w1 - w2) * temp2;
 		result *= (6 * Nside * Nside - 3 * ring * ring) / 8. / ring;
 		result += (6 * Nside * Nside - ring * ring) * (temp - 2. * pixel[ipix] - (w1 + w2) * temp2) / 4.;
-		
+
 		result += 36. * Nside * Nside * Nside * Nside * temp2  / M_PI / M_PI / (6 * Nside * Nside - ring * ring);
 	}
-	
+
 	result /= -2.;
-	
+
 	return true;
 }
-
-
-

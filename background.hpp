@@ -16,6 +16,7 @@
 #include <gsl/gsl_integration.h>
 
 
+//TODO: get it from Class
 double FermiDiracIntegrand(double q, void * w)
 {
 	return q * q * sqrt(q * q + *(double *)w) / (exp(q) + 1.0l);
@@ -34,6 +35,7 @@ double FermiDiracIntegrand(double q, void * w)
 //
 //////////////////////////
 
+//TODO: get it from Class
 double FermiDiracIntegral(double &w)
 {
 	double result;
@@ -66,6 +68,7 @@ double FermiDiracIntegral(double &w)
 //
 //////////////////////////
 
+//TODO: get it from Class
 double bg_ncdm(const double a, const cosmology cosmo, const int p)
 {
 	if (p < 0 || p >= cosmo.num_ncdm)
@@ -100,6 +103,7 @@ double bg_ncdm(const double a, const cosmology cosmo, const int p)
 //
 //////////////////////////
 
+//TODO: get it from Class
 double bg_ncdm(const double a, const cosmology cosmo)
 {
 	double w;
@@ -128,6 +132,8 @@ double bg_ncdm(const double a, const cosmology cosmo)
 // Arguments:
 //   a          scale factor
 //   fourpiG    "4 pi G"
+//   H_spline   Class spline with physical H
+//   acc        Gsl acc parameter
 //   cosmo      structure containing the cosmological parameters
 //
 // Returns: conformal Hubble rate
@@ -135,23 +141,40 @@ double bg_ncdm(const double a, const cosmology cosmo)
 //////////////////////////
 
 // Hconf normalized to critial density so we have H0^2= 8piG/3
-double Hconf(const double a, const double fourpiG, const cosmology cosmo)
+double Hconf(const double a, const double fourpiG,
+	#ifdef HAVE_CLASS_BG
+	gsl_spline * H_spline, gsl_interp_accel * acc
+	#else
+	const cosmology cosmo
+	#endif
+)
 {
+	#ifdef HAVE_CLASS_BG
+	double norm = sqrt(2./3.*fourpiG)/gsl_spline_eval(H_spline, 1., acc);
+	double Ha = gsl_spline_eval(H_spline, a, acc);
+	// The extra scale factor comes from converting physical to conformal H
+	return norm*a*Ha;
+	#else
 	return sqrt((2. * fourpiG / 3.) * (((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) / a) + (cosmo.Omega_Lambda * a * a)
 	+ (cosmo.Omega_rad / a / a)+ (cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence)* a * a)));
 	// cout<<"Omega_rad: "<<cosmo.Omega_rad<<" cosmo.Omega_Lambda"<<cosmo.Omega_Lambda<<endl;
+	#endif
 }
 
 // Here the normalization factor is not \rho_crit=1, it is what it should be in th enormal unit.
 // So Omega_m is the matter density at arbitrary redshift and is not normalized, since we did not use Hconf in the fomrula
 // While Hconf is normalized to critical density 1 so H^2/H_0^2= H^2/(8piG/3) which is used in the last formula.
+//TODO: check where this is used and take it from Class
 double Omega_m(const double a, const cosmology cosmo) { return cosmo.Omega_m / (cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo) + cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence)* a * a * a + cosmo.Omega_Lambda * a * a * a + cosmo.Omega_rad / a); }
 //
+//TODO: check where this is used and take it from Class
 double Omega_rad(const double a, const cosmology cosmo) { return (cosmo.Omega_rad + (bg_ncdm(a, cosmo) + cosmo.Omega_cdm + cosmo.Omega_b - cosmo.Omega_m) * a) / ((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) * a + cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence)* a * a * a * a + cosmo.Omega_Lambda * a * a * a * a + cosmo.Omega_rad); }
 
 //Here Omega_Lambda is just Lambda
+//TODO: check where this is used and take it from Class
 double Omega_Lambda(const double a, const cosmology cosmo) { return cosmo.Omega_Lambda / ((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) / a / a / a + cosmo.Omega_Lambda + cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence) + cosmo.Omega_rad / a / a / a / a);}
 
+//TODO: remove this
 double Hconf_class(const double a, const cosmology cosmo)
 {
   double H0_class=100*cosmo.h/(C_SPEED_OF_LIGHT*100.);
@@ -169,15 +192,38 @@ double Hconf_class(const double a, const cosmology cosmo)
 // Arguments:
 //   a          scale factor
 //   fourpiG    "4 pi G"
+//   H_spline   Class spline with physical H
+//   acc        Gsl acc parameter
 //   cosmo      structure containing the cosmological parameters
 //
 // Returns: conformal Hubble rate
 //
 //////////////////////////
 // Hconf normalized to critial density so we have H0^2= 8piG/3
-double Hconf_prime(const double a, const double fourpiG, const cosmology cosmo)
+double Hconf_prime(const double a, const double fourpiG,
+	#ifdef HAVE_CLASS_BG
+	gsl_spline * H_spline, gsl_interp_accel * acc
+	#else
+	const cosmology cosmo
+	#endif
+)
 {
+	#ifdef HAVE_CLASS_BG
+	double norm = sqrt(2./3.*fourpiG)/gsl_spline_eval(H_spline, 1., acc);
+	double Hc = Hconf(a, fourpiG,
+		#ifdef HAVE_CLASS_BG
+		H_spline, acc
+		#else
+		cosmo
+		#endif
+		);
+	// dHc/da = H + a*d(H)/da
+	double dHcda = Hc/a + a*norm*gsl_spline_eval_deriv(H_spline, a, acc);
+	// dHconf/dtau = a*Hc*dHc/da
+	return a*Hc*dHcda;
+	#else
 	return (2. * fourpiG / (6. * a * a)) * (  -(cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) * a + 2. * cosmo.Omega_Lambda * a *  a * a * a - 2. * cosmo.Omega_rad - (1. + 3. * cosmo.w_kessence) * cosmo.Omega_kessence * pow( a, 1.-3.* cosmo.w_kessence));
+	#endif
 }
 
 //////////////////////////
@@ -190,6 +236,8 @@ double Hconf_prime(const double a, const double fourpiG, const cosmology cosmo)
 // Arguments:
 //   a          scale factor (will be advanced by dtau)
 //   fourpiG    "4 pi G"
+//   H_spline   Class spline with physical H
+//   acc        Gsl acc parameter
 //   cosmo      structure containing the cosmological parameters
 //   dtau       time step by which the scale factor should be advanced
 //
@@ -197,23 +245,56 @@ double Hconf_prime(const double a, const double fourpiG, const cosmology cosmo)
 //
 //////////////////////////
 
-void rungekutta4bg(double &a, const double fourpiG, const cosmology cosmo, const double dtau)
+void rungekutta4bg(double &a, const double fourpiG,
+	#ifdef HAVE_CLASS_BG
+	gsl_spline * H_spline, gsl_interp_accel * acc,
+	#else
+	const cosmology cosmo,
+	#endif
+	const double dtau)
 {
 	double k1a, k2a, k3a, k4a;
 
-	k1a = a * Hconf(a, fourpiG, cosmo);
-	k2a = (a + k1a * dtau / 2.) * Hconf(a + k1a * dtau / 2., fourpiG, cosmo);
-	k3a = (a + k2a * dtau / 2.) * Hconf(a + k2a * dtau / 2., fourpiG, cosmo);
-	k4a = (a + k3a * dtau) * Hconf(a + k3a * dtau, fourpiG, cosmo);
+	k1a = a * Hconf(a, fourpiG,//TODO_EB
+		#ifdef HAVE_CLASS_BG
+			H_spline, acc
+		#else
+			cosmo
+		#endif
+		);
+	k2a = (a + k1a * dtau / 2.) * Hconf(a + k1a * dtau / 2., fourpiG,//TODO_EB
+		#ifdef HAVE_CLASS_BG
+			H_spline, acc
+		#else
+			cosmo
+		#endif
+		);
+	k3a = (a + k2a * dtau / 2.) * Hconf(a + k2a * dtau / 2., fourpiG,//TODO_EB
+		#ifdef HAVE_CLASS_BG
+			H_spline, acc
+		#else
+			cosmo
+		#endif
+		);
+	k4a = (a + k3a * dtau) * Hconf(a + k3a * dtau, fourpiG,//TODO_EB
+		#ifdef HAVE_CLASS_BG
+			H_spline, acc
+		#else
+			cosmo
+		#endif
+		);
 
 	a += dtau * (k1a + 2. * k2a + 2. * k3a + k4a) / 6.;
 }
 
 
+#ifndef HAVE_CLASS_BG
 double particleHorizonIntegrand(double sqrta, void * cosmo)
 {
-	return 2. / (sqrta * Hconf(sqrta*sqrta, 1., *(cosmology *)cosmo));
+	double Hc = Hconf(sqrta*sqrta, 1., *(cosmology *)cosmo);
+	return 2. / (sqrta * Hc);
 }
+#endif
 
 //////////////////////////
 // particleHorizon
@@ -230,8 +311,19 @@ double particleHorizonIntegrand(double sqrta, void * cosmo)
 //
 //////////////////////////
 
-double particleHorizon(const double a, const double fourpiG, cosmology & cosmo)
+double particleHorizon(const double a, const double fourpiG,
+	#ifdef HAVE_CLASS_BG
+	const double H_spline_0, background & class_background
+	#else
+	cosmology & cosmo
+	#endif
+)
 {
+	#ifdef HAVE_CLASS_BG
+	double tau;
+	background_tau_of_z(&class_background, 1./a - 1., &tau);
+	return tau*H_spline_0/sqrt(2./3.*fourpiG);
+	#else
 	double result;
 	gsl_function f;
 	double err;
@@ -243,6 +335,7 @@ double particleHorizon(const double a, const double fourpiG, cosmology & cosmo)
 	gsl_integration_qng(&f, sqrt(a) * 1.0e-7, sqrt(a), 5.0e-7, 1.0e-7, &result, &err, &n);
 
 	return result / sqrt(fourpiG);
+	#endif
 }
 
 #endif
