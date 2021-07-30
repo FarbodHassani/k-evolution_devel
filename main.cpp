@@ -272,9 +272,11 @@ int main(int argc, char **argv)
   Field<Real> stress_tensor;
   Field<Real> pi_k_old;
   Field<Real> det_gamma;
+  Field<Real> det_gamma_old;
   Field<Real> cs2_full;
   Field<Cplx> scalarFT_pi_old;
   Field<Cplx> scalarFT_det_gamma;
+  Field<Cplx> scalarFT_det_gamma_old;
   Field<Cplx> scalarFT_cs2_full;
   #endif
 	Field<Real> pi_k;
@@ -332,6 +334,10 @@ int main(int argc, char **argv)
     det_gamma.initialize(lat,1);
     scalarFT_det_gamma.initialize(latFT,1);
     PlanFFT<Cplx> plan_det_gamma(&det_gamma, &scalarFT_det_gamma);
+
+    det_gamma_old.initialize(lat,1);
+    scalarFT_det_gamma_old.initialize(latFT,1);
+    PlanFFT<Cplx> plan_det_gamma_old(&det_gamma_old, &scalarFT_det_gamma_old);
 
     cs2_full.initialize(lat,1);
     scalarFT_cs2_full.initialize(latFT,1);
@@ -579,7 +585,7 @@ for (x.first(); x.test(); x.next())
   out_avg<<"### The result of the average over time \n### d tau = "<< dtau<<endl;
   out_avg<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
   out_avg<<"### initial time = "<< tau <<endl;
-  out_avg<<"### 1- tau\t2- average(H pi_k)\t3- average (zeta)\t 4- average (deta_gamma)\t 5- average (phi)\t6-z(redshift)   " <<endl;
+  out_avg<<"### 1- tau\t2- average(H pi_k)\t3- average (zeta)\t 4- average (deta_gamma)\t 5- average (phi)\t6-z(redshift)  \t7-avg(c_s2) " <<endl;
 
 
   out_max<<"### The result of the maximum over time \n### d tau = "<< dtau<<endl;
@@ -611,10 +617,11 @@ double avg_pi = 0.;
 double avg_zeta = 0.;
 double avg_phi = 0.;
 double avg_det_gamma = 0.;
-double avg_cs2_full = 0.;
+double avg_cs2_full = 1.;
 double avg_pi_old = 0.;
 
 double max_pi = 0.;
+double max_pi_old = 0.;
 double max_zeta = 0.;
 double max_phi = 0.;
 
@@ -641,6 +648,7 @@ string str_filename5 ;
   			// phi_old(x) =phi(x);
   			// chi_old(x) =chi(x);
         pi_k_old(x) = pi_k(x);
+        det_gamma_old (x) = det_gamma(x);
   		}
 #ifdef BACKREACTION_TEST
       //****************************
@@ -659,13 +667,8 @@ string str_filename5 ;
       avg_det_gamma =average(  det_gamma , 1., numpts3d ) ;
       avg_cs2_full =average(  cs2_full , 1., numpts3d ) ;
 
-      max_pi =maximum(  pi_k, Hconf(a, fourpiG,//TODO_EB
-			#ifdef HAVE_CLASS_BG
-				H_spline, acc
-			#else
-				cosmo
-			#endif
-				), numpts3d ) ;
+      max_pi =maximum(  pi_k, 1., numpts3d ) ;
+      max_pi_old =maximum(  pi_k_old, 1., numpts3d ) ;
       max_zeta =maximum(  zeta_half,1., numpts3d ) ;
       max_phi =maximum(  phi , 1., numpts3d ) ;
 
@@ -673,7 +676,7 @@ string str_filename5 ;
       // if(parallel.isRoot())
       // {
         // fprintf(Result_avg,"\n %20.20e %20.20e ", tau, avg ) ;
-      out_avg<<setw(9) << tau <<"\t"<< setw(9) << avg_pi<<"\t"<< setw(9) << avg_zeta<<"\t"<< setw(9) << avg_det_gamma<<"\t"<< setw(9) << avg_phi<<"\t"<< setw(9) << 1./a -1.<<endl;
+      out_avg<<setw(9) << tau <<"\t"<< setw(9) << avg_pi<<"\t"<< setw(9) << avg_zeta<<"\t"<< setw(9) << avg_det_gamma<<"\t"<< setw(9) << avg_phi<<"\t"<< setw(9) << 1./a -1.<<"\t"<< setw(9) << avg_cs2_full<<endl;
 
         out_max<<setw(9) << tau <<"\t"<< setw(9) << max_pi<<"\t"<< setw(9) << max_zeta<<"\t"<< setw(9) << max_phi<<endl;
 
@@ -1333,7 +1336,7 @@ ref_time = MPI_Wtime();
    			dtau  / sim.nKe_numsteps / 2.0);
        #ifdef BACKREACTION_TEST
          //   //Make snapshots and power arround blowup TIME
-         // // max_zeta =maximum(  zeta_half, Hconf(a, fourpiG,//TODO_EB
+         // max_zeta =maximum(  zeta_half, Hconf(a, fourpiG,//TODO_EB
    			// #ifdef HAVE_CLASS_BG
    			// 	H_spline, acc
    			// #else
@@ -1353,9 +1356,9 @@ ref_time = MPI_Wtime();
          avg_phi =average(  phi , 1., numpts3d ) ;
          avg_pi_old =average(  pi_k_old, 1., numpts3d ) ;
 
-         if (avg_zeta > 4.e-7 && abs(avg_pi/avg_pi_old)>1.02 && snapcount_b< sim.num_snapshot_kess )
+         if (avg_zeta > 4.e-7 && abs(avg_pi/avg_pi_old)>1.015 && snapcount_b< sim.num_snapshot_kess )
          {
-         if(parallel.isRoot())  cout << "\033[1;32mThe blowup criteria are met, the requested snapshots being produced\033[0m\n";
+         if(parallel.isRoot())  cout << "\033[1;32mThe blowup criteria for EFT equations are met, the requested snapshots being produced\033[0m\n";
            writeSpectra(sim, cosmo, fourpiG, a, snapcount_b,
              #ifdef HAVE_CLASS
              				class_background, class_perturbs, ic,
@@ -1459,14 +1462,36 @@ ref_time = MPI_Wtime();
       avg_phi =average(  phi , 1., numpts3d ) ;
       avg_pi_old =average(  pi_k_old, 1., numpts3d ) ;
 
-      if (avg_zeta > 4.e-7 && abs(avg_pi/avg_pi_old)>1.02 && snapcount_b< sim.num_snapshot_kess )
+      for (x.first(); x.test(); x.next())
       {
-      if(parallel.isRoot())  cout << "\033[1;32mThe blowup criteria are met, the requested snapshots being produced\033[0m\n";
-                writeSpectra(sim, cosmo, fourpiG, a, snapcount_b,
-                #ifdef HAVE_CLASS
-                class_background, class_perturbs, ic,
-                #endif
-                &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
+          if (det_gamma_old (x) * det_gamma(x) < 0)
+          {
+            if(parallel.isRoot())
+            {
+              cout << "\033[1;32mThe determinant has changed sign at \033[0m"  <<x<<" z: "<<1./a -1.<<endl;
+            // str_filename =  "./output/pi_negative_det_" + to_string(snapcount_b) + ".h5";
+            break;
+            }
+            // str_filename2 = "./output/zeta_" + to_string(snapcount_b) + ".h5";
+            // str_filename3 = "./output/det_gamma_negative_det_" + to_string(snapcount_b) + ".h5";
+            // str_filename4 = "./output/cs2_full_negative_det_" + to_string(snapcount_b) + ".h5";
+            // // str_filename5 = "./output/phi_" + to_string(snapcount_b) + ".h5";
+            // pi_k.saveHDF5(str_filename);
+            // // zeta_half.saveHDF5(str_filename2);
+            // det_gamma.saveHDF5(str_filename3);
+            // cs2_full.saveHDF5(str_filename4);
+          }
+      }
+
+      if (a>1./(1+1.0) && a<1./(1+0.907858) && snapcount_b< sim.num_snapshot_kess )
+      {
+        dtau = dtau * 0.3;
+      if(parallel.isRoot())  cout << "\033[1;32mThe blowup criteria for the fundamental theory are met, the requested snapshots being produced\033[0m\n";
+                // writeSpectra(sim, cosmo, fourpiG, a, snapcount_b,
+                // #ifdef HAVE_CLASS
+                // class_background, class_perturbs, ic,
+                // #endif
+                // &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
           str_filename =  "./output/pi_k_" + to_string(snapcount_b) + ".h5";
           str_filename2 = "./output/zeta_" + to_string(snapcount_b) + ".h5";
           str_filename3 = "./output/det_gamma_" + to_string(snapcount_b) + ".h5";
@@ -1500,7 +1525,7 @@ ref_time = MPI_Wtime();
           #else
             cosmo
           #endif
-          ) <<"\t"<< setw(9) <<snapcount_b  <<endl;
+        ) <<"\t"<< setw(9) <<snapcount_b <<"\t"<< setw(9) << avg_cs2_full <<endl;
           }
 
     #endif
