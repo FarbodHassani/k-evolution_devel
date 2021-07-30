@@ -289,7 +289,9 @@ struct cosmology
 	double Omega_b;
 	double Omega_m;
 	double Omega_Lambda;
-	// Kessence part
+  // kessence theory
+  double MGtheory;
+ 	// Kessence EFT
 	double Omega_kessence;
   double w_kessence;
 	double cs2_kessence;

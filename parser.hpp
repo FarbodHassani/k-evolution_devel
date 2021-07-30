@@ -1672,9 +1672,13 @@ if (ic.IC_kess == 1)
 	{
 		cosmo.h = P_HUBBLE;
 	}
-	// K-essence  paramteres
-	if (!parseParameter(params, numparam, "X_hat",  cosmo.X_hat))
+	// K-essence full  paramteres
+  if (!parseParameter(params, numparam, "kessence_theory", cosmo.MGtheory))
 	{
+			cosmo.MGtheory=1; // default is full theory
+	}
+ if (!parseParameter(params, numparam, "X_hat",  cosmo.X_hat))
+  {
 			cosmo.X_hat=8;
 	}
 	if (!parseParameter(params, numparam, "g0",  cosmo.g0))
@@ -1689,6 +1693,8 @@ if (ic.IC_kess == 1)
 	{
 			cosmo.g4=0.1;
 	}
+  // EFT kessence
+
 	if (!parseParameter(params, numparam, "cs2_kessence",  cosmo.cs2_kessence))
 	{
 			cosmo.cs2_kessence=1;
