@@ -1672,10 +1672,25 @@ if (ic.IC_kess == 1)
 	{
 		cosmo.h = P_HUBBLE;
 	}
-	// K-essence full  paramteres
-  if (!parseParameter(params, numparam, "kessence_theory", cosmo.MGtheory))
+
+  // K-essence full  paramteres
+  if (parseParameter(params, numparam, "k-essence theory", par_string))
 	{
-			cosmo.MGtheory=1; // default is full theory
+		if (par_string[0] == 'C' || par_string[0] == 'c')
+		{
+			COUT << " k-essence theory set to: " << COLORTEXT_CYAN << "covariant k-essence power" << COLORTEXT_RESET << endl;
+			cosmo.MGtheory = 1;
+		}
+		else if (par_string[0] == 'E' || par_string[0] == 'e')
+		{
+			COUT << " k-essence theory set to: " << COLORTEXT_CYAN << "EFT k-essence" << COLORTEXT_RESET << endl;
+			cosmo.MGtheory = 0;
+		}
+		else
+		{
+			COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << "k-essence theory set to: covariant k-essence power" << endl;
+			cosmo.MGtheory = 1;
+		}
 	}
  if (!parseParameter(params, numparam, "X_hat",  cosmo.X_hat))
   {
@@ -1694,7 +1709,6 @@ if (ic.IC_kess == 1)
 			cosmo.g4=0.1;
 	}
   // EFT kessence
-
 	if (!parseParameter(params, numparam, "cs2_kessence",  cosmo.cs2_kessence))
 	{
 			cosmo.cs2_kessence=1;

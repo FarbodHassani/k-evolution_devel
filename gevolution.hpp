@@ -378,13 +378,6 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
     sum /= n3;
     hom /= n3;
     return max * constant;
-    // COUT << scientific << setprecision(6);
-    // COUT << message
-    // << setw(17) << field_name
-    // << " Max = " << setw(9) << max * constant
-    // << " hom = " << setw(9) << hom * constant
-    // << endl;
-    // cout.flags(f);
     }
 
 #endif
@@ -454,7 +447,6 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
   					Laplace_pi+=pi(x+1) + pi(x-1) - 2. * pi(x);
   					Laplace_pi+=pi(x+2) + pi(x-2) - 2. * pi(x);
             Laplace_pi= Laplace_pi/(dx*dx);
-
             //*************
             //Gradpi_Gradpi
             //*************
@@ -526,7 +518,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
       //
       //////////////////////////
       template <class FieldType>
-      void update_pi_k( double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi,Field<FieldType> & chi_old, Field<FieldType> & pi_k , Field<FieldType> & zeta_half, double Omega_fld ,double w, double cs2, double Hcon, double  H_prime, int non_linearity)
+      void update_pi_k_eft( double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi,Field<FieldType> & chi_old, Field<FieldType> & pi_k , Field<FieldType> & zeta_half, double Omega_fld ,double w, double cs2, double Hcon, double  H_prime, int non_linearity)
       {
 
         double psi, psi_prime, psi_half;
@@ -563,7 +555,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
       // We use predictor corrector method to calculate \zeta precisely for non-linear case. (for linear equation is does not make better)
       // updating zeta from n-1/2 to n+1/2 by zeta'(n)
       template <class FieldType>
-      void update_zeta(double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi, Field<FieldType> & chi_old, Field<FieldType> & pi_k , Field<FieldType> & zeta_half, double Omega_fld ,double c_a2, double cs2, double s, double Hcon, double H_prime, int non_linearity )
+      void update_zeta_eft(double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi, Field<FieldType> & chi_old, Field<FieldType> & pi_k , Field<FieldType> & zeta_half, double Omega_fld ,double c_a2, double cs2, double s, double Hcon, double H_prime, int non_linearity )
         {
         double Gradphi_Gradpi, Gradpsi_Gradpi, Gradpi_Gradpi, GradZeta_Gradpi, Gradi_nablai_pi_Grad_pi_squared, Dx_psi, Dy_psi, Dz_psi;
         double C1, C2, C3, psi, psi_old, psi_prime, phi_prime, Laplacian_pi, zeta_old_integer, zeta_old_half ;
@@ -731,88 +723,6 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
                                        )
                                          )
                                   );
-        //**********************************************************************
-        //**********************************************************************
-        //PREDICTOR-CORRECTOR METHOD
-        //**********************************************************************
-        //**********************************************************************
-
-        //****************************************
-        //Predictor-corrector on zeta_half (n+3/2)
-        //****************************************
-        // double zeta_predictor_half_n0, zeta_prime_int_n0, zeta_corrector_half_n1 ;
-        // // zeta_predictor_int_n0 = zeta(n), zeta_prime_int_n0= zeta'(n) and
-        // // zeta_predictor_half_n1 = zeta(n+1/2)
-        // int n_correcor_steps=10, numerator;
-        // numerator=0;
-        // //***********************
-        // //Maximum relative error
-        // //***********************
-        // double Max_error=1.e-5;
-        // //*****************************************************************************
-        // //Making the corrector for the first loop from the newly calculated zeta(n+1/2)
-        // //zeta_half(n+1/2) = (zeta(n+1) + zeta(n))/2
-        // //*****************************************************************************
-        // zeta_half(x) = (zeta_integer(x) + zeta_old_integer)/2.;
-        // //********************************************
-        // //n_correcor_steps loops over corrector method
-        // //********************************************
-        // for (int i=1; i<n_correcor_steps+1; i++)
-        //   {
-        //   //***********************************************************
-        //   //Goes to predictor corrector only if we have Non-linearities
-        //   //***********************************************************
-        //   if (non_linearity ==1)
-        //     {
-        //       //*************************************************************
-        //       //Corrected: GradPsiZeta_Gradpi = Grad_pi . Grad_ (zeta + psi)
-        //       //Grad_pi . Grad_ (zeta + psi) = Grad_pi (Grad_zeta + Grad_Psi)
-        //       //Where zeta_integer is the corrected one at step (n)
-        //       //Before we have zeta because of approximation
-        //       //*************************************************************
-        //       GradPsiZeta_Gradpi= 0.25* (zeta_integer(x+0) - zeta_integer(x-0) + Dx_psi) * (pi_k(x+0) - pi_k(x-0)) / (dx * dx);
-        //       GradPsiZeta_Gradpi+=0.25* (zeta_integer(x+1) - zeta_integer(x-1) + Dy_psi) * (pi_k(x+1) - pi_k(x-1)) / (dx * dx);
-        //       GradPsiZeta_Gradpi+=0.25* (zeta_integer(x+2) - zeta_integer(x-2) + Dz_psi) * (pi_k(x+2) - pi_k(x-2)) / (dx * dx);
-        //
-        //     }
-        //   //**********************************************
-        //   // zeta'(n) from the new values at n, zeta(n)...
-        //   // like zeta_integer(x) (n)
-        //   //**********************************************
-        //   zeta_prime_int_n0 =
-        //   /*Linear(1,2,3)*/      + 3. * Hcon * ( w * zeta_integer(x) + cs2 * psi ) - C2 * pi_k(x)
-        //   /*Linear(4,5)*/        + 3. * cs2 * phi_prime + cs2 * Laplacian_pi
-        //   /*Non-linear(1,2)*/    + 2. * cs2 * phi(x) * Laplacian_pi - (1. - cs2) * psi * Laplacian_pi
-        //   /*Non-linear(3)  */    - 3. * cs2 * Hcon * (1. + w) * pi_k(x) * Laplacian_pi
-        //   /*Non-linear(4)  */    +(1. - cs2) * (zeta_integer(x) + psi) * Laplacian_pi
-        //   /*Non-linear(5,6,7)*/  - cs2 * Gradphi_Gradpi + (2. * cs2 -1.) * Gradpsi_Gradpi - C3 * Gradpi_Gradpi
-        //   /*Non-linear(8)  */    + 2.* (1. - cs2) * GradPsiZeta_Gradpi;              //************************************************************************************
-        //   //Computing the zeta_corrected(n+1/2) from the new value of zeta'(n) and zeta(n-1/2)
-        //   //************************************************************************************
-        //   zeta_corrector_half_n1 = zeta_integer(x) + zeta_prime_int_n0 * dtau/2;
-        //
-        //   //***********************************************************************************
-        //   //Computing the corredcted zeta(n) from the new value of zeta(n+1/2) and zeta(n-1/2)
-        //   //************************************************************************************
-        //   zeta_predictor_int_n0  = (zeta_corrector_half_n1 + zeta_old_half)/2.;
-        //
-        //   //***********************************************************************************
-        //   // Now we must check the relative error between the two corrected and predicted ones zeta_integer(x)=zeta_predictor_int_n0 and the previous step: zeta_half(x), zeta_integer(x)
-        //   //If the error has reached less than 10^-6% it breacks the loop
-        //   //***********************************************************************************
-        //   if (abs(2. * (zeta_corrector_half_n1 - zeta_half(x)))/(zeta_half(x) + zeta_corrector_half_n1) <Max_error) break;
-        //    zeta_half(x)    = zeta_corrector_half_n1; // zeta(n+3/2) after correction
-        //    zeta_integer(x) = zeta_predictor_int_n0; //zeta(n+1) after correction
-        //    numerator++;
-        //   }
-        //   if (numerator==n_correcor_steps) cout << "\033[1;31mbold WARNING: PRECISION ERROR ON KESSENCE FIELD ZETA, More than 1% Error\033[0m\n" << '\n';
-        //
-        // //***********************************************************************************
-        // // When we get the precision and it goes out of loop we need to update zeta_integer for
-        // //being synched with particles and ....
-        // //zeta(n+1) = zeta(n+1/2) + zeta'(n)dtau/2
-        // //***********************************************************************************
-        // zeta_integer(x) = zeta_half(x) +   zeta_prime_int_n0 * dtau/2.;
 
              }
       }

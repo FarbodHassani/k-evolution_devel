@@ -225,7 +225,6 @@ int main(int argc, char **argv)
   initializeCLASSstructures(sim, ic, cosmo, class_background, class_thermo, class_perturbs, params, numparam);
   loadBGFunctions(class_background, H_spline, "H [1/Mpc]", sim.z_in);
   loadBGFunctions(class_background, cs2_spline, "c_s^2", sim.z_in);
-  // loadBGFunctions(class_background, cs2_spline, "c_s^2", sim.z_in); //TODO: FH
   loadBGFunctions(class_background, rho_smg_spline, "(.)rho_smg", sim.z_in);
   loadBGFunctions(class_background, p_smg_spline, "(.)p_smg", sim.z_in);
   loadBGFunctions(class_background, rho_crit_spline, "(.)rho_crit", sim.z_in);
@@ -280,7 +279,6 @@ int main(int argc, char **argv)
   Field<Cplx> scalarFT_cs2_full;
   #endif
 	Field<Real> pi_k;
-	// Field<Real> zeta_integer;
   Field<Real> zeta_half;
 	Field<Real> T00_Kess;
 	Field<Real> T0i_Kess;
@@ -293,7 +291,6 @@ int main(int argc, char **argv)
   #endif
 	Field<Cplx> scalarFT_chi_old;
 	Field<Cplx> scalarFT_pi;
-	// Field<Cplx> scalarFT_zeta_integer;
   Field<Cplx> scalarFT_zeta_half;
 	Field<Cplx> T00_KessFT;
 	Field<Cplx> T0i_KessFT;
@@ -330,7 +327,6 @@ int main(int argc, char **argv)
     pi_k_old.initialize(lat,1);
   	scalarFT_pi_old.initialize(latFT,1);
   	PlanFFT<Cplx> plan_pi_k_old(&pi_k_old, &scalarFT_pi_old);
-    /// zeta
     det_gamma.initialize(lat,1);
     scalarFT_det_gamma.initialize(latFT,1);
     PlanFFT<Cplx> plan_det_gamma(&det_gamma, &scalarFT_det_gamma);
@@ -345,22 +341,21 @@ int main(int argc, char **argv)
 
   #endif
 	//Kessence part initializing
-	//Phi_old
 	phi_old.initialize(lat,1);
 	scalarFT_phi_old.initialize(latFT,1);
 	PlanFFT<Cplx> plan_phi_old(&phi_old, &scalarFT_phi_old);
   //Relativistic corrections
-  #ifdef BACKREACTION_TEST
-  short_wave.initialize(lat,1);
-  short_wave_scalarFT.initialize(latFT,1);
-  PlanFFT<Cplx> short_wave_plan(&short_wave, &short_wave_scalarFT);
-  relativistic_term.initialize(lat,1);
-  relativistic_term_scalarFT.initialize(latFT,1);
-  PlanFFT<Cplx> relativistic_term_plan(&relativistic_term, &relativistic_term_scalarFT);
-  stress_tensor.initialize(lat,1);
-  stress_tensor_scalarFT.initialize(latFT,1);
-  PlanFFT<Cplx> stress_tensor_plan(&stress_tensor, &stress_tensor_scalarFT);
-  #endif
+  // #ifdef BACKREACTION_TEST
+  // short_wave.initialize(lat,1);
+  // short_wave_scalarFT.initialize(latFT,1);
+  // PlanFFT<Cplx> short_wave_plan(&short_wave, &short_wave_scalarFT);
+  // relativistic_term.initialize(lat,1);
+  // relativistic_term_scalarFT.initialize(latFT,1);
+  // PlanFFT<Cplx> relativistic_term_plan(&relativistic_term, &relativistic_term_scalarFT);
+  // stress_tensor.initialize(lat,1);
+  // stress_tensor_scalarFT.initialize(latFT,1);
+  // PlanFFT<Cplx> stress_tensor_plan(&stress_tensor, &stress_tensor_scalarFT);
+  // #endif
 	//pi_k kessence
 	pi_k.initialize(lat,1);
 	scalarFT_pi.initialize(latFT,1);
@@ -389,9 +384,7 @@ int main(int argc, char **argv)
 	Tij_Kess.initialize(lat,3,3,symmetric);
 	Tij_KessFT.initialize(latFT,3,3,symmetric);
 	PlanFFT<Cplx> plan_Tij_Kess(&Tij_Kess, &Tij_KessFT);
-	// Tij_Kess.alloc();
 	// kessence end
-
 
 	update_cdm_fields[0] = &phi;
 	update_cdm_fields[1] = &chi;
@@ -417,9 +410,7 @@ int main(int argc, char **argv)
 			sim.movelimit = lat.sizeLocal(i)-1;
 	}
 	parallel.min(sim.movelimit);
-	fourpiG = 1.5 * sim.boxsize * sim.boxsize / C_SPEED_OF_LIGHT / C_SPEED_OF_LIGHT; // Just a definition to make Friedmann equation simplified! and working with normal numbers
-  // cout<<"Gevolution H0: "<<sqrt(2. * fourpiG / 3.)<<endl;
-  // cout<<"Box: "<<sim.boxsize<<endl;
+	fourpiG = 1.5 * sim.boxsize * sim.boxsize / C_SPEED_OF_LIGHT / C_SPEED_OF_LIGHT;
 	a = 1. / (1. + sim.z_in);
   tau = particleHorizon(a, fourpiG,
     #ifdef HAVE_CLASS_BG
@@ -436,40 +427,34 @@ int main(int argc, char **argv)
 			cosmo
 		#endif
 	) )
-		// dtau = sim.Cf * dx / sim.nKe_numsteps;
     dtau = sim.Cf * dx;
 
 	else
-		// dtau = sim.steplimit / sim.nKe_numsteps / Hconf(a, fourpiG,//TODO_EB
-		// 	#ifdef HAVE_CLASS_BG
-		// 		H_spline, acc
-		// 	#else
-		// 		cosmo
-		// 	#endif
-		// );
-    dtau = sim.steplimit / 	Hconf(a, fourpiG,//TODO_EB
+	    dtau = sim.steplimit / 	Hconf(a, fourpiG,//TODO_EB
 			#ifdef HAVE_CLASS_BG
 				H_spline, acc
 			#else
 				cosmo
 			#endif
 			);
-
-
 	dtau_old = 0.;
 
 	if (ic.generator == ICGEN_BASIC)
 		generateIC_basic(sim, ic, cosmo, fourpiG, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &pi_k, &zeta_half, &chi, &Bi, &source, &Sij, &scalarFT, &scalarFT_pi, &scalarFT_zeta_half, &BiFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, params, numparam);
 	// generates ICs on the fly
 	else if (ic.generator == ICGEN_READ_FROM_DISK)
-    readIC(sim, ic, cosmo, fourpiG, a, tau, dtau, dtau_old, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, cycle, snapcount, pkcount, restartcount, IDbacklog, params, numparam);
+  {
+    // readIC(sim, ic, cosmo, fourpiG, a, tau, dtau, dtau_old, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, cycle, snapcount, pkcount, restartcount, IDbacklog, params, numparam);
+    COUT << " error: IC generator is wrongly chosen!- For this code you need to use the basic initial conditions (IC_basic) " << endl;
+	  parallel.abortForce();
+  }
 #ifdef ICGEN_PREVOLUTION
-	else if (ic.generator == ICGEN_PREVOLUTION)
-		generateIC_prevolution(sim, ic, cosmo, fourpiG, a, tau, dtau, dtau_old, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, params, numparam);
+COUT << " error: IC generator is wrongly chosen!- For this code you need to use the basic initial conditions (IC_basic) " << endl;
+parallel.abortForce();
 #endif
 #ifdef ICGEN_FALCONIC
-	else if (ic.generator == ICGEN_FALCONIC)
-		maxvel[0] = generateIC_FalconIC(sim, ic, cosmo, fourpiG, dtau, &pcls_cdm, pcls_ncdm, maxvel+1, &phi, &source, &chi, &Bi, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_source, &plan_chi, &plan_Bi, &plan_source, &plan_Sij);
+COUT << " error: IC generator is wrongly chosen!- For this code you need to use the basic initial conditions (IC_basic) " << endl;
+	parallel.abortForce();
 #endif
 	else
 	{
@@ -536,13 +521,13 @@ int main(int argc, char **argv)
 #ifdef BACKREACTION_TEST
 
 // In case we want to initialize the IC ourselves
-for (x.first(); x.test(); x.next())
-  {
-    zeta_half(x)=phi(x);
-    pi_k(x)=0.0;
-  }
-  zeta_half.updateHalo();  // communicate halo values
-  pi_k.updateHalo();  // communicate halo values
+// for (x.first(); x.test(); x.next())
+//   {
+//     zeta_half(x)=phi(x);
+//     pi_k(x)=0.0;
+//   }
+//   zeta_half.updateHalo();  // communicate halo values
+//   pi_k.updateHalo();  // communicate halo values
 
 //   //****************************
 //   //****SAVE DATA To test Backreaction
@@ -594,7 +579,7 @@ for (x.first(); x.test(); x.next())
   out_max<<"### 1- tau\t2- max(H pi_k)\t3- max (zeta)\t 4- max (phi)   " <<endl;
 
 
-  out_real<<"### The result of the verage over time \n### d tau = "<< dtau<<endl;
+  out_real<<"### The result of the average over time \n### d tau = "<< dtau<<endl;
   out_real<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
   out_real<<"### initial time = "<< tau <<endl;
   out_real<<"### 1- tau\t2- pi_k(x)\t3-zeta(x)\t 4-x" <<endl;
@@ -885,12 +870,12 @@ string str_filename5 ;
         #endif
           );
 
-        #ifdef BACKREACTION_TEST
-
-        prepareFTsource_BackReactionTest<Real>(short_wave, dx, phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hc * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hc * Hc * dx * dx, sim.boxsize);  // prepare nonlinear source for phi update
-        #else
+        // #ifdef BACKREACTION_TEST
+        //
+        // prepareFTsource_BackReactionTest<Real>(short_wave, dx, phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hc * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hc * Hc * dx * dx, sim.boxsize);  // prepare nonlinear source for phi update
+        // #else
         prepareFTsource<Real>(phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hc * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hc * Hc * dx * dx);  // prepare nonlinear source for phi update
-        #endif
+        // #endif
 
 #ifdef BENCHMARK
 				ref2_time= MPI_Wtime();
@@ -902,7 +887,6 @@ string str_filename5 ;
 #endif
 
     solveModifiedPoissonFT(scalarFT, scalarFT, 1. / (dx * dx), 3. * Hc / dtau_old);  // phi update (k-space)
-
 
 
 #ifdef BENCHMARK
@@ -968,29 +952,6 @@ string str_filename5 ;
         #endif
         ), scalarFT(kFT).real(), T00hom);
         fclose(outfile);
-        // if (cycle == 0)
-				// 	fprintf(outfile, "# background statistics\n# cycle   tau/boxsize    a             conformal H/H0         Hconf_prime       phi(k=0)       T00(k=0)\n");
-				// fprintf(outfile, " %6d   %e   %e   %e   %e   %e   %e\n", cycle, tau, a, Hconf(a, fourpiG,//TODO_EB
-				// #ifdef HAVE_CLASS_BG
-				// 	H_spline, acc
-				// #else
-				// 	cosmo
-				// #endif
-				// ) /
-				// Hconf(1., fourpiG,//TODO_EB
-				// #ifdef HAVE_CLASS_BG
-				// 	H_spline, acc
-				// #else
-				// 	cosmo
-				// #endif
-				// ),Hconf_prime(a_kess, fourpiG,//TODO_EB
-				// #ifdef HAVE_CLASS_BG
-				// 	H_spline, acc
-				// #else
-				// 	cosmo
-				// #endif
-				// ), scalarFT(kFT).real(), T00hom);
-				// fclose(outfile);
 			}
 		}
 		// done recording background data
@@ -1241,7 +1202,7 @@ ref_time = MPI_Wtime();
        for (i=0;i<sim.nKe_numsteps;i++)
        {
          //computing zeta_half(-1/2) and zeta_int(-1) but we do not work with zeta(-1)
-         update_zeta(-dtau/ (2. * sim.nKe_numsteps) , dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half,
+         update_zeta_eft(-dtau/ (2. * sim.nKe_numsteps) , dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half,
    				#ifdef HAVE_CLASS_BG
    				gsl_spline_eval(rho_smg_spline, a_kess, acc)/gsl_spline_eval(rho_crit_spline, a_kess, acc),
    				gsl_spline_eval(p_smg_spline, a_kess, acc)/gsl_spline_eval(rho_smg_spline, a_kess, acc),
@@ -1273,7 +1234,7 @@ ref_time = MPI_Wtime();
        //\zeta_integer(n+1/2) = \zeta_integer(n-1/2) + \zeta_integer'(n)  dtau
        //We also update zeta_int from n to n+1
        //********************************************************************************
-       update_zeta(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half,
+       update_zeta_eft(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half,
    			#ifdef HAVE_CLASS_BG
    			gsl_spline_eval(rho_smg_spline, a_kess, acc)/gsl_spline_eval(rho_crit_spline, a_kess, acc),
    			gsl_spline_eval(p_smg_spline, a_kess, acc)/gsl_spline_eval(rho_smg_spline, a_kess, acc),
@@ -1307,7 +1268,7 @@ ref_time = MPI_Wtime();
        //In the pi update we also update zeta_int because we need the values of a_kess and H_kess at step n+1/2
        //By the below update we get pi(n+1) and zeta(n+1)
        //********************************************************************************
-       update_pi_k(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half,
+       update_pi_k_eft(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half,
    			#ifdef HAVE_CLASS_BG
    			gsl_spline_eval(rho_smg_spline, a_kess, acc)/gsl_spline_eval(rho_crit_spline, a_kess, acc),
    			gsl_spline_eval(p_smg_spline, a_kess, acc)/gsl_spline_eval(rho_smg_spline, a_kess, acc),
@@ -1402,7 +1363,6 @@ ref_time = MPI_Wtime();
        #endif
        }
 
-
    #ifdef BENCHMARK
        kessence_update_time += MPI_Wtime() - ref_time;
        ref_time = MPI_Wtime();
@@ -1410,21 +1370,20 @@ ref_time = MPI_Wtime();
    //**********************
    //Kessence - LeapFrog: End
    //**********************
-
  }
 
 
     // Fundamental k-essence theory  cosmo.MGtheory == 1
-    if (cosmo.MGtheory == 1)
+    else if (cosmo.MGtheory == 1)
     {
       double a_kess=a;
       if(cycle==0)
       {
       if(parallel.isRoot())  cout << "\033[1;34mThe fundamental theory is being solved!\033[0m\n";
       }
-    //********************************************************************************
+    //****************************************************
     // Euler algorithm
-    //********************************************************************************
+    //****************************************************
     update_pi_dot_full(dtau/ sim.nKe_numsteps, dx, a_kess,pi_k, zeta_half, det_gamma, cs2_full, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
      #ifdef HAVE_CLASS_BG
      Hconf(a_kess, fourpiG, H_spline, acc)
