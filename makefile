@@ -28,6 +28,7 @@ DGEVOLUTION  += -DHAVE_CLASS    # requires LIB -lclass
 #DGEVOLUTION  += -DHAVE_HEALPIX  # requires LIB -lchealpix
 DEFTEVOLUTION  := -DHAVE_CLASS_BG  # requires LIB -lclass, You must have -DHAVE_CLASS
 
+
 # further compiler options
 OPT          := -O3 -std=c++11
 

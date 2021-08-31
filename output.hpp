@@ -1882,25 +1882,25 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 	if (sim.out_pk & MASK_RBARE || sim.out_pk & MASK_DBARE || sim.out_pk & MASK_POT || ((sim.out_pk & MASK_T00 || sim.out_pk & MASK_DELTA) && sim.gr_flag == 0))
 	{
 		projection_init(source);
-#ifdef HAVE_CLASS
-		if ((sim.radiation_flag > 0 || sim.fluid_flag > 0) && sim.gr_flag == 0)
-		{
-			projection_T00_project(class_background, class_perturbs, *source, *scalarFT, plan_source, sim, ic, cosmo, fourpiG, a);
-			if (sim.out_pk & MASK_DELTA)
-			{
-				Omega_ncdm = 0;
-				for (i = 0; i < cosmo.num_ncdm; i++)
-				{
-					if (a < 1. / (sim.z_switch_deltancdm[i] + 1.) && cosmo.Omega_ncdm[i] > 0)
-						Omega_ncdm += bg_ncdm(a, cosmo, i);
-				}
-				// plan_source->execute(FFT_FORWARD);
-				// extractPowerSpectrum(*scalarFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
-				// sprintf(filename, "%s%s%03d_deltaclass.dat", sim.output_path, sim.basename_pk, pkcount);
-				// writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * ((a < 1. / (sim.z_switch_deltarad + 1.) ? sim.radiation_flag : 0) * cosmo.Omega_rad / a + sim.fluid_flag * cosmo.Omega_fld / pow(a, 3. * cosmo.w0_fld) + Omega_ncdm) * ((a < 1. / (sim.z_switch_deltarad + 1.) ? sim.radiation_flag : 0) * cosmo.Omega_rad / a + sim.fluid_flag * cosmo.Omega_fld / pow(a, 3. * cosmo.w0_fld) + Omega_ncdm), filename, "power spectrum of delta for linear fields (CLASS)", a, sim.z_pk[pkcount]);
-			}
-		}
-#endif
+// #ifdef HAVE_CLASS
+// 		if ((sim.radiation_flag > 0 || sim.fluid_flag > 0) && sim.gr_flag == 0)
+// 		{
+// 			projection_T00_project(class_background, class_perturbs, *source, *scalarFT, plan_source, sim, ic, cosmo, fourpiG, a);
+// 			if (sim.out_pk & MASK_DELTA)
+// 			{
+// 				Omega_ncdm = 0;
+// 				for (i = 0; i < cosmo.num_ncdm; i++)
+// 				{
+// 					if (a < 1. / (sim.z_switch_deltancdm[i] + 1.) && cosmo.Omega_ncdm[i] > 0)
+// 						Omega_ncdm += bg_ncdm(a, cosmo, i);
+// 				}
+// 				// plan_source->execute(FFT_FORWARD);
+// 				// extractPowerSpectrum(*scalarFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
+// 				// sprintf(filename, "%s%s%03d_deltaclass.dat", sim.output_path, sim.basename_pk, pkcount);
+// 				// writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * ((a < 1. / (sim.z_switch_deltarad + 1.) ? sim.radiation_flag : 0) * cosmo.Omega_rad / a + sim.fluid_flag * cosmo.Omega_fld / pow(a, 3. * cosmo.w0_fld) + Omega_ncdm) * ((a < 1. / (sim.z_switch_deltarad + 1.) ? sim.radiation_flag : 0) * cosmo.Omega_rad / a + sim.fluid_flag * cosmo.Omega_fld / pow(a, 3. * cosmo.w0_fld) + Omega_ncdm), filename, "power spectrum of delta for linear fields (CLASS)", a, sim.z_pk[pkcount]);
+// 			}
+// 		}
+// #endif
 		scalarProjectionCIC_project(pcls_cdm, source);
 		if (sim.baryon_flag)
 			scalarProjectionCIC_project(pcls_b, source);
@@ -2113,25 +2113,25 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 	if ((sim.out_pk & MASK_T00 || sim.out_pk & MASK_DELTA) && sim.gr_flag > 0)
 	{
 		projection_init(source);
-#ifdef HAVE_CLASS
-		if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
-		{
-			projection_T00_project(class_background, class_perturbs, *source, *scalarFT, plan_source, sim, ic, cosmo, fourpiG, a);
-			if (sim.out_pk & MASK_DELTA)
-			{
-				Omega_ncdm = 0;
-				for (i = 0; i < cosmo.num_ncdm; i++)
-				{
-					if (a < 1. / (sim.z_switch_deltancdm[i] + 1.) && cosmo.Omega_ncdm[i] > 0)
-						Omega_ncdm += bg_ncdm(a, cosmo, i);
-				}
-				// plan_source->execute(FFT_FORWARD);
-				// extractPowerSpectrum(*scalarFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
-				// sprintf(filename, "%s%s%03d_deltaclass.dat", sim.output_path, sim.basename_pk, pkcount);
-				// writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * ((a < 1. / (sim.z_switch_deltarad + 1.) ? sim.radiation_flag : 0) * cosmo.Omega_rad / a + sim.fluid_flag * cosmo.Omega_fld / pow(a, 3. * cosmo.w0_fld) + Omega_ncdm) * ((a < 1. / (sim.z_switch_deltarad + 1.) ? sim.radiation_flag : 0) * cosmo.Omega_rad / a + sim.fluid_flag * cosmo.Omega_fld / pow(a, 3. * cosmo.w0_fld) + Omega_ncdm), filename, "power spectrum of delta for linear fields (CLASS)", a, sim.z_pk[pkcount]);
-			}
-		}
-#endif
+// #ifdef HAVE_CLASS
+// 		if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
+// 		{
+// 			projection_T00_project(class_background, class_perturbs, *source, *scalarFT, plan_source, sim, ic, cosmo, fourpiG, a);
+// 			if (sim.out_pk & MASK_DELTA)
+// 			{
+// 				Omega_ncdm = 0;
+// 				for (i = 0; i < cosmo.num_ncdm; i++)
+// 				{
+// 					if (a < 1. / (sim.z_switch_deltancdm[i] + 1.) && cosmo.Omega_ncdm[i] > 0)
+// 						Omega_ncdm += bg_ncdm(a, cosmo, i);
+// 				}
+// 				// plan_source->execute(FFT_FORWARD);
+// 				// extractPowerSpectrum(*scalarFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
+// 				// sprintf(filename, "%s%s%03d_deltaclass.dat", sim.output_path, sim.basename_pk, pkcount);
+// 				// writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * ((a < 1. / (sim.z_switch_deltarad + 1.) ? sim.radiation_flag : 0) * cosmo.Omega_rad / a + sim.fluid_flag * cosmo.Omega_fld / pow(a, 3. * cosmo.w0_fld) + Omega_ncdm) * ((a < 1. / (sim.z_switch_deltarad + 1.) ? sim.radiation_flag : 0) * cosmo.Omega_rad / a + sim.fluid_flag * cosmo.Omega_fld / pow(a, 3. * cosmo.w0_fld) + Omega_ncdm), filename, "power spectrum of delta for linear fields (CLASS)", a, sim.z_pk[pkcount]);
+// 			}
+// 		}
+// #endif
 		projection_T00_project(pcls_cdm, source, a, phi);
 		if (sim.baryon_flag)
 			projection_T00_project(pcls_b, source, a, phi);

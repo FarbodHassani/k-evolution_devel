@@ -501,21 +501,21 @@ COUT << " error: IC generator is wrongly chosen!- For this code you need to use 
 	COUT << COLORTEXT_GREEN << " initialization complete." << COLORTEXT_RESET << endl << endl;
 #endif
 
-#ifdef HAVE_CLASS
-	if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
-	{
-    initializeCLASSstructures(sim, ic, cosmo, class_background, class_thermo, class_perturbs, params, numparam);
-		if (sim.gr_flag > 0 && a < 1. / (sim.z_switch_linearchi + 1.) && (ic.generator == ICGEN_BASIC || (ic.generator == ICGEN_READ_FROM_DISK && cycle == 0)))
-		{
-			prepareFTchiLinear(class_background, class_perturbs, scalarFT, sim, ic, cosmo, fourpiG, a);
-			plan_source.execute(FFT_BACKWARD);
-			for (x.first(); x.test(); x.next())
-				chi(x) += source(x);
-			chi.updateHalo();
-		}
-	}
-	if (numparam > 0) free(params);
-#endif
+// #ifdef HAVE_CLASS
+// 	if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
+// 	{
+//     initializeCLASSstructures(sim, ic, cosmo, class_background, class_thermo, class_perturbs, params, numparam);
+// 		if (sim.gr_flag > 0 && a < 1. / (sim.z_switch_linearchi + 1.) && (ic.generator == ICGEN_BASIC || (ic.generator == ICGEN_READ_FROM_DISK && cycle == 0)))
+// 		{
+// 			prepareFTchiLinear(class_background, class_perturbs, scalarFT, sim, ic, cosmo, fourpiG, a);
+// 			plan_source.execute(FFT_BACKWARD);
+// 			for (x.first(); x.test(); x.next())
+// 				chi(x) += source(x);
+// 			chi.updateHalo();
+// 		}
+// 	}
+// 	if (numparam > 0) free(params);
+// #endif
 
 
 #ifdef BACKREACTION_TEST
@@ -701,10 +701,10 @@ string str_filename5 ;
 #endif
 		// construct stress-energy tensor
 		projection_init(&source);
-#ifdef HAVE_CLASS
-		if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
-			projection_T00_project(class_background, class_perturbs, source, scalarFT, &plan_source, sim, ic, cosmo, fourpiG, a);
-#endif
+// #ifdef HAVE_CLASS
+// 		if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
+// 			projection_T00_project(class_background, class_perturbs, source, scalarFT, &plan_source, sim, ic, cosmo, fourpiG, a);
+// #endif
 		if (sim.gr_flag > 0)
 		{
 			projection_T00_project(&pcls_cdm, &source, a, &phi);
@@ -967,14 +967,14 @@ string str_filename5 ;
 		fft_count += 6;
 #endif
 
-#ifdef HAVE_CLASS
-		if (sim.radiation_flag > 0 && a < 1. / (sim.z_switch_linearchi + 1.))
-		{
-			prepareFTchiLinear(class_background, class_perturbs, scalarFT, sim, ic, cosmo, fourpiG, a);
-			projectFTscalar(SijFT, scalarFT, 1);
-		}
-		else
-#endif
+// #ifdef HAVE_CLASS
+// 		if (sim.radiation_flag > 0 && a < 1. / (sim.z_switch_linearchi + 1.))
+// 		{
+// 			prepareFTchiLinear(class_background, class_perturbs, scalarFT, sim, ic, cosmo, fourpiG, a);
+// 			projectFTscalar(SijFT, scalarFT, 1);
+// 		}
+// 		else
+// #endif
 		projectFTscalar(SijFT, scalarFT);  // construct chi by scalar projection (k-space)
 
 #ifdef BENCHMARK
@@ -1214,7 +1214,7 @@ ref_time = MPI_Wtime();
    				cosmo.Omega_kessence,
    				cosmo.w_kessence,
    				cosmo.cs2_kessence,
-          ,0.0, // s parameter (FH:todo) should be read from hiclass as well as other params
+          ,0., // s parameter (FH:todo) should be read from hiclass as well as other params
    				Hconf(a_kess, fourpiG, cosmo),
    				Hconf_prime(a_kess, fourpiG, cosmo)
    				#endif
@@ -1296,21 +1296,6 @@ ref_time = MPI_Wtime();
    			#endif
    			dtau  / sim.nKe_numsteps / 2.0);
        #ifdef BACKREACTION_TEST
-         //   //Make snapshots and power arround blowup TIME
-         // max_zeta =maximum(  zeta_half, Hconf(a, fourpiG,//TODO_EB
-   			// #ifdef HAVE_CLASS_BG
-   			// 	H_spline, acc
-   			// #else
-   			// 	cosmo
-   			// #endif
-   			// ), numpts3d ) ;
-         // // max_zeta_old =maximum(  zeta_half_old, Hconf(a, fourpiG,//TODO_EB
-   			// #ifdef HAVE_CLASS_BG
-   			// 	H_spline, acc
-   			// #else
-   			// 	cosmo
-   			// #endif
-   			// ), numpts3d ) ;
          avg_zeta =average(  zeta_half,1., numpts3d ) ;
          // avg_zeta_old =average(  zeta_half_old,1., numpts3d ) ;
          avg_pi =average(  pi_k,1., numpts3d ) ;
@@ -1431,14 +1416,6 @@ ref_time = MPI_Wtime();
             // str_filename =  "./output/pi_negative_det_" + to_string(snapcount_b) + ".h5";
             break;
             }
-            // str_filename2 = "./output/zeta_" + to_string(snapcount_b) + ".h5";
-            // str_filename3 = "./output/det_gamma_negative_det_" + to_string(snapcount_b) + ".h5";
-            // str_filename4 = "./output/cs2_full_negative_det_" + to_string(snapcount_b) + ".h5";
-            // // str_filename5 = "./output/phi_" + to_string(snapcount_b) + ".h5";
-            // pi_k.saveHDF5(str_filename);
-            // // zeta_half.saveHDF5(str_filename2);
-            // det_gamma.saveHDF5(str_filename3);
-            // cs2_full.saveHDF5(str_filename4);
           }
       }
 
@@ -1700,6 +1677,17 @@ ref_time = MPI_Wtime();
 #ifdef HAVE_CLASS
 	if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
     freeCLASSstructures(class_background, class_thermo, class_perturbs);
+#endif
+
+#ifdef HAVE_CLASS_BG
+// Free interpolation structures
+gsl_interp_accel_free(acc);
+gsl_spline_free(H_spline);
+gsl_spline_free(p_smg_spline);
+gsl_spline_free(cs2_spline);
+gsl_spline_free(rho_smg_spline);
+gsl_spline_free(rho_crit_spline);
+COUT << endl << " hiclass interpolation structures correctly deallocated." << endl << endl;
 #endif
 
 #ifdef BENCHMARK

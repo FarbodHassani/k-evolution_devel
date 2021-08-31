@@ -180,36 +180,21 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
   sprintf(class_filecontent.name[i], "Omega_Lambda");
   sprintf(class_filecontent.value[i++], "%e", 0.0);
 
-  // cout<<"class_filecontent.name[i]: "<<class_filecontent.name[0]<<" class_filecontent.value[i++]: "<<class_filecontent.value[i++]<<endl;
-
   sprintf(class_filecontent.name[i], "Omega_fld");
 	sprintf(class_filecontent.value[i++], "%e", 0.0);
 
   sprintf(class_filecontent.name[i], "Omega_smg");
   sprintf(class_filecontent.value[i++], "%d", -1);
-  // sprintf(class_filecontent.name[i], "Omega_smg");
-  // sprintf(class_filecontent.value[i++], "-1");
 
-  // cout<<"class_filecontent.name[i]: "<<class_filecontent.name[0]<<" class_filecontent.value[i++]: "<<class_filecontent.value[i++]<<endl;
-  // sprintf(class_filecontent.name[i], "Omega_smg");
-  // sprintf(class_filecontent.value[i++], "%e", -1);
-
-    // cout<<"class_filecontent.name[i]: "<<class_filecontent.name[0]<<" class_filecontent.value[i++]: "<<class_filecontent.value[i++]<<endl;
   //
   sprintf(class_filecontent.name[i], "gravity_model");
   sprintf(class_filecontent.value[i++], "propto_omega");
   // //
 
-    // cout<<"class_filecontent.name[i]: "<<class_filecontent.name[0]<<" class_filecontent.value[i++]: "<<class_filecontent.value[i++]<<endl;
-
   sprintf(class_filecontent.name[i], "parameters_smg");
   sprintf(class_filecontent.value[i++],"%e, %e, %e, %e, %e", 30. ,0., 0., 0., 1.); // 30 ,0., 0., 0., 1. # alpha_k = 30 corresponds to c_s^2 = 10^-2
 
-    // cout<<"class_filecontent.name[i]: "<<class_filecontent.name[0]<<" class_filecontent.value[i++]: "<<class_filecontent.value[i++]<<endl;
 
-
-  // sprintf(class_filecontent.name[i], "expansion_model");
-  // sprintf(class_filecontent.value[i++],"lcdm");
   sprintf(class_filecontent.name[i], "expansion_model");
   sprintf(class_filecontent.value[i++],"wowa");
 
@@ -394,9 +379,9 @@ void freeCLASSstructures(background & class_background, thermo & class_thermo, p
 //
 //////////////////////////
 
-void loadTransferFunctions(background & class_background, perturbs & class_perturbs, gsl_spline * & tk_delta, gsl_spline * & tk_theta, const char * qname, const double boxsize, const double z, double h) // Here we need to add the background paramters
+void loadTransferFunctions(background & class_background, perturbs & class_perturbs, gsl_spline * & tk_delta, gsl_spline * & tk_theta, const char * qname, const double boxsize, const double z, double h , double Hconf_class, double Omega_m, double Omega_smg ,double Omega_rad,  double w_smg)
 {
-	int cols = 0, dcol = -1, tcol = -1, kcol = -1, phicol = -1, psicol= -1, etacol= -1, h_primecol= -1, eta_primecol= -1;
+  int cols = 0, dcol = -1, tcol = -1, kcol = -1, phicol = -1, psicol= -1, etacol= -1, h_primecol= -1, eta_primecol= -1;
   double alpha, alpha_prime;
 	double * k;
 	double * tk_d;
@@ -409,11 +394,7 @@ void loadTransferFunctions(background & class_background, perturbs & class_pertu
 	char * ptr;
   // hiclass bg inputs
   double a = 1./(1.+z);
-  double Hconf_class = 0.0002;
-  double Omega_m = (0.022032 + 0.12038)/h/h;
-  double Omega_rad = 1.e-4;
-  double Omega_mg = 1.0 - Omega_m -Omega_rad;
-  double w_mg = -0.9; // Should be read from hiclass
+  // double Hconf_class=0.002, Omega_m=0.3,  Omega_smg=0.68 , Omega_rad=0.00001, w_smg = -0.9;
   perturb_output_titles(&class_background, &class_perturbs, class_format, coltitles);
 
   if (strncmp(qname,"vx",strlen("vx")) == 0)
@@ -505,7 +486,7 @@ void loadTransferFunctions(background & class_background, perturbs & class_pertu
       }
       else if (strncmp(qname,"tot",strlen("tot")) == 0)
       {
-        tk_d[i] += -alpha * 3. * Hconf_class * (Omega_m + 4. * Omega_rad/3. + Omega_mg * (1. + w_mg));
+        tk_d[i] += -alpha * 3. * Hconf_class * (Omega_m + 4. * Omega_rad/3. + Omega_smg * (1. + w_smg));
       }
     }
 
