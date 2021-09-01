@@ -2124,13 +2124,10 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
     // // cout<<"value H: "<<gsl_spline_eval(bg_data,1.001,acc_bg_data)<<endl;
 		// #endif
 
-
     npts = tk_d_kess->size;
     kess_field = (double *) malloc(npts * sizeof(double));
     kess_field_prime = (double *) malloc(npts * sizeof(double));
     k_ess = (double *) malloc(npts * sizeof(double));
-    // double H0conf_hiclass=0.000219998079; // In units of 1/Mpc
-    // cout<<"HconfGev: "<<H0 <<endl;
     for (i = 0; i < npts; i++)
     {
       // The relation between pi_k and delta and theta!
