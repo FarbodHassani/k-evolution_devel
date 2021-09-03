@@ -122,6 +122,8 @@ int main(int argc, char **argv)
 	gsl_interp_accel * acc = gsl_interp_accel_alloc();
 	//Background variables EFTevolution //TODO_EB: add as many as necessary
 	gsl_spline * H_spline = NULL;
+  gsl_spline * phi_smg = NULL;
+  gsl_spline * phi_smg_prime = NULL;
 	gsl_spline * cs2_spline = NULL;
 	gsl_spline * rho_smg_spline = NULL;
 	gsl_spline * p_smg_spline = NULL;
@@ -224,10 +226,13 @@ int main(int argc, char **argv)
   //TODO_EB:add BG functions here
   initializeCLASSstructures(sim, ic, cosmo, class_background, class_thermo, class_perturbs, params, numparam);
   loadBGFunctions(class_background, H_spline, "H [1/Mpc]", sim.z_in);
+  loadBGFunctions(class_background, phi_smg, "phi_smg", sim.z_in);
+  loadBGFunctions(class_background, phi_smg_prime, "phi\'", sim.z_in);
   loadBGFunctions(class_background, cs2_spline, "c_s^2", sim.z_in);
   loadBGFunctions(class_background, rho_smg_spline, "(.)rho_smg", sim.z_in);
   loadBGFunctions(class_background, p_smg_spline, "(.)p_smg", sim.z_in);
   loadBGFunctions(class_background, rho_crit_spline, "(.)rho_crit", sim.z_in);
+
 #endif
 
 	h5filename.reserve(2*PARAM_MAX_LENGTH);
@@ -521,14 +526,21 @@ COUT << " error: IC generator is wrongly chosen!- For this code you need to use 
 #ifdef BACKREACTION_TEST
 
 // In case we want to initialize the IC ourselves
-// for (x.first(); x.test(); x.next())
-//   {
-//     zeta_half(x)=phi(x);
-//     pi_k(x)=0.0;
-//   }
-//   zeta_half.updateHalo();  // communicate halo values
-//   pi_k.updateHalo();  // communicate halo values
-
+//FH
+for (x.first(); x.test(); x.next())
+  {
+    pi_k(x)=gsl_spline_eval(phi_smg, 1. / (1. + sim.z_in), acc); //* gsl_spline_eval(H_spline, 1.0, acc)/sqrt(2./3.*fourpiG); // phi has dimension of time so we multiply by H0_class/H_0 gevolution
+    zeta_half(x)=0.00118622584;//gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
+  }
+  zeta_half.updateHalo();  // communicate halo values
+  pi_k.updateHalo();  // communicate halo values
+  update_pi_dot_full(dtau/ sim.nKe_numsteps, dx, a,pi_k, zeta_half, det_gamma, cs2_full, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
+   #ifdef HAVE_CLASS_BG
+   Hconf(a, fourpiG, H_spline, acc)
+   #else
+   Hconf(a, fourpiG, cosmo)
+   #endif
+    );
 //   //****************************
 //   //****SAVE DATA To test Backreaction
 //   //****************************

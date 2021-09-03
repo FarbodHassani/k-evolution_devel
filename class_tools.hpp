@@ -59,7 +59,7 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
 	double perturb_sampling_stepsize;
 	int recfast_Nz0;
 	int i;
-	int num_entries = 24; // For class it is 19 parameters should be parsed
+	int num_entries = 29; // For class it is 19 parameters should be parsed
 #ifdef CLASS_K_PER_DECADE_FOR_PK
 	int k_per_decade_for_pk;
 	if (numparam == 0 || !parseParameter(params, numparam, "k_per_decade_for_pk", k_per_decade_for_pk))
@@ -94,11 +94,11 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
 
 	parser_init(&class_filecontent, num_entries, filename, class_errmsg);
 
+
 	for (i = 0; i < num_entries; i++)
 		class_filecontent.read[i] = _FALSE_;
 
 	i = 0;
-
 
 	sprintf(class_filecontent.name[i], "root");
 	sprintf(class_filecontent.value[i++], "%s%s_class", sim.output_path, sim.basename_generic);
@@ -120,6 +120,12 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
 
 	sprintf(class_filecontent.name[i], "output");
 	sprintf(class_filecontent.value[i++], "%s", output_value);
+
+  sprintf(class_filecontent.name[i], "write background");
+  sprintf(class_filecontent.value[i++], "y");
+
+  sprintf(class_filecontent.name[i], "write parameters");
+  sprintf(class_filecontent.value[i++], "y");
 
 	sprintf(class_filecontent.name[i], "gauge");
 	sprintf(class_filecontent.value[i++], "synchronous");
@@ -187,24 +193,33 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
   sprintf(class_filecontent.value[i++], "%d", -1);
 
   //
+
   sprintf(class_filecontent.name[i], "gravity_model");
-  sprintf(class_filecontent.value[i++], "propto_omega");
+  sprintf(class_filecontent.value[i++], "k_essence_power");
   // //
 
   sprintf(class_filecontent.name[i], "parameters_smg");
-  sprintf(class_filecontent.value[i++],"%e, %e, %e, %e, %e", 30. ,0., 0., 0., 1.); // 30 ,0., 0., 0., 1. # alpha_k = 30 corresponds to c_s^2 = 10^-2
-
+  sprintf(class_filecontent.value[i++],"%e, %e, %e, %e, %e, %e", cosmo.X_hat,  cosmo.g0, cosmo.g2,   cosmo.g4,    1.,   1.e20); // 30 ,0., 0., 0., 1. # alpha_k = 30 corresponds to c_s^2 = 10^-2
 
   sprintf(class_filecontent.name[i], "expansion_model");
   sprintf(class_filecontent.value[i++],"wowa");
 
-    // cout<<"class_filecontent.name[i]: "<<class_filecontent.name[0]<<" class_filecontent.value[i++]: "<<class_filecontent.value[i++]<<endl;
   // //
   sprintf(class_filecontent.name[i], "expansion_smg");
   sprintf(class_filecontent.value[i++],"%e, %e, %e ", 0.7, -0.9, 0.0);
-
-    // cout<<"class_filecontent.name[i]: "<<class_filecontent.name[i]<<" class_filecontent.value[i++]: "<<class_filecontent.value[i++]<<endl;
   // EFT part end //
+
+  sprintf(class_filecontent.name[i], "output_background_smg");
+  sprintf(class_filecontent.value[i++],"%d", 4);
+
+  sprintf(class_filecontent.name[i], "skip_stability_tests_smg");
+  sprintf(class_filecontent.value[i++],"no");
+
+  sprintf(class_filecontent.name[i], "tuning_index_smg");
+  sprintf(class_filecontent.value[i++],"%d", 1);
+
+  sprintf(class_filecontent.name[i], "tuning_dxdy_guess_smg");
+  sprintf(class_filecontent.value[i++],"%e",  1.e-7);
 
 	sprintf(class_filecontent.name[i], "N_ncdm");
 	sprintf(class_filecontent.value[i++], "%d", cosmo.num_ncdm);
@@ -248,6 +263,9 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
 
 		sprintf(class_filecontent.name[i], "nonlinear_verbose");
 		sprintf(class_filecontent.value[i++], "1");
+
+    sprintf(class_filecontent.name[i], "input_verbose");
+    sprintf(class_filecontent.value[i++], "1");
 	}
 
 	while (numparam > 0)
