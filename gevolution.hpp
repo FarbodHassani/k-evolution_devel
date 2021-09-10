@@ -426,7 +426,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 			void update_pi_dot_full(double dtau, double dx, double a, Field<FieldType> & pi , Field<FieldType> & pi_dot, Field<FieldType> & det_gamma, Field<FieldType> & cs2_full, double X_hat ,double g0, double g2, double g4, double Hcon)
 			  {
         double Laplace_pi, Gradpi_Gradpi, Gradpi_dot_Gradpi, grad_pi_grad_pi_gradgrad_pi;
-        double X_e, K_e, dK_dX, d2K_dX2, dK_dpi, d2K_dpidX;
+        double X, K, dK_dX, d2K_dX2, dK_dpi, d2K_dpidX;
         double d2pi_dt2, Rhs;
         double term1, term2, term3, term4, term5, term6, term7;
 
@@ -477,10 +477,10 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
             + 2.0 * ((0.25 *(pi(x + 1 + 2) - pi(x + 1 - 2) - pi(x - 1 + 2) + pi(x - 1 - 2) )/(dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx)));
 
             // definitions
-            X_e = (pi_dot(x) * pi_dot(x) - Gradpi_Gradpi)/(2. * a * a); // Kinetic term
-            K_e = -g0 + g2 * (X_e - X_hat) * (X_e - X_hat) + g4 * pow(X_e - X_hat,4); // K(X,phi)
-            dK_dX = 2.0 * g2 * (X_e - X_hat) + 4.0 * g4 * pow(X_e - X_hat,3);
-            d2K_dX2 = 2.0 * g2 + 12. * g4 * (X_e - X_hat) * (X_e - X_hat) ;
+            X = (pi_dot(x) * pi_dot(x) - Gradpi_Gradpi)/(2. * a * a); // Kinetic term
+            K = -g0 + g2 * (X - X_hat) * (X - X_hat) + g4 * pow(X - X_hat,4); // K(X,phi)
+            dK_dX = 2.0 * g2 * (X - X_hat) + 4.0 * g4 * pow(X - X_hat,3);
+            d2K_dX2 = 2.0 * g2 + 12. * g4 * (X - X_hat) * (X - X_hat) ;
             dK_dpi = 0.;
             d2K_dpidX =0.;
 
@@ -492,12 +492,13 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
             term6 = -Hcon * d2K_dX2 * pi_dot(x) * Gradpi_Gradpi/(a*a);
             term7 = - d2K_dX2 * grad_pi_grad_pi_gradgrad_pi/(a*a);
 
-          Rhs = term1 + term2 + term3 + term4 +term5 +term6 + term7;
+            Rhs = term1 + term2 + term3 + term4 +term5 +term6 + term7;
 
-          d2pi_dt2 = Rhs/(dK_dX + pi_dot(x)* pi_dot(x) * d2K_dX2/(a*a));
-          pi_dot(x) = pi_dot(x) + dtau * d2pi_dt2;
-          det_gamma(x) = (2.0 * dK_dX/a/a) * (2.0 * dK_dX/a/a) * (1. + 2. * X_e * d2K_dX2/dK_dX);
-          cs2_full(x) = 1. + (2. * X_e * d2K_dX2 )/dK_dX;
+            d2pi_dt2 = Rhs/(dK_dX + pi_dot(x)* pi_dot(x) * d2K_dX2/(a*a));
+            pi_dot(x) = pi_dot(x) + dtau * d2pi_dt2;
+            det_gamma(x) = (2.0 * dK_dX/a/a) * (2.0 * dK_dX/a/a) * (1. + 2. * X * d2K_dX2/dK_dX);
+            // cs2_full(x) = 1. + (2. * X * d2K_dX2 )/dK_dX;
+            cs2_full(x) = dK_dX/(2. * X * d2K_dX2 + dK_dX);
 
              }
       }
