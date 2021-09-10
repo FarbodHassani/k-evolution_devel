@@ -1,4 +1,4 @@
-COMPILER     := /usr/local/bin/mpic++
+COMPILER     := mpic++
 INCLUDE      := -I/Users/farbod/Documents/GitHub/hi_class_pub_devel/include -I//usr/local/Cellar/fftw/3.3.8_2//include -I/usr/local/Cellar/gsl/2.6/include -I/usr/local/Cellar/hdf5/1.12.0_1/include -I./../LATfield2 # add the path to LATfield2 and other libraries (if necessary)
 LIB          := -L/Users/farbod/Documents/GitHub/hi_class_pub_devel -L/usr/local/Cellar/hdf5/1.12.0_1/lib -L/usr/local/Cellar/gsl/2.6/lib  -L//usr/local/Cellar/fftw/3.3.8_2//lib -lfftw3 -lm -lhdf5 -lgsl -lgslcblas -lclass
 

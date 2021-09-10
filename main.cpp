@@ -530,7 +530,8 @@ COUT << " error: IC generator is wrongly chosen!- For this code you need to use 
 for (x.first(); x.test(); x.next())
   {
     pi_k(x)=gsl_spline_eval(phi_smg, 1. / (1. + sim.z_in), acc); //* gsl_spline_eval(H_spline, 1.0, acc)/sqrt(2./3.*fourpiG); // phi has dimension of time so we multiply by H0_class/H_0 gevolution
-    zeta_half(x)=0.00118622584;//gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
+    zeta_half(x)=gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
+    // cout<<" z:"<<sim.z_in<<" a: "<<1. / (1. + sim.z_in)<<" pi_k(x)"<<pi_k(x)<<" zeta_half(x)"<<zeta_half(x)<<endl;
   }
   zeta_half.updateHalo();  // communicate halo values
   pi_k.updateHalo();  // communicate halo values

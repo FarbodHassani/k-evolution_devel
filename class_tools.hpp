@@ -554,7 +554,7 @@ void loadTransferFunctions(background & class_background, perturbs & class_pertu
 
 void loadBGFunctions(background & class_background, gsl_spline * & bg_data, const char * qname, double z_in)
 {
-	int cols = 0, bgcol = -1, zcol = -1;
+	int cols = 0, bgcol = -1, bgcol2 = -1, zcol = -1;
 	char coltitles[_MAXTITLESTRINGLENGTH_] = {0};
 	char zname[16];
 	double * a;
@@ -570,16 +570,28 @@ void loadBGFunctions(background & class_background, gsl_spline * & bg_data, cons
 
 	// Get the redshift variable
 	sprintf(zname, "z");
-
 	ptr = strtok(coltitles, _DELIMITER_);
 	while (ptr != NULL)
 	{
-		if (strncmp(ptr, qname, strlen(qname)) == 0) bgcol = cols;
-		if (strncmp(ptr, zname, strlen(zname)) == 0) zcol = cols;
-		cols++;
-  	ptr = strtok(NULL, _DELIMITER_);
-	}
+    if (strncmp(ptr, zname, strlen(zname)) == 0) zcol = cols;
 
+    if (strncmp(qname,"phi\'\'",strlen("phi\'\'")) == 0)
+      {
+        if (strncmp(ptr, qname, strlen(qname)) == 0) {bgcol = cols; bgcol2 = bgcol; }
+      }
+    else
+      {
+  		if (strncmp(ptr, qname, strlen(qname)) == 0) bgcol = cols;
+  		if (strncmp(ptr, zname, strlen(zname)) == 0) zcol = cols;
+      }
+
+      cols++;
+      ptr = strtok(NULL, _DELIMITER_);
+	}
+  if (strncmp(qname,"phi\'",strlen("phi\'")) == 0 && bgcol2<0)
+  {
+    bgcol = bgcol-1;
+  }
 	if (bgcol < 0 || zcol < 0)
 	{
 		COUT << " error in loadBGFunctions (HAVE_CLASS)! Unable to identify requested columns!" << endl;
