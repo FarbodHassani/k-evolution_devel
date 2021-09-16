@@ -100,7 +100,7 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
 	i = 0;
 
   sprintf(class_filecontent.name[i], "use_ppf");
-	sprintf(class_filecontent.value[i++], "%e", "no");
+	sprintf(class_filecontent.value[i++], "%s", "no");
 
 	sprintf(class_filecontent.name[i], "root");
 	sprintf(class_filecontent.value[i++], "%s%s_class", sim.output_path, sim.basename_generic);
