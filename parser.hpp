@@ -662,8 +662,8 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 						pvalue |= MASK_PHI_PRIME;
 				else if (strcmp(item, "pi_k") == 0 || strcmp(item, "Pi_k") == 0)
 					pvalue |= MASK_PI_K;
-				else if (strcmp(item, "zeta") == 0 || strcmp(item, "zeta") == 0)
-					pvalue |= MASK_zeta;
+				else if (strcmp(item, "Zeta") == 0 || strcmp(item, "zeta") == 0)
+					pvalue |= MASK_ZETA;
           //Kessence end
 				else if (strcmp(item, "Chi") == 0 || strcmp(item, "chi") == 0)
 					pvalue |= MASK_CHI;
@@ -700,7 +700,7 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 					pvalue |= MASK_T_KESS;
 
 				else if (strcmp(item, "Delta_Kess") == 0 || strcmp(item, "delta_Kessence") == 0)
-					pvalue |= MASK_Delta_KESS;
+					pvalue |= MASK_DELTA_KESS;
         else if (strcmp(item, "Cross_dkess_dm") == 0 || strcmp(item, "Cross_dkess_dmatter") == 0)
           pvalue |= MASK_DELTAKESS_DELTA;
 
@@ -717,7 +717,7 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 			else if (strcmp(start, "Pi_k") == 0 || strcmp(start, "pi_k") == 0)
 				pvalue |= MASK_PI_K;
 			else if (strcmp(start, "zeta") == 0 || strcmp(start, "zeta") == 0)
-				pvalue |= MASK_zeta;
+				pvalue |= MASK_ZETA;
         //Kessence end
 			else if (strcmp(start, "Chi") == 0 || strcmp(start, "chi") == 0)
 				pvalue |= MASK_CHI;
