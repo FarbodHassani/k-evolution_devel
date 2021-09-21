@@ -465,6 +465,12 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef HAVE_CLASS
+
+  if(sim.fluid_flag > 0 )
+  {
+    if(parallel.isRoot())  cout << " \033[1;31merror:\033[0m"<< " \033[1;31merror: You are using k-evolution and asking for fluid k-essence treatment at the same time! Don't know what to do!  \033[0m" << endl;
+    parallel.abortForce();
+  }
 	if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
 	{
 		initializeCLASSstructures(sim, ic, cosmo, class_background, class_perturbs, class_spectra, params, numparam);

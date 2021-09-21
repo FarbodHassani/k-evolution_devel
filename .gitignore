@@ -59,3 +59,16 @@ k-evolution_test_reference/Run_cs2_em7_w_0d9_codes/output_kevolutionv1d0_PATCH4_
 output/data__settings_used.ini
 .DS_Store
 .DS_Store
+.DS_Store
+output/data_classparameters.ini
+output/data_settings_used.ini
+output_file/data_classparameters.ini
+output_file/data_classunused_parameters
+output_file/data_settings_used.ini
+unity_interface_test.ini
+unity_interface_test_file.ini
+unity_kev_test1.ini
+unity_test2_neutrino.ini
+output/data_classparameters.ini
+output/data_settings_used.ini
+unity_kev_test1.ini

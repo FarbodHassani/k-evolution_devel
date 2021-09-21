@@ -428,7 +428,7 @@ void loadTransferFunctions(background & class_background, perturbs & class_pertu
 		sprintf(dname, "d_%s", qname);
 		sprintf(tname, "t_%s", qname);
 		h /= boxsize;
-    }
+  }
 	else
 	{
 		sprintf(dname, "phi");
@@ -440,12 +440,12 @@ void loadTransferFunctions(background & class_background, perturbs & class_pertu
 	ptr = strtok(coltitles, _DELIMITER_);
 	while (ptr != NULL)
 	{
-    	if (strncmp(ptr, dname, strlen(dname)) == 0) dcol = cols;
+    if (strncmp(ptr, dname, strlen(dname)) == 0) dcol = cols;
 		else if (strncmp(ptr, tname, strlen(tname)) == 0) tcol = cols;
 		else if (strncmp(ptr, kname, strlen(kname)) == 0) kcol = cols;
 		cols++;
-    	ptr = strtok(NULL, _DELIMITER_);
-  	}
+    ptr = strtok(NULL, _DELIMITER_);
+  }
 
 	if (dcol < 0 || tcol < 0 || kcol < 0)
 	{
@@ -464,7 +464,16 @@ void loadTransferFunctions(background & class_background, perturbs & class_pertu
 	{
 		k[i] = data[i*cols + kcol] * boxsize;
 		tk_d[i] = data[i*cols + dcol];
-		tk_t[i] = data[i*cols + tcol] / h;
+
+    if (strncmp(qname,"fld",strlen("fld")) == 0 && qname != NULL)
+     {
+       tk_t[i] = data[i*cols + tcol];
+     }
+     else
+     {
+       tk_t[i] = data[i*cols + tcol] / h;
+     }
+
 		if (i > 0)
 		{
 			if (k[i] < k[i-1])
