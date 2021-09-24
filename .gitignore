@@ -72,3 +72,10 @@ unity_test2_neutrino.ini
 output/data_classparameters.ini
 output/data_settings_used.ini
 unity_kev_test1.ini
+.DS_Store
+output/data_classparameters.ini
+output/data_settings_used.ini
+unity_kev_test1.ini
+unity_kev_w_cs_test.ini
+data_settings_used.ini
+.DS_Store

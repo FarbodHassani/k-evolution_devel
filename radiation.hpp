@@ -107,6 +107,8 @@ void projection_T00_project(background & class_background, perturbs & class_pert
 	if (a < 1. && cosmo.Omega_kessence > 0 && sim.fluid_flag == 1)
 	{
     cout<<"WARNING: You cannot ask for class dark energy perturbations in k-evolution!";
+    if(parallel.isRoot())  cout << " \033[1;31m You cannot ask for class dark energy perturbations in k-evolution! \033[0m" << endl;
+    parallel.abortForce();
 		// loadTransferFunctions(class_background, class_perturbs, class_spectra, tk1, tk2, "fld", sim.boxsize, (1. / a) - 1., cosmo.h);
 		// Omega_fld = cosmo.Omega_fld / pow(a, 3. * cosmo.w0_fld);
     //

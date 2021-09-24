@@ -464,15 +464,7 @@ void loadTransferFunctions(background & class_background, perturbs & class_pertu
 	{
 		k[i] = data[i*cols + kcol] * boxsize;
 		tk_d[i] = data[i*cols + dcol];
-
-    if (strncmp(qname,"fld",strlen("fld")) == 0 && qname != NULL)
-     {
-       tk_t[i] = data[i*cols + tcol];
-     }
-     else
-     {
-       tk_t[i] = data[i*cols + tcol] / h;
-     }
+    tk_t[i] = data[i*cols + tcol] / h;
 
 		if (i > 0)
 		{
