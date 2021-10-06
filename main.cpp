@@ -525,13 +525,20 @@ COUT << " error: IC generator is wrongly chosen!- For this code you need to use 
 
 #ifdef BACKREACTION_TEST
 
-// In case we want to initialize the IC ourselves
+// In case we want to initialize the /IC ourselves
 //FH
+//Initial condition
 for (x.first(); x.test(); x.next())
   {
-    pi_k(x)=gsl_spline_eval(phi_smg, 1. / (1. + sim.z_in), acc); //* gsl_spline_eval(H_spline, 1.0, acc)/sqrt(2./3.*fourpiG); // phi has dimension of time so we multiply by H0_class/H_0 gevolution
-    zeta_half(x)=gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
-    // cout<<" z:"<<sim.z_in<<" a: "<<1. / (1. + sim.z_in)<<" pi_k(x)"<<pi_k(x)<<" zeta_half(x)"<<zeta_half(x)<<endl;
+    pi_k(x)=  gsl_spline_eval(phi_smg, 1. / (1. + sim.z_in), acc) * gsl_spline_eval(H_spline, 1.0, acc)/
+    #ifdef HAVE_CLASS_BG
+    Hconf(1.0, fourpiG, H_spline, acc)
+    #else
+    Hconf(1.0, fourpiG, cosmo)
+    #endif
+    ;
+     //* gsl_spline_eval(H_spline, 1.0, acc)/sqrt(2./3.*fourpiG); // phi has dimension of time so we multiply by H0_class/H_0 gevolution
+    zeta_half(x)=0.000001 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
   }
   zeta_half.updateHalo();  // communicate halo values
   pi_k.updateHalo();  // communicate halo values
@@ -583,7 +590,7 @@ for (x.first(); x.test(); x.next())
   out_avg<<"### The result of the average over time \n### d tau = "<< dtau<<endl;
   out_avg<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
   out_avg<<"### initial time = "<< tau <<endl;
-  out_avg<<"### 1- tau\t2- average(H pi_k)\t3- average (zeta)\t 4- average (deta_gamma)\t 5- average (phi)\t6-z(redshift)  \t7-avg(c_s2) " <<endl;
+  out_avg<<"### 1- z(redshift)\t2- average(H0 pi_k)\t3- average (zeta)\t 4- average (deta_gamma)\t 5- average (phi)\t6-avg(c_s2)  \t7-tau " <<endl;
 
 
   out_max<<"### The result of the maximum over time \n### d tau = "<< dtau<<endl;
@@ -637,7 +644,7 @@ string str_filename5 ;
 
 	while (true)    // main loop
 	{
-    //Kessence
+    //Kessence IC
   	for (x.first(); x.test(); x.next())
   		{
         // cout<<"tau: "<<tau<<" z: "<<1./(a) -1.<<endl;
@@ -653,7 +660,7 @@ string str_filename5 ;
       //****PRINTING AVERAGE OVER TIME
       //****************************
       // check_field(  zeta_half, 1. , " H pi_k", numpts3d);
-      avg_pi =average(  pi_k, Hconf(a, fourpiG,//TODO_EB
+      avg_pi =average(  pi_k, Hconf(1.0, fourpiG,//TODO_EB
 			#ifdef HAVE_CLASS_BG
 				H_spline, acc
 			#else
@@ -674,7 +681,7 @@ string str_filename5 ;
       // if(parallel.isRoot())
       // {
         // fprintf(Result_avg,"\n %20.20e %20.20e ", tau, avg ) ;
-      out_avg<<setw(9) << tau <<"\t"<< setw(9) << avg_pi<<"\t"<< setw(9) << avg_zeta<<"\t"<< setw(9) << avg_det_gamma<<"\t"<< setw(9) << avg_phi<<"\t"<< setw(9) << 1./a -1.<<"\t"<< setw(9) << avg_cs2_full<<endl;
+      out_avg<<setw(9) << 1./a -1. <<"\t"<< setw(9) << avg_pi<<"\t"<< setw(9) << avg_zeta<<"\t"<< setw(9) << avg_det_gamma<<"\t"<< setw(9) << avg_phi<<"\t"<< setw(9) <<avg_cs2_full <<"\t"<< setw(9) << tau<<endl;
 
         out_max<<setw(9) << tau <<"\t"<< setw(9) << max_pi<<"\t"<< setw(9) << max_zeta<<"\t"<< setw(9) << max_phi<<endl;
 
@@ -721,9 +728,6 @@ string str_filename5 ;
 		if (sim.gr_flag > 0)
 		{
 			projection_T00_project(&pcls_cdm, &source, a, &phi);
-
-
-
 
 			if (sim.baryon_flag)
 				projection_T00_project(&pcls_b, &source, a, &phi);
@@ -1413,7 +1417,13 @@ ref_time = MPI_Wtime();
       // // max_zeta =maximum(  zeta_half, Hconf(a, fourpiG, cosmo), numpts3d ) ;
       // max_zeta_old =maximum(  zeta_half_old, Hconf(a, fourpiG, cosmo), numpts3d ) ;
       avg_zeta =average(  zeta_half,1., numpts3d ) ;
-      avg_pi =average(  pi_k,1., numpts3d ) ;
+      avg_pi =average(  pi_k,1., numpts3d ) *
+      #ifdef HAVE_CLASS_BG
+      Hconf(a_kess, fourpiG, H_spline, acc)
+      #else
+      Hconf(a_kess, fourpiG, cosmo)
+      #endif
+      ;
       avg_det_gamma =average(  det_gamma , 1., numpts3d ) ;
       avg_cs2_full = average (cs2_full, 1., numpts3d);
       avg_phi =average(  phi , 1., numpts3d ) ;
