@@ -416,6 +416,7 @@ int main(int argc, char **argv)
 	}
 	parallel.min(sim.movelimit);
 	fourpiG = 1.5 * sim.boxsize * sim.boxsize / C_SPEED_OF_LIGHT / C_SPEED_OF_LIGHT;
+  cout<<"H0: "<<sqrt(2. * fourpiG / 3.);
 	a = 1. / (1. + sim.z_in);
   tau = particleHorizon(a, fourpiG,
     #ifdef HAVE_CLASS_BG
