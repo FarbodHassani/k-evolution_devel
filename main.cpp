@@ -539,7 +539,7 @@ for (x.first(); x.test(); x.next())
     #endif
     ;
      //* gsl_spline_eval(H_spline, 1.0, acc)/sqrt(2./3.*fourpiG); // phi has dimension of time so we multiply by H0_class/H_0 gevolution
-    zeta_half(x)= gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);//0.000001 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
+    zeta_half(x)=  gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);//0.000001 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);//0.000001 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
   }
   zeta_half.updateHalo();  // communicate halo values
   pi_k.updateHalo();  // communicate halo values
@@ -1387,6 +1387,8 @@ ref_time = MPI_Wtime();
     //****************************************************
     // Euler algorithm
     //****************************************************
+    for (i=0;i<sim.nKe_numsteps;i++)
+    {
     update_pi_dot_full(dtau/ sim.nKe_numsteps, dx, a_kess,pi_k, zeta_half, det_gamma, cs2_full, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
      #ifdef HAVE_CLASS_BG
      Hconf(a_kess, fourpiG, H_spline, acc)
@@ -1487,7 +1489,7 @@ ref_time = MPI_Wtime();
           #endif
         ) <<"\t"<< setw(9) <<snapcount_b <<"\t"<< setw(9) << avg_cs2_full <<endl;
           }
-
+      }
     #endif
 
     // Fundamental k-essence theory  END
