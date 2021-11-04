@@ -1320,6 +1320,8 @@ if (ic.IC_kess == 1)
           sim.num_snapshot_kess=0;
       }
 
+
+
 	parseParameter(params, numparam, "Pk redshifts", sim.z_pk, sim.num_pk);
 	if (sim.num_pk > 0)
 		qsort((void *) sim.z_pk, (size_t) sim.num_pk, sizeof(double), sort_descending);
@@ -1708,6 +1710,10 @@ if (ic.IC_kess == 1)
 	{
 			cosmo.g4=0.1;
 	}
+  if (!parseParameter(params, numparam, "kessence solver",  cosmo.solver_kessence))
+  {
+      cosmo.solver_kessence=1; // Default is leap-frog
+  }
   // EFT kessence
 	if (!parseParameter(params, numparam, "cs2_kessence",  cosmo.cs2_kessence))
 	{
