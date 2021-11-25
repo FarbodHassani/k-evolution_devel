@@ -1,0 +1,301 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%   DRAFT - Kevolution
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[a4paper,11pt]{article}
+\pdfoutput=1
+\usepackage{jcappub}
+\usepackage{bbold}
+\usepackage[x11names]{xcolor}
+\usepackage{colortbl,hhline} 
+\usepackage[english]{babel}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath}
+\usepackage{color}
+\usepackage{amsfonts}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{eufrak}
+\usepackage{etoolbox}
+\usepackage{amsmath}
+\usepackage{empheq}
+\usepackage{cancel}
+\usepackage[most]{tcolorbox}
+\usepackage{float}              % Activate [H] option to place figure HERE
+\usepackage{subcaption}
+\usepackage[normalem]{ulem}
+\usepackage{xspace}
+\usepackage{adjustbox}
+\newtcbox{\mymath}[1][]{%
+    nobeforeafter, math upper, tcbox raise base,
+    enhanced, colframe=yellow!30!black,
+    colback=yellow!30, boxrule=1pt,
+    #1}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\def\be{\begin{equation}}
+\def\ee{\end{equation}}
+\def\bea{\begin{eqnarray}}
+\def\eea{\end{eqnarray}}
+\def\bean{\begin{eqnarray*}}
+\def\eean{\end{eqnarray*}}
+\def\cd{\cdot}
+\def\vp{\varphi}
+\def\l {\langle}
+\def\re {\rangle}
+\def \dd {\partial}
+\def \ra {\rightarrow}
+\def \la {\lambda}
+\def \La {\Lambda}
+\def \De {\Delta}
+\def \DH {\Delta_{\rm HI}}
+\newcommand{\de}{\delta}
+\def \b {\beta}
+\def \al {\alpha}
+\def \ka {\kappa}
+\def \Ga {\Gamma}
+\def \ga {\gamma}
+\def \si {\sigma}
+\def \Si {\Sigma}
+\def \ep {\epsilon}
+\def \om {\omega}
+\def \Om {\Omega}
+\def \lap {\triangle}
+\def \ep {\epsilon}
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%Special definitions for this paper
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\newcommand{\MyRed}{\color [rgb]{0.8,0,0}}
+\newcommand{\MyGreen}{\color [rgb]{0,0.7,0}}
+\newcommand{\MyBlue}{\color [rgb]{0,0,0.8}}
+\newcommand{\MyBrown}{\color [rgb]{0.8,0.4,0.1}}
+\newcommand{\MyPurple}{\color [rgb]{0.6,0.0,0.6}}
+\def\GV#1{{\MyRed [GV: #1]}}
+\def\RD#1{{\MyGreen [RD:  {\tt #1}]}} 
+\def\RDt#1{{\MyGreen #1}}   
+\def\mkt#1{{\MyBlue #1}}  
+\def\mkr#1{{\MyBlue [MK: #1]}}  
+\def\GF#1{{\MyPurple [GF: #1]}} 
+\newcommand{\jat}[1]{{\color[rgb]{0,0.6,0}#1}}
+\newcommand{\jar}[1]{{\color[rgb]{0,0.7,0} {\sf[#1]}}}
+\newcommand{\FV}[1]{{\color[rgb]{0.8,0.33,0.13}#1}}
+
+\newcommand{\ie}{\emph{i.e.}\xspace}
+\newcommand{\cf}{\emph{cf.}\xspace}
+\newcommand{\etal}{\emph{et al.}\xspace}
+\newcommand{\eg}{\emph{e.g.}\xspace}
+
+\newcommand{\Scal}{\mathcal S}
+\newcommand{\DD}{\mathcal D}
+\newcommand{\EE}{\mathcal E}
+\newcommand{\MM}{\mathcal M}
+\newcommand{\HH}{\mathcal H}
+
+\newcommand{\Real}{\mathbb{R}}
+\newcommand{\bn}{\boldsymbol{n}}
+\newcommand{\bv}{\boldsymbol{v}}
+\newcommand{\bx}{\boldsymbol{x}}
+\newcommand{\bnabla}{\boldsymbol{\nabla}}
+\newcommand{\bell}{\boldsymbol{\ell}}
+\newcommand{\bal}{\boldsymbol{\alpha}}
+
+\definecolor{bittersweet}{rgb}{1.0, 0.44, 0.37}
+\newcommand{\fhc}[1]{{\textcolor{bittersweet}{\sf[#1]}}}
+\newcommand{\fh}[1]{\textcolor{purple}{#1}}
+\newcommand{\edit}[2]{\textcolor{red}{\sout{#1} {#2}}}  
+
+\setlength{\arrayrulewidth}{.6mm}
+\setlength{\tabcolsep}{7pt}
+\renewcommand{\arraystretch}{1.8}
+
+%Filippos commands
+\newcommand{\MP}{M_{\rm Pl}}
+\newcommand{\zetaf}{\zeta}
+
+%Farbod
+\newcommand{\lat}{{ (\mathrm i,\mathrm j,\mathrm k )}}
+\newcommand {\mf}{\mathrm}
+\newcommand {\sn}{\mathrm n}
+\newcommand {\gev}{\textit{gevolution}\xspace}
+\newcommand {\kev}{{$k$-evolution}\xspace}
+\newcommand{\class}{\texttt{CLASS}\xspace}
+\newcommand{\hiclass}{\texttt{hi\_class}\xspace}
+
+% for orcid
+\usepackage{scalerel,tikz}
+\usetikzlibrary{svg.path}
+\definecolor{orcidlogocol}{HTML}{A6CE39}
+\tikzset{orcidlogo/.pic={
+ \fill[orcidlogocol] svg{M256,128c0,70.7-57.3,128-128,128C57.3,256,0,198.7,0,128C0,57.3,57.3,0,128,0C198.7,0,256,57.3,256,128z};
+ \fill[white] svg{M86.3,186.2H70.9V79.1h15.4v48.4V186.2z}
+ svg{M108.9,79.1h41.6c39.6,0,57,28.3,57,53.6c0,27.5-21.5,53.6-56.8,53.6h-41.8V79.1z M124.3,172.4h24.5c34.9,0,42.9-26.5,42.9-39.7c0-21.5-13.7-39.7-43.7-39.7h-23.7V172.4z}
+ svg{M88.7,56.8c0,5.5-4.5,10.1-10.1,10.1c-5.6,0-10.1-4.6-10.1-10.1c0-5.6,4.5-10.1,10.1-10.1C84.2,46.7,88.7,51.3,88.7,56.8z};
+}}
+\newcommand\orcidicon[1]{\href{https://orcid.org/#1}{\mbox{\scalerel*{
+\begin{tikzpicture}[yscale=-1,transform shape]
+\pic{orcidlogo};
+\end{tikzpicture}
+}{|}}}}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%\title{KGB-evolution}
+%\author[a]{Farbod Hassani~\orcidicon{0000-0003-2640-4460},}
+%\author[b]{Julian Adamek~\orcidicon{0000-0002-0723-6740},}
+%\author[a]{Emilio Bellini~\orcidicon{0000-0002-3052-7394},}
+%\author[a]{Martin Kunz~\orcidicon{0000-0002-3052-7394},}
+%\author[c]{Filippo Vernizzi~\orcidicon{0000-0003-3426-2802}}
+%\author[d]{ Miguel Zumalacarregui~\orcidicon{0000-0002-9943-6490}}
+%
+%
+%\affiliation[a]{
+%Universit\'e de Gen\`eve, D\'epartement de Physique Th\'eorique and CAP,
+%24 quai Ernest-Ansermet, CH-1211 Gen\`eve 4, Switzerland
+%}
+%\affiliation[b]{Universit\"at Z\"urich, Institute for Computational Science, Winterthurerstrasse 190, CH-8057 Z\"urich, Switzerland}
+%%\affiliation[b]{
+%%School of Physics and Astronomy, Queen Mary University of London, 327 Mile End Road, London E1 4NS, UK}
+%\affiliation[c]{Institut de physique th\' eorique, Universit\'e  Paris Saclay, 
+%CEA, CNRS, 91191 Gif-sur-Yvette, France}
+%\affiliation[d]{Max Planck Institute for Gravitational Physics (Albert Einstein Institute)
+%Am M\"uhlenberg 1, D-14476 Potsdam-Golm, Germany}
+%\emailAdd{farbod.hassani@astro.uio.no}
+%\emailAdd{julian.adamek@uzh.ch}
+%\emailAdd{martin.kunz@unige.ch}
+%\emailAdd{filippo.vernizzi@ipht.fr}
+%\emailAdd{miguel.zumalacarregui@aei.mpg.de}
+%
+%\abstract{
+%}
+%\graphicspath{Images/}
+\begin{document}
+%\maketitle
+%%%%%%%%%%%%%%%%%
+%%%INTRODUCTION
+%%%%%%%%%%%%%%%%%
+
+Our equation is
+\begin{equation}
+\begin{aligned}
+\left(K_{X}+\frac{\pi^{\prime 2}}{a^{2}} K_{X X}\right) \pi^{\prime \prime} &=\\
+& a^{2}\left(K_{\pi}-\frac{\pi^{\prime 2}}{a^{2}} K_{\pi X}\right)-\mathcal{H}\left(2 K_{X}-\frac{\pi^{\prime 2}}{a^{2}} K_{X X}\right) \pi^{\prime} \\
+&+K_{X} \nabla^{2} \pi+K_{\pi X} \partial_{i} \pi \partial^{i} \pi+2 \frac{K_{X X}}{a^{2}} \pi^{\prime} \partial_{i} \pi \partial^{i} \pi^{\prime}-\mathcal{H} \frac{K_{X X}}{a^{2}} \pi^{\prime} \partial_{i} \pi \partial^{i} \pi \\
+&-\frac{K_{X X}}{a^{2}} \partial_{i} \pi \partial_{j} \pi \partial^{j} \partial^{i} \pi
+\end{aligned}
+\end{equation}
+where
+$$
+\begin{aligned}
+K &=-g_{0}+g_{2}(X-\hat{X})^{2}+g_{4}(X-\hat{X})^{4} \\
+K_{X} &=2 g_{2}(X-\hat{X})+4 g_{4}(X-\hat{X})^{3} \\
+K_{X X} &=2 g_{2}+12 g_{4}(X-\hat{X})^{2} \\
+K_{\pi} &=0 \\
+K_{\pi X} &=0
+\end{aligned}
+$$
+where
+$$
+X=\frac{1}{2 a^{2}}\left(\pi^{\prime 2}-\partial_{i} \pi \partial^{i} \pi\right)
+$$
+\section{Rewriting the PDE}
+We write down the PDE in the following form to simplify our numerics implementation,
+\begin{equation}
+\begin{aligned}
+ \pi^{\prime \prime} &= \frac{1}{\left(K_{X}+\frac{\pi^{\prime 2}}{a^{2}} K_{X X}\right)}  \Bigg[ -\mathcal{H}\left(2 K_{X}-\frac{\pi^{\prime 2}}{a^{2}} K_{X X}\right) \pi^{\prime} +K_{X} \nabla^{2} \pi+K_{\pi X} \partial_{i} \pi \partial^{i} \pi\\
+&+2 \frac{K_{X X}}{a^{2}} \pi^{\prime} \partial_{i} \pi \partial^{i} \pi^{\prime}-\mathcal{H} \frac{K_{X X}}{a^{2}} \pi^{\prime} \partial_{i} \pi \partial^{i} \pi -\frac{K_{X X}}{a^{2}} \partial_{i} \pi \partial_{j} \pi \partial^{j} \partial^{i} \pi  \Bigg]
+\end{aligned}
+\end{equation}
+
+\section{Numerical implementation}
+\subsection{Euler method}
+
+ \be
+  \pi^{\mf n+1}_\lat=  \pi^{ \mf n } _\lat+  \pi^{' \; \mf n }_\lat \; \Delta \tau
+ \ee
+\be
+  \pi^{' \mf n+1}_\lat=  \pi^{' \mf n } _\lat+  \pi^{'' \; \mf n}_\lat \; \Delta \tau
+ \ee
+ \be
+  \pi^{\mf n+2}_\lat=  \pi^{ \mf n +1} _\lat+  \pi^{' \; \mf n +1}_\lat \; \Delta \tau
+ \ee
+where the superscript ${\mf n}$ and subscript $\lat$ shows respectively the time step and the position on the lattice, i.e $ \pi^{' \mf n}_\lat $ is the field $\pi'$ at discrete time step $(\mf n)$ and point $(\lat)$  on the lattice.  To find $\pi^{''  \; \mf n}_\lat$ {we discretize our equation as}
+ 
+\begin{align}
+\begin{split}
+ \pi^{ '' \;\mf n}_\lat  =&   \frac{1}{\left(K_{X}+\frac{ (\pi^{\prime \; n})^ 2}{a^{2}} K_{X X}\right) }
+ \Bigg[ a^{2}\left(K_{\pi}-\frac{(\pi^{\prime \; \mf n})^ 2}{a^{2}} K_{\pi X}\right)-\mathcal{H}\left(2 K_{X}-\frac{(\pi^{\prime \; \mf n})^ 2}{a^{2}} K_{X X}\right) \pi^{\prime \; \mf n} \\
+&+K_{X} \nabla^{2} \pi^{\mf n}+K_{\pi X} \partial_{i} \pi^{\mf n} \partial^{i} \pi^{\mf n}+2 \frac{K_{X X}}{a^{2}} \pi^{\prime \; \mf n} \partial_{i} \pi^{\mf n} \partial^{i} \pi^{\prime \; \mf n}
+-\mathcal{H} \frac{K_{X X}}{a^{2}} \pi^{\prime \; \mf n} \partial_{i} \pi^{\mf n} \partial^{i} \pi^{\mf n} \\
+&-\frac{K_{X X}}{a^{2}} \partial_{i} \pi^{\mf n} \partial_{j} \pi^{\mf n} \partial^{j} \partial^{i} \pi^{\mf n}
+ \Bigg]
+\end{split}
+\end{align}
+
+
+\subsection{The leap-frog method}
+We use the Newton-Stormer-Verlet-leapfrog method \cite{EHairer} to solve the two first order partial differential equations for the linear $k$-essence scalar field on the lattice,
+ \be
+  \pi^{\prime \; \mf n+\frac{1}{2}}_{ \lat}=   \pi^{ \prime \; \mf n-{\frac{1}{2}} } _{ \lat}+   \pi^{ \prime \prime \; \mf n}_{\lat} \; \Delta \tau \label{ref_v_prime}
+  \ee
+  \be
+      \pi^{\sn +1}_{\lat}=\pi^{\sn }_{\lat} + \pi^{\prime \; \sn+\frac{1}{2}}_{\lat} \Delta \tau \label{B2}
+\ee
+      It is important to note that in our scheme we have split the background from perturbations, as a result we have access to the $\mathcal{H}^{\sn +\frac12}$ independently of the value of the fields.
+Moreover we compute $ \pi^{\sn+\frac{1}{2}}_{ \lat}$ as,
+  \be
+   \pi'^{\sn} _{ \lat}={\pi^{' \sn-\frac{1}{2}}_{ \lat} +   \pi^{'' \sn}_{\lat}}  \frac{\Delta \tau}{2} \label{B4}
+  \ee
+  To do this in the code we need to also define the $\pi^{'' \sn}_{\lat} $ as a new field to make sure that we update the $\pi'$ field correctly.
+ %%%%%%%%%%%%%%%%%%%
+ %%%%%%%%%%%%%%%%%%%
+ %%%%%%%%%%%%%%%%%%%
+
+
+
+%\be
+%\begin{split}
+%& g^{\alpha \beta} (t, \vec x)  \to  \tilde g^{\alpha \beta} ( \tilde t (\eta,\vec x), \vec x) =  \frac{\partial \tilde x^\alpha (\eta,\vec x) }{\partial x^\mu}  \frac{\partial \tilde x^\beta (\eta,\vec x)}{\partial x^\nu}  g^{\mu \nu} (  t (\eta), \vec x)  \\
+%&= \left[ a (\eta) \delta^\alpha_0 \delta^0_\mu +  \delta_0^\alpha  \partial_\mu ( a(\eta) \pi(\eta,\vec x) ) + \delta^\alpha_i \delta^i_\mu \right]  \left[ a (\eta) \delta^\beta_0 \delta^0_\nu + \delta_0^\beta \partial_\nu  ( a(\eta) \pi(\eta,\vec x) ) + \delta^\beta_i \delta^i _\nu \right] g^{\mu \nu} (\eta, \vec x) \;, 
+%\end{split}
+%\ee
+%
+%
+%We focus on transforming $K$. We do not need all orders in $\epsilon$: since $\delta K$ will be multiplied by at least $\delta g^{00}$ that is at least ${\cal O}(\epsilon)$, we need to go to ${\cal O}(\epsilon)$ at most. We start from the definition
+%\begin{align}
+%K_{ij} = & \frac12 \sqrt{-g^{00}} \left[ \partial_0 g_{ij} - \hat \nabla_i g_{0j} - \hat \nabla_j g_{0i}  \right]   \\
+%  =  & \frac12 \sqrt{-g^{00}} \left[ \partial_0 g_{ij} - \partial_i g_{0j} - \partial_j g_{0i}  + 2 \hat \Gamma_{ij}^k \partial_k g_{0 k} \right] \;,
+%\end{align}
+%where the hat denotes quantities defined with respect to the spatial metric of the three-dimensional constant time hypersurfaces, $\hat g_{ij}$, and in the second line we have introduced the 3-d Christoffel symbol, which is given by
+%\be
+%\hat \Gamma_{ij}^k = \frac12  \hat g^{kl}  \left( \partial_i \hat g_{lj} + \partial_j \hat  g_{il} - \partial_l \hat  g_{ij}     \right) = \frac12 \left( g^{kl} - \frac{g^{0k} g^{0l} }{g^{00}} \right) \left( \partial_i g_{lj} + \partial_j g_{il} - \partial_l g_{ij}     \right) \;.
+%\ee
+%Clearly, we only need to know how to transform the metric $g_{\mu \nu}$ and the derivatives $\partial_\alpha$ and we are done. 
+%
+%Let us start with the metric $g_{\alpha \beta}$.
+%\be
+%\begin{split}
+%g_{\alpha \beta} (t, \vec x)  \to \tilde g_{\alpha \beta} ( \tilde t (\eta,\vec x), \vec x) &=  \frac{\partial  x^\mu  }{\partial \tilde x^\alpha}  \frac{\partial  x^\nu  }{\partial \tilde x^\beta}  g_{\mu \nu} (  t (\eta), \vec x)  \;.
+%\end{split}
+%\ee
+%Up to order $\epsilon$ we obtain
+%\begin{align}
+%g_{00} \to \tilde g_{00} & = g_{00} (1- 2 \partial_0( a \pi) / a) + \ldots \;, \\
+%g_{0i} \to \tilde g_{0i} & = g_{0i} - g_{00}  \partial_i \pi + \ldots \;, \\
+%g_{ij} \to \tilde g_{ij} & = g_{ij}  -  \partial_i \pi g_{0j} -  \partial_j \pi g_{0i} + g_{00}  \partial_i \pi \partial_j \pi + \ldots \;.
+%\end{align}
+%For the derivatives we obtain
+%\begin{align}
+%\partial_{0} \to \tilde \partial_{0} & =  (1- 2 \partial_0( a \pi)/a) \partial_{0} + \ldots \;, \\
+%\partial_{i} \to \tilde \partial_{i}& = \partial_{i} -  \partial_i \pi \partial_0  + \ldots \;.
+%\end{align}
+%
+
+%
+\bibliographystyle{JHEP}
+\bibliography{Biblio_KGB}
+
+
+
+\end{document}
