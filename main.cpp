@@ -543,27 +543,21 @@ COUT << " error: IC generator is wrongly chosen!- For this code you need to use 
 // In case we want to initialize the /IC ourselves
 //FH
 //Initial condition
-// for (x.first(); x.test(); x.next())
-//   {
-//     pi_k(x)=  gsl_spline_eval(phi_smg, 1. / (1. + sim.z_in), acc) * gsl_spline_eval(H_spline, 1.0, acc)/
-//     #ifdef HAVE_CLASS_BG
-//     Hconf(1.0, fourpiG, H_spline, acc)
-//     #else
-//     Hconf(1.0, fourpiG, cosmo)
-//     #endif
-//     ;
-//      //* gsl_spline_eval(H_spline, 1.0, acc)/sqrt(2./3.*fourpiG); // phi has dimension of time so we multiply by H0_class/H_0 gevolution
-//     zeta_half(x)=  gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);//0.000001 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);//0.000001 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
-//   }
-//   zeta_half.updateHalo();  // communicate halo values
-//   pi_k.updateHalo();  // communicate halo values
-  // update_pi_dot_full(dtau/ sim.nKe_numsteps, dx, a,pi_k, zeta_half, det_gamma, cs2_full, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
-  //  #ifdef HAVE_CLASS_BG
-  //  Hconf(a, fourpiG, H_spline, acc)
-  //  #else
-  //  Hconf(a, fourpiG, cosmo)
-  //  #endif
-  //   );
+for (x.first(); x.test(); x.next())
+  {
+    pi_k(x)=  gsl_spline_eval(phi_smg, 1. / (1. + sim.z_in), acc) * gsl_spline_eval(H_spline, 1.0, acc)/
+    #ifdef HAVE_CLASS_BG
+    Hconf(1.0, fourpiG, H_spline, acc)
+    #else
+    Hconf(1.0, fourpiG, cosmo)
+    #endif
+    ;
+     //* gsl_spline_eval(H_spline, 1.0, acc)/sqrt(2./3.*fourpiG); // phi has dimension of time so we multiply by H0_class/H_0 gevolution
+    zeta_half(x)=  gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);//0.000001 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);//0.000001 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
+  }
+  zeta_half.updateHalo();  // communicate halo values
+  pi_k.updateHalo();  // communicate halo values
+
 //   //****************************
 //   //****SAVE DATA To test Backreaction
 //   //****************************
@@ -687,7 +681,7 @@ string str_filename5 ;
       // if(parallel.isRoot())
       // {
         // fprintf(Result_avg,"\n %20.20e %20.20e ", tau, avg ) ;
-      out_avg<<setw(9) << 1./a -1. <<"\t"<< setw(9) << avg_pi<<"\t"<< setw(9) << avg_zeta<<"\t"<< setw(9) << avg_det_gamma<<"\t"<< setw(9) << avg_phi<<"\t"<< setw(9) <<avg_cs2_full <<"\t"<< setw(9) << tau<<endl;
+      out_avg<<setw(9) << 1./a -1. <<"\t"<< setw(15) <<setprecision(15) << avg_pi<<"\t"<< setw(15)<<setprecision(15) << avg_zeta<<"\t"<< setw(9) << avg_det_gamma<<"\t"<< setw(9) << avg_phi<<"\t"<< setw(15) <<setprecision(15) <<avg_cs2_full <<"\t"<< setw(9) << tau<<endl;
 
         out_max<<setw(9) << tau <<"\t"<< setw(9) << max_pi<<"\t"<< setw(9) << max_zeta<<"\t"<< setw(9) << max_phi<<endl;
 
@@ -1384,364 +1378,188 @@ ref_time = MPI_Wtime();
     // Fundamental k-essence theory  cosmo.MGtheory == 1
   else if (cosmo.MGtheory == 1)
   {
-    double a_kess=a;
 
-    if (cosmo.solver_kessence==0) // Euler method is being used!
-      {
-        if(cycle==0)
+      if (cosmo.solver_kessence==0) // Euler method is being used!
         {
-        if(parallel.isRoot())  cout << "\033[1;34mThe fundamental theory is being solved using Euler method!\033[0m\n";
-        }
-
-    //****************************************************
-    // Euler algorithm
-    //****************************************************
-    for (i=0;i<sim.nKe_numsteps;i++)
-    {
-      for (x.first(); x.test(); x.next())
-        {
-           pi_k_old(x) = pi_k(x);
-           zeta_half_old(x) = zeta_half(x);
-           det_gamma_old (x) = det_gamma(x);
-        }
-    update_pi_dot_euler(dtau/ sim.nKe_numsteps, dx, a_kess,pi_k, zeta_half, det_gamma, cs2_full, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
-     #ifdef HAVE_CLASS_BG
-     Hconf(a_kess, fourpiG, H_spline, acc)
-     #else
-     Hconf(a_kess, fourpiG, cosmo)
-     #endif
-      );
-    zeta_half.updateHalo();
-
-    update_pi_full(dtau/ sim.nKe_numsteps, pi_k, zeta_half_old); // H_old is updated here in the function
-    pi_k.updateHalo();
-    // Although it's an Euler algorithm we can update the BG part twice in each step to increase the precision!
-    rungekutta4bg(a_kess, fourpiG,
-			#ifdef HAVE_CLASS_BG
-				H_spline, acc,
-			#else
-				cosmo,
-			#endif
-			dtau  / sim.nKe_numsteps );// We don't use the BG in the update pi, so we need to update it once!
-
-
-      #ifdef BACKREACTION_TEST
-      //   //Make snapshots and power arround blowup TIME
-      // // max_zeta =maximum(  zeta_half, Hconf(a, fourpiG, cosmo), numpts3d ) ;
-      // max_zeta_old =maximum(  zeta_half_old, Hconf(a, fourpiG, cosmo), numpts3d ) ;
-      avg_zeta =average(  zeta_half,1., numpts3d ) ;
-      avg_pi =average(  pi_k,1., numpts3d ) *
-      #ifdef HAVE_CLASS_BG
-      Hconf(a_kess, fourpiG, H_spline, acc)
-      #else
-      Hconf(a_kess, fourpiG, cosmo)
-      #endif
-      ;
-      avg_det_gamma =average(  det_gamma , 1., numpts3d ) ;
-      avg_cs2_full = average (cs2_full, 1., numpts3d);
-      avg_phi =average(  phi , 1., numpts3d ) ;
-      avg_pi_old =average(  pi_k_old, 1., numpts3d ) ;
-
-      for (x.first(); x.test(); x.next())
-      {
-          if (det_gamma_old (x) * det_gamma(x) < 0)
+          if(cycle==0)
           {
-            if(parallel.isRoot())
-            {
-              cout << "\033[1;32mThe determinant has changed sign at \033[0m"  <<x<<" z: "<<1./a -1.<<endl;
-            // str_filename =  "./output/pi_negative_det_" + to_string(snapcount_b) + ".h5";
-            break;
-            }
+          if(parallel.isRoot())  cout << "\033[1;34mThe fundamental theory is being solved using Euler method!\033[0m\n";
           }
-      }
+        double a_kess=a;
 
-      if (a>1./(1+1.0) && a<1./(1+0.907858) && snapcount_b< sim.num_snapshot_kess )
+      //****************************************************
+      // Euler algorithm
+      //****************************************************
+      for (i=0;i<sim.nKe_numsteps;i++)
       {
-        dtau = dtau * 0.3;
-      if(parallel.isRoot())  cout << "\033[1;32mThe blowup criteria for the fundamental theory are met, the requested snapshots being produced\033[0m\n";
-                // writeSpectra(sim, cosmo, fourpiG, a, snapcount_b,
-                // #ifdef HAVE_CLASS
-                // class_background, class_perturbs, ic,
-                // #endif
-                // &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
-          str_filename =  "./output/pi_k_" + to_string(snapcount_b) + ".h5";
-          str_filename2 = "./output/zeta_" + to_string(snapcount_b) + ".h5";
-          str_filename3 = "./output/det_gamma_" + to_string(snapcount_b) + ".h5";
-          str_filename4 = "./output/cs2_full_" + to_string(snapcount_b) + ".h5";
-          str_filename5 = "./output/phi_" + to_string(snapcount_b) + ".h5";
-          pi_k.saveHDF5(str_filename);
-          zeta_half.saveHDF5(str_filename2);
-          det_gamma.saveHDF5(str_filename3);
-          cs2_full.saveHDF5(str_filename4);
-          phi.saveHDF5(str_filename5);
-
-          snapcount_b++;
-
-        //****************************
-        //****PRINTING snapshots info
-        //****************************
-          // COUT << scientific << setprecision(8);
-          // if(parallel.isRoot())
-          // {
-          // out_snapshots<<"### 1- tau\t2- z \t3- a\t 4- zeta_avg\t 5- avg_pi\t 6- avg_phi\t 7- avg(det)\t 8- H_conf/H0 \t 9- snap_count"<<endl;
-
-          out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(a_kess) -1.0 <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << avg_zeta <<"\t"<< setw(9) << avg_pi <<"\t"<< setw(9) << avg_phi <<"\t"<< setw(9) <<tau <<"\t"<< setw(9) << Hconf(a_kess, fourpiG,//TODO_EB
-          #ifdef HAVE_CLASS_BG
-            H_spline, acc
-          #else
-            cosmo
-          #endif
-          ) / Hconf(1., fourpiG,//TODO_EB
-          #ifdef HAVE_CLASS_BG
-            H_spline, acc
-          #else
-            cosmo
-          #endif
-        ) <<"\t"<< setw(9) <<snapcount_b <<"\t"<< setw(9) << avg_cs2_full <<endl;
+        for (x.first(); x.test(); x.next())
+          {
+             pi_k_old(x) = pi_k(x);
+             zeta_half_old(x) = zeta_half(x);
+             det_gamma_old (x) = det_gamma(x);
           }
-      }
-    #endif
-  }  //Euler method end!
+      update_pi_dot_euler(dtau/ sim.nKe_numsteps, dx, a_kess,pi_k, zeta_half, det_gamma, cs2_full, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
+       #ifdef HAVE_CLASS_BG
+       Hconf(a_kess, fourpiG, H_spline, acc)
+       #else
+       Hconf(a_kess, fourpiG, cosmo)
+       #endif
+        );
+      zeta_half.updateHalo();
+
+      update_pi_full(dtau/ sim.nKe_numsteps, pi_k, zeta_half_old); // H_old is updated here in the function
+      pi_k.updateHalo();
+      // Although it's an Euler algorithm we can update the BG part twice in each step to increase the precision!
+      rungekutta4bg(a_kess, fourpiG,
+  			#ifdef HAVE_CLASS_BG
+  				H_spline, acc,
+  			#else
+  				cosmo,
+  			#endif
+  			dtau  / sim.nKe_numsteps );// We don't use the BG in the update pi, so we need to update it once!
+
+      //   #ifdef BACKREACTION_TEST
+      //   //   //Make snapshots and power arround blowup TIME
+      //   // // max_zeta =maximum(  zeta_half, Hconf(a, fourpiG, cosmo), numpts3d ) ;
+      //   // max_zeta_old =maximum(  zeta_half_old, Hconf(a, fourpiG, cosmo), numpts3d ) ;
+      //   avg_zeta =average(  zeta_half,1., numpts3d ) ;
+      //   avg_pi =average(  pi_k,1., numpts3d ) *
+      //   #ifdef HAVE_CLASS_BG
+      //   Hconf(a_kess, fourpiG, H_spline, acc)
+      //   #else
+      //   Hconf(a_kess, fourpiG, cosmo)
+      //   #endif
+      //   ;
+      //   avg_det_gamma =average(  det_gamma , 1., numpts3d ) ;
+      //   avg_cs2_full = average (cs2_full, 1., numpts3d);
+      //   avg_phi =average(  phi , 1., numpts3d ) ;
+      //   avg_pi_old =average(  pi_k_old, 1., numpts3d ) ;
+      //
+      //   for (x.first(); x.test(); x.next())
+      //   {
+      //       if (det_gamma_old (x) * det_gamma(x) < 0)
+      //       {
+      //         if(parallel.isRoot())
+      //         {
+      //           cout << "\033[1;32mThe determinant has changed sign at \033[0m"  <<x<<" z: "<<1./a -1.<<endl;
+      //         // str_filename =  "./output/pi_negative_det_" + to_string(snapcount_b) + ".h5";
+      //         break;
+      //         }
+      //       }
+      //   }
+      //
+      //   if (a>1./(1+1.0) && a<1./(1+0.907858) && snapcount_b< sim.num_snapshot_kess )
+      //   {
+      //     dtau = dtau * 0.3;
+      //   if(parallel.isRoot())  cout << "\033[1;32mThe blowup criteria for the fundamental theory are met, the requested snapshots being produced\033[0m\n";
+      //             // writeSpectra(sim, cosmo, fourpiG, a, snapcount_b,
+      //             // #ifdef HAVE_CLASS
+      //             // class_background, class_perturbs, ic,
+      //             // #endif
+      //             // &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
+      //       str_filename =  "./output/pi_k_" + to_string(snapcount_b) + ".h5";
+      //       str_filename2 = "./output/zeta_" + to_string(snapcount_b) + ".h5";
+      //       str_filename3 = "./output/det_gamma_" + to_string(snapcount_b) + ".h5";
+      //       str_filename4 = "./output/cs2_full_" + to_string(snapcount_b) + ".h5";
+      //       str_filename5 = "./output/phi_" + to_string(snapcount_b) + ".h5";
+      //       pi_k.saveHDF5(str_filename);
+      //       zeta_half.saveHDF5(str_filename2);
+      //       det_gamma.saveHDF5(str_filename3);
+      //       cs2_full.saveHDF5(str_filename4);
+      //       phi.saveHDF5(str_filename5);
+      //
+      //       snapcount_b++;
+      //
+      //     //****************************
+      //     //****PRINTING snapshots info
+      //     //****************************
+      //       // COUT << scientific << setprecision(8);
+      //       // if(parallel.isRoot())
+      //       // {
+      //       // out_snapshots<<"### 1- tau\t2- z \t3- a\t 4- zeta_avg\t 5- avg_pi\t 6- avg_phi\t 7- avg(det)\t 8- H_conf/H0 \t 9- snap_count"<<endl;
+      //
+      //       out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(a_kess) -1.0 <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << avg_zeta <<"\t"<< setw(9) << avg_pi <<"\t"<< setw(9) << avg_phi <<"\t"<< setw(9) <<tau <<"\t"<< setw(9) << Hconf(a_kess, fourpiG,//TODO_EB
+      //       #ifdef HAVE_CLASS_BG
+      //         H_spline, acc
+      //       #else
+      //         cosmo
+      //       #endif
+      //       ) / Hconf(1., fourpiG,//TODO_EB
+      //       #ifdef HAVE_CLASS_BG
+      //         H_spline, acc
+      //       #else
+      //         cosmo
+      //       #endif
+      //     ) <<"\t"<< setw(9) <<snapcount_b <<"\t"<< setw(9) << avg_cs2_full <<endl;
+      //       }
+      //   }
+      // #endif
+    }
+  }
+
+    //Euler method end!
 
 
     else if (cosmo.solver_kessence==1) // Leap-frog method is being used!
       {
+        double a_kess=a;
+
         if(cycle==0)
         {
-        if(parallel.isRoot())  cout << "\033[1;34mThe fundamental theory is being solved using leap-frog method!\033[0m\n";
-        }
+          if(parallel.isRoot())  cout << "\033[1;34mThe fundamental theory is being solved using leap-frog method!\033[0m\n";
 
-    //****************************************************
-    // Leap-frod algorithm
-    //****************************************************
-    for (i=0;i<sim.nKe_numsteps;i++)
-    {
-
-    update_pi_dot_leap_frog(dtau/ sim.nKe_numsteps, dx, a_kess,pi_k, zeta_half, pi_dot_dot, det_gamma, cs2_full, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
-     #ifdef HAVE_CLASS_BG
-     Hconf(a_kess, fourpiG, H_spline, acc)
-     #else
-     Hconf(a_kess, fourpiG, cosmo)
-     #endif
-      );
-    zeta_half.updateHalo();
-    // Although it's an Euler algorithm we can update the BG part twice in each step to increase the precision!
-    rungekutta4bg(a_kess, fourpiG,
-      #ifdef HAVE_CLASS_BG
-        H_spline, acc,
-      #else
-        cosmo,
-      #endif
-      dtau  / sim.nKe_numsteps / 2.0);
-
-    update_pi_full(dtau/ sim.nKe_numsteps, pi_k, zeta_half); // H_old is updated here in the function
-    pi_k.updateHalo();
-    rungekutta4bg(a_kess, fourpiG,
-      #ifdef HAVE_CLASS_BG
-        H_spline, acc,
-      #else
-        cosmo,
-      #endif
-      dtau  / sim.nKe_numsteps / 2.0);
-      #ifdef BACKREACTION_TEST
-      //   //Make snapshots and power arround blowup TIME
-      // // max_zeta =maximum(  zeta_half, Hconf(a, fourpiG, cosmo), numpts3d ) ;
-      // max_zeta_old =maximum(  zeta_half_old, Hconf(a, fourpiG, cosmo), numpts3d ) ;
-      avg_zeta =average(  zeta_half,1., numpts3d ) ;
-      avg_pi =average(  pi_k,1., numpts3d ) *
-      #ifdef HAVE_CLASS_BG
-      Hconf(a_kess, fourpiG, H_spline, acc)
-      #else
-      Hconf(a_kess, fourpiG, cosmo)
-      #endif
-      ;
-      avg_det_gamma =average(  det_gamma , 1., numpts3d ) ;
-      avg_cs2_full = average (cs2_full, 1., numpts3d);
-      avg_phi =average(  phi , 1., numpts3d ) ;
-      avg_pi_old =average(  pi_k_old, 1., numpts3d ) ;
-
-      for (x.first(); x.test(); x.next())
-      {
-          if (det_gamma_old (x) * det_gamma(x) < 0)
+          for (i=0;i<sim.nKe_numsteps;i++)
           {
-            if(parallel.isRoot())
-            {
-              cout << "\033[1;32mThe determinant has changed sign at \033[0m"  <<x<<" z: "<<1./a -1.<<endl;
-            // str_filename =  "./output/pi_negative_det_" + to_string(snapcount_b) + ".h5";
-            break;
-            }
-          }
-      }
-
-      if (a>1./(1+1.0) && a<1./(1+0.907858) && snapcount_b< sim.num_snapshot_kess )
-      {
-        dtau = dtau * 0.3;
-      if(parallel.isRoot())  cout << "\033[1;32mThe blowup criteria for the fundamental theory are met, the requested snapshots being produced\033[0m\n";
-                // writeSpectra(sim, cosmo, fourpiG, a, snapcount_b,
-                // #ifdef HAVE_CLASS
-                // class_background, class_perturbs, ic,
-                // #endif
-                // &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
-          str_filename =  "./output/pi_k_" + to_string(snapcount_b) + ".h5";
-          str_filename2 = "./output/zeta_" + to_string(snapcount_b) + ".h5";
-          str_filename3 = "./output/det_gamma_" + to_string(snapcount_b) + ".h5";
-          str_filename4 = "./output/cs2_full_" + to_string(snapcount_b) + ".h5";
-          str_filename5 = "./output/phi_" + to_string(snapcount_b) + ".h5";
-          pi_k.saveHDF5(str_filename);
-          zeta_half.saveHDF5(str_filename2);
-          det_gamma.saveHDF5(str_filename3);
-          cs2_full.saveHDF5(str_filename4);
-          phi.saveHDF5(str_filename5);
-
-          snapcount_b++;
-
-        //****************************
-        //****PRINTING snapshots info
-        //****************************
-          // COUT << scientific << setprecision(8);
-          // if(parallel.isRoot())
-          // {
-          // out_snapshots<<"### 1- tau\t2- z \t3- a\t 4- zeta_avg\t 5- avg_pi\t 6- avg_phi\t 7- avg(det)\t 8- H_conf/H0 \t 9- snap_count"<<endl;
-
-          out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(a_kess) -1.0 <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << avg_zeta <<"\t"<< setw(9) << avg_pi <<"\t"<< setw(9) << avg_phi <<"\t"<< setw(9) <<tau <<"\t"<< setw(9) << Hconf(a_kess, fourpiG,//TODO_EB
-          #ifdef HAVE_CLASS_BG
-            H_spline, acc
-          #else
-            cosmo
-          #endif
-          ) / Hconf(1., fourpiG,//TODO_EB
-          #ifdef HAVE_CLASS_BG
-            H_spline, acc
-          #else
-            cosmo
-          #endif
-        ) <<"\t"<< setw(9) <<snapcount_b <<"\t"<< setw(9) << avg_cs2_full <<endl;
-          }
-      }
-    #endif
-  }  // End of Leap-Frog algorithm
-
-
-
-
-  else if (cosmo.solver_kessence==2) // Leap-frog method is being used!
-    {
-      if(cycle==0)
-      {
-      if(parallel.isRoot())  cout << "\033[1;34mThe fundamental theory is being solved using 4th Order Runge-Kutta method!\033[0m\n";
-      }
-
-  //****************************************************
-  // Leap-frod algorithm
-  //****************************************************
-  for (i=0;i<sim.nKe_numsteps;i++)
-  {
-  // update_pi_dot_leap_frog(dtau/ sim.nKe_numsteps, dx, a_kess,pi_k, zeta_half, det_gamma, cs2_full, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
-  //  #ifdef HAVE_CLASS_BG
-  //  Hconf(a_kess, fourpiG, H_spline, acc)
-  //  #else
-  //  Hconf(a_kess, fourpiG, cosmo)
-  //  #endif
-  //   );
-  // zeta_half.updateHalo();
-  // // Although it's an Euler algorithm we can update the BG part twice in each step to increase the precision!
-  // rungekutta4bg(a_kess, fourpiG,
-  //   #ifdef HAVE_CLASS_BG
-  //     H_spline, acc,
-  //   #else
-  //     cosmo,
-  //   #endif
-  //   dtau  / sim.nKe_numsteps / 2.0);
-
-  update_pi_full(dtau/ sim.nKe_numsteps, pi_k, zeta_half); // H_old is updated here in the function
-  pi_k.updateHalo();
-  rungekutta4bg(a_kess, fourpiG,
-    #ifdef HAVE_CLASS_BG
-      H_spline, acc,
-    #else
-      cosmo,
-    #endif
-    dtau  / sim.nKe_numsteps / 2.0);
-    #ifdef BACKREACTION_TEST
-    //   //Make snapshots and power arround blowup TIME
-    // // max_zeta =maximum(  zeta_half, Hconf(a, fourpiG, cosmo), numpts3d ) ;
-    // max_zeta_old =maximum(  zeta_half_old, Hconf(a, fourpiG, cosmo), numpts3d ) ;
-    avg_zeta =average(  zeta_half,1., numpts3d ) ;
-    avg_pi =average(  pi_k,1., numpts3d ) *
-    #ifdef HAVE_CLASS_BG
-    Hconf(a_kess, fourpiG, H_spline, acc)
-    #else
-    Hconf(a_kess, fourpiG, cosmo)
-    #endif
-    ;
-    avg_det_gamma =average(  det_gamma , 1., numpts3d ) ;
-    avg_cs2_full = average (cs2_full, 1., numpts3d);
-    avg_phi =average(  phi , 1., numpts3d ) ;
-    avg_pi_old =average(  pi_k_old, 1., numpts3d ) ;
-
-    for (x.first(); x.test(); x.next())
-    {
-        if (det_gamma_old (x) * det_gamma(x) < 0)
-        {
-          if(parallel.isRoot())
-          {
-            cout << "\033[1;32mThe determinant has changed sign at \033[0m"  <<x<<" z: "<<1./a -1.<<endl;
-          // str_filename =  "./output/pi_negative_det_" + to_string(snapcount_b) + ".h5";
-          break;
+            //computing zeta_half(-1/2) and zeta_int(-1) but we do not work with zeta(-1)
+            update_pi_dot_leap_frog(-dtau/ (2.0 * sim.nKe_numsteps), dx, a_kess, pi_k, zeta_half, pi_dot_dot, det_gamma, cs2_full, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
+             #ifdef HAVE_CLASS_BG
+             Hconf(a_kess, fourpiG, H_spline, acc)
+             #else
+             Hconf(a_kess, fourpiG, cosmo)
+             #endif
+              );            // zeta_integer.updateHalo();
+            zeta_half.updateHalo(); // phi' (n-1/2)
+            
           }
         }
-    }
 
-    if (a>1./(1+1.0) && a<1./(1+0.907858) && snapcount_b< sim.num_snapshot_kess )
-    {
-      dtau = dtau * 0.3;
-    if(parallel.isRoot())  cout << "\033[1;32mThe blowup criteria for the fundamental theory are met, the requested snapshots being produced\033[0m\n";
-              // writeSpectra(sim, cosmo, fourpiG, a, snapcount_b,
-              // #ifdef HAVE_CLASS
-              // class_background, class_perturbs, ic,
-              // #endif
-              // &pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
-        str_filename =  "./output/pi_k_" + to_string(snapcount_b) + ".h5";
-        str_filename2 = "./output/zeta_" + to_string(snapcount_b) + ".h5";
-        str_filename3 = "./output/det_gamma_" + to_string(snapcount_b) + ".h5";
-        str_filename4 = "./output/cs2_full_" + to_string(snapcount_b) + ".h5";
-        str_filename5 = "./output/phi_" + to_string(snapcount_b) + ".h5";
-        pi_k.saveHDF5(str_filename);
-        zeta_half.saveHDF5(str_filename2);
-        det_gamma.saveHDF5(str_filename3);
-        cs2_full.saveHDF5(str_filename4);
-        phi.saveHDF5(str_filename5);
+      //****************************************************
+      // Leap-frod algorithm
+      //****************************************************
+      for (i=0;i<sim.nKe_numsteps;i++)
+      {
 
-        snapcount_b++;
+        update_pi_dot_leap_frog(dtau/ sim.nKe_numsteps, dx, a_kess,pi_k, zeta_half, pi_dot_dot, det_gamma, cs2_full, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
+         #ifdef HAVE_CLASS_BG
+         Hconf(a_kess, fourpiG, H_spline, acc)
+         #else
+         Hconf(a_kess, fourpiG, cosmo)
+         #endif
+       );  // phi' (n-1/2) [phi(n), phi(n)] -->  phi' (n+1/2)
+        zeta_half.updateHalo();
+        rungekutta4bg(a_kess, fourpiG,
+          #ifdef HAVE_CLASS_BG
+            H_spline, acc,
+          #else
+            cosmo,
+          #endif
+          dtau  / sim.nKe_numsteps / 2.0);
 
-      //****************************
-      //****PRINTING snapshots info
-      //****************************
-        // COUT << scientific << setprecision(8);
-        // if(parallel.isRoot())
-        // {
-        // out_snapshots<<"### 1- tau\t2- z \t3- a\t 4- zeta_avg\t 5- avg_pi\t 6- avg_phi\t 7- avg(det)\t 8- H_conf/H0 \t 9- snap_count"<<endl;
-
-        out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(a_kess) -1.0 <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << avg_zeta <<"\t"<< setw(9) << avg_pi <<"\t"<< setw(9) << avg_phi <<"\t"<< setw(9) <<tau <<"\t"<< setw(9) << Hconf(a_kess, fourpiG,//TODO_EB
-        #ifdef HAVE_CLASS_BG
-          H_spline, acc
-        #else
-          cosmo
-        #endif
-        ) / Hconf(1., fourpiG,//TODO_EB
-        #ifdef HAVE_CLASS_BG
-          H_spline, acc
-        #else
-          cosmo
-        #endif
-      ) <<"\t"<< setw(9) <<snapcount_b <<"\t"<< setw(9) << avg_cs2_full <<endl;
-        }
-    }
-  #endif
-}  // End of Runge Kutta algorithm
-
-  } // Fundamental k-essence theory  END
-
+        update_pi_full(dtau/ sim.nKe_numsteps, pi_k, zeta_half); // H_old is updated here in the function
+        pi_k.updateHalo();
+        // Although it's an Euler algorithm we can update the BG part twice in each step to increase the precision!
+        rungekutta4bg(a_kess, fourpiG,
+          #ifdef HAVE_CLASS_BG
+            H_spline, acc,
+          #else
+            cosmo,
+          #endif
+          dtau  / sim.nKe_numsteps / 2.0);
+      }
+    // End of Leap-Frog algorithm
+  }
+   // Fundamental k-essence theory  END
+}
 
 #ifdef BENCHMARK
     kessence_update_time += MPI_Wtime() - ref_time;

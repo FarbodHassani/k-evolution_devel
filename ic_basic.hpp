@@ -2142,8 +2142,7 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
         // pi'(conformal_Newtonian) = cs^2/(1+w) delta_fld + Psi + H(conf)*pi (3 cs^2 -1)
         // So zeta = cs^2/(1+w) delta + 3 cs^2 H(conf) * pi
         //
-        kess_field_prime[i] = - M_PI * tk_t_kess->y[i] * sqrt( Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_t_kess->x[i])
-         / tk_t_kess->x[i];
+        kess_field_prime[i] = - M_PI * tk_t_kess->y[i] * sqrt( Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_t_kess->x[i])/ tk_t_kess->x[i];
       }
       // Field realization
       gsl_spline_free(tk_d_kess);
