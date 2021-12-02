@@ -1,7 +1,7 @@
 # programming environment
 COMPILER     := mpic++
-INCLUDE      := -I/usr/local/Cellar/gsl/2.6/include  -I/Users/farbod/Dropbox/Projects/Blowup-EFT-kessence-BH/LATfield2-master/  -I /Users/farbod/Packages/hdf5-1.10.1/hdf5/include -I/Users/farbod/include    # add the path to LATfield2 and other libraries (if necessary)
-LIB          :=-L/Users/farbod/Packages/hdf5-1.10.1/hdf5/lib -L/Users/farbod/usr/lib -L/usr/local/Cellar/gsl/2.6/lib -lfftw3 -lm -lhdf5 -lgsl -lgslcblas
+INCLUDE      := -I/usr/local/Cellar/fftw/3.3.9/include -I/usr/local/Cellar/gsl/2.6/include -I/usr/local/Cellar/hdf5/1.12.0_1/include -I./../LATfield2   # add the path to LATfield2 and other libraries (if necessary)
+LIB          :=-L/usr/local/Cellar/hdf5/1.12.0_1/lib -L/usr/local/Cellar/gsl/2.6/lib  -L/usr/local/Cellar/fftw/3.3.9/lib -lfftw3 -lm -lhdf5 -lgsl -lgslcblas -lclass
 
 # target and sources
 EXEC         := gevolution
