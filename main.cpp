@@ -124,6 +124,7 @@ int main(int argc, char **argv)
 	gsl_spline * H_spline = NULL;
   gsl_spline * phi_smg = NULL;
   gsl_spline * phi_smg_prime = NULL;
+  gsl_spline * phi_smg_prime_prime = NULL;
 	gsl_spline * cs2_spline = NULL;
 	gsl_spline * rho_smg_spline = NULL;
 	gsl_spline * p_smg_spline = NULL;
@@ -228,6 +229,7 @@ int main(int argc, char **argv)
   loadBGFunctions(class_background, H_spline, "H [1/Mpc]", sim.z_in);
   loadBGFunctions(class_background, phi_smg, "phi_smg", sim.z_in);
   loadBGFunctions(class_background, phi_smg_prime, "phi\'", sim.z_in);
+  loadBGFunctions(class_background, phi_smg_prime_prime, "phi\'\'", sim.z_in);
   loadBGFunctions(class_background, cs2_spline, "c_s^2", sim.z_in);
   loadBGFunctions(class_background, rho_smg_spline, "(.)rho_smg", sim.z_in);
   loadBGFunctions(class_background, p_smg_spline, "(.)p_smg", sim.z_in);
@@ -554,6 +556,7 @@ for (x.first(); x.test(); x.next())
     ;
      //* gsl_spline_eval(H_spline, 1.0, acc)/sqrt(2./3.*fourpiG); // phi has dimension of time so we multiply by H0_class/H_0 gevolution
     zeta_half(x)=  gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);//0.000001 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);//0.000001 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
+    pi_dot_dot(x) = gsl_spline_eval(phi_smg_prime_prime, 1. / (1. + sim.z_in), acc);
   }
   zeta_half.updateHalo();  // communicate halo values
   pi_k.updateHalo();  // communicate halo values
@@ -1519,7 +1522,7 @@ ref_time = MPI_Wtime();
              #endif
               );            // zeta_integer.updateHalo();
             zeta_half.updateHalo(); // phi' (n-1/2)
-            
+
           }
         }
 

@@ -540,6 +540,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
             //Laplace pi, pi(n) since pi is not updated yet
             //****************************************************************
             tmp(x) = pi_dot(x) + dtau * pi_dot_dot(x)/2.; //pi'(n) = pi'(n-1/2) + dtau/2 * pi_dot_dot(n)
+            // cout<<"tmp(x): "<<tmp(x)<<endl;
             //det_gamma is just a name! To decrease memory allocation!
             // cout<<"tmp: "<<tmp(x)<<" d2pi_dt2"<<d2pi_dt2<<endl;
 
