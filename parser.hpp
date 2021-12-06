@@ -1712,7 +1712,7 @@ if (ic.IC_kess == 1)
 	}
   if (!parseParameter(params, numparam, "kessence solver",  cosmo.solver_kessence))
   {
-      cosmo.solver_kessence=1; // Default is leap-frog
+      cosmo.solver_kessence=2; // Default is RK4
   }
   // EFT kessence
 	if (!parseParameter(params, numparam, "cs2_kessence",  cosmo.cs2_kessence))

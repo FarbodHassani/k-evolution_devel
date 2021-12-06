@@ -290,7 +290,11 @@ int main(int argc, char **argv)
   Field<Cplx> scalarFT_det_gamma_old;
   Field<Cplx> scalarFT_cs2_full;
   #endif
-	Field<Real> pi_k;
+	Field<Real> f_function;
+  Field<Real> g_function;
+
+  Field<Real> pi_k;
+  // Field<Real> zeta;
   Field<Real> zeta_half;
 	Field<Real> T00_Kess;
 	Field<Real> T0i_Kess;
@@ -302,7 +306,10 @@ int main(int argc, char **argv)
   Field<Cplx> stress_tensor_scalarFT;
   #endif
 	Field<Cplx> scalarFT_chi_old;
-	Field<Cplx> scalarFT_pi;
+	Field<Cplx> scalarFT_f_function;
+  Field<Cplx> scalarFT_g_function;
+  Field<Cplx> scalarFT_pi;
+  // Field<Cplx> scalarFT_zeta;
   Field<Cplx> scalarFT_zeta_half;
 	Field<Cplx> T00_KessFT;
 	Field<Cplx> T0i_KessFT;
@@ -344,6 +351,17 @@ int main(int argc, char **argv)
     scalarFT_zeta_half_old.initialize(latFT,1);
     PlanFFT<Cplx> plan_zeta_half_old(&zeta_half_old, &scalarFT_zeta_half_old);
 
+    f_function.initialize(lat,1);
+  	scalarFT_f_function.initialize(latFT,1);
+  	PlanFFT<Cplx> plan_f_function(&f_function, &scalarFT_f_function);
+
+    g_function.initialize(lat,1);
+    scalarFT_g_function.initialize(latFT,1);
+    PlanFFT<Cplx> plan_g_function(&g_function, &scalarFT_g_function);
+
+    // zeta.initialize(lat,1);
+    // scalarFT_zeta.initialize(latFT,1);
+    // PlanFFT<Cplx> plan_zeta(&zeta, &scalarFT_zeta);
 
     pi_dot_dot.initialize(lat,1);
     scalarFT_pi_dot_dot.initialize(latFT,1);
@@ -555,12 +573,19 @@ for (x.first(); x.test(); x.next())
     #endif
     ;
      //* gsl_spline_eval(H_spline, 1.0, acc)/sqrt(2./3.*fourpiG); // phi has dimension of time so we multiply by H0_class/H_0 gevolution
-    zeta_half(x)=  gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);//0.000001 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);//0.000001 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
-    pi_dot_dot(x) = gsl_spline_eval(phi_smg_prime_prime, 1. / (1. + sim.z_in), acc);
+    zeta_half(x)= x.coord(0); //gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);//0.000001 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);//0.000001 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
+    // pi_dot_dot(x) = gsl_spline_eval(phi_smg_prime_prime, 1. / (1. + sim.z_in), acc);
+    // /( gsl_spline_eval(H_spline, 1.0, acc)/
+    // #ifdef HAVE_CLASS_BG
+    // Hconf(1.0, fourpiG, H_spline, acc)
+    // #else
+    // Hconf(1.0, fourpiG, cosmo)
+    // #endif
+    det_gamma(x) = 0.;
   }
   zeta_half.updateHalo();  // communicate halo values
   pi_k.updateHalo();  // communicate halo values
-
+  pi_dot_dot.updateHalo();
 //   //****************************
 //   //****SAVE DATA To test Backreaction
 //   //****************************
@@ -1511,8 +1536,8 @@ ref_time = MPI_Wtime();
         {
           if(parallel.isRoot())  cout << "\033[1;34mThe fundamental theory is being solved using leap-frog method!\033[0m\n";
 
-          for (i=0;i<sim.nKe_numsteps;i++)
-          {
+          // for (i=0;i<sim.nKe_numsteps;i++)
+          // {
             //computing zeta_half(-1/2) and zeta_int(-1) but we do not work with zeta(-1)
             update_pi_dot_leap_frog(-dtau/ (2.0 * sim.nKe_numsteps), dx, a_kess, pi_k, zeta_half, pi_dot_dot, det_gamma, cs2_full, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
              #ifdef HAVE_CLASS_BG
@@ -1523,7 +1548,7 @@ ref_time = MPI_Wtime();
               );            // zeta_integer.updateHalo();
             zeta_half.updateHalo(); // phi' (n-1/2)
 
-          }
+          // }
         }
 
       //****************************************************
@@ -1561,6 +1586,96 @@ ref_time = MPI_Wtime();
       }
     // End of Leap-Frog algorithm
   }
+
+
+  else if (cosmo.solver_kessence==2) // RK2 method is being used!
+    {
+      double a_kess=a;
+
+      if(cycle==0)
+      {
+        if(parallel.isRoot())  cout << "\033[1;34mThe fundamental theory is being solved using RK2 method!\033[0m\n";
+      }
+
+    //****************************************************
+    // Leap-frod algorithm
+    //****************************************************
+    for (i=0;i<sim.nKe_numsteps;i++)
+    {
+      update_pi_RK2(dtau/ sim.nKe_numsteps, pi_k, zeta_half, pi_dot_dot);  // phi' (n-1/2) [phi(n), phi(n)] -->  phi' (n+1/2)
+        pi_k.updateHalo();
+
+     rungekutta4bg(a_kess, fourpiG,
+       #ifdef HAVE_CLASS_BG
+         H_spline, acc,
+       #else
+         cosmo,
+       #endif
+       dtau  / sim.nKe_numsteps / 2.0);
+
+      update_pi_dot_RK2(dtau/ sim.nKe_numsteps, dx, a_kess,pi_k, zeta_half, pi_dot_dot, det_gamma, cs2_full, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
+       #ifdef HAVE_CLASS_BG
+       Hconf(a_kess, fourpiG, H_spline, acc)
+       #else
+       Hconf(a_kess, fourpiG, cosmo)
+       #endif
+     );  // phi' (n-1/2) [phi(n), phi(n)] -->  phi' (n+1/2)
+      zeta_half.updateHalo();
+      rungekutta4bg(a_kess, fourpiG,
+        #ifdef HAVE_CLASS_BG
+          H_spline, acc,
+        #else
+          cosmo,
+        #endif
+        dtau  / sim.nKe_numsteps / 2.0);
+    }
+  // End of Leap-Frog algorithm
+}
+
+
+else if (cosmo.solver_kessence==3) // RK4 method is being used!
+  {
+    double a_kess=a;
+
+    if(cycle==0)
+    {
+      if(parallel.isRoot())  cout << "\033[1;34mThe fundamental theory is being solved using RK4 method!\033[0m\n";
+    }
+
+  //****************************************************
+  // RK4 algorithm
+  //****************************************************
+  for (i=0;i<sim.nKe_numsteps;i++)
+  {
+    update_pi_RK2(dtau/ sim.nKe_numsteps, pi_k, zeta_half, pi_dot_dot);  // phi' (n-1/2) [phi(n), phi(n)] -->  phi' (n+1/2)
+      pi_k.updateHalo();
+
+   rungekutta4bg(a_kess, fourpiG,
+     #ifdef HAVE_CLASS_BG
+       H_spline, acc,
+     #else
+       cosmo,
+     #endif
+     dtau  / sim.nKe_numsteps / 2.0);
+
+    update_pi_dot_RK2(dtau/ sim.nKe_numsteps, dx, a_kess,pi_k, zeta_half, pi_dot_dot, det_gamma, cs2_full, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
+     #ifdef HAVE_CLASS_BG
+     Hconf(a_kess, fourpiG, H_spline, acc)
+     #else
+     Hconf(a_kess, fourpiG, cosmo)
+     #endif
+   );  // phi' (n-1/2) [phi(n), phi(n)] -->  phi' (n+1/2)
+    zeta_half.updateHalo();
+    rungekutta4bg(a_kess, fourpiG,
+      #ifdef HAVE_CLASS_BG
+        H_spline, acc,
+      #else
+        cosmo,
+      #endif
+      dtau  / sim.nKe_numsteps / 2.0);
+  }
+// End of RK4
+}
    // Fundamental k-essence theory  END
 }
 
