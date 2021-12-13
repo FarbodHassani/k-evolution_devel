@@ -1,3 +1,15 @@
 
 .DS_Store
 *.h5
+*.dat
+*.txt
+*.ini
+output/file__classunused_parameters
+gevolution
+Data/RK2-dt0d04-nKe1/file__classunused_parameters
+Data/LP-dt0d01-nKe60/file__classunused_parameters
+Data/LP-dt0d01-nKe10/file__classunused_parameters
+Data/Eu-dt0d01-nKe60/file__classunused_parameters
+Data/Eu-dt0d01-nKe10/file__classunused_parameters
+Data/Eu-dt-0d02-nKe-20/file__classunused_parameters
+Data/Eu-dt-0d01-nKe-60-model2/file__classunused_parameters
