@@ -1265,7 +1265,7 @@ if (!parseParameter(params, numparam, "T_kessence file", ic.tk_kessence) && ic.g
   {
     sim.NL_kessence = 0; //Default is linear kessence.
   }
-    sim. fluid_flag = 0.0;
+    // sim. fluid_flag = 0.0;
   //kessence end
 
 	cosmo.num_ncdm = MAX_PCL_SPECIES-2;
