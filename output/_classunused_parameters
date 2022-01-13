@@ -1,5 +1,0 @@
-# List of input/precision parameters passed
-# but not used (just for info)
-#
-expansion_model = wowa
-expansion_smg = 7.000000e-01, -9.000000e-01, 0.000000e+00 
