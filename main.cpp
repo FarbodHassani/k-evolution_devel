@@ -523,13 +523,13 @@ for (x.first(); x.test(); x.next())
   out_avg<<"### The result of the average over time \n### d tau = "<< dtau<<endl;
   out_avg<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
   out_avg<<"### initial time = "<< tau <<endl;
-  out_avg<<"### 1- tau\t2- average(H pi_k)\t3- average (zeta)\t 4- average (phi)\t5-z(redshift)   " <<endl;
+  out_avg<<"### 1- tau \t 2- average(H pi_k) \t 3 - average (zeta) \t 4- average (phi) \t 5- average (Laplace_phi) \t 6- average (source) \t 7-z(redshift)   " <<endl;
 
 
   out_max<<"### The result of the maximum over time \n### d tau = "<< dtau<<endl;
   out_max<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
   out_max<<"### initial time = "<< tau <<endl;
-  out_max<<"### 1- tau\t2- max(H pi_k)\t3- max (zeta)\t 4- max (phi) \t 4- z  " <<endl;
+  out_max<<"### 1- tau \t 2- max(H pi_k) \t 3- max (zeta) \t 4- max (phi) \t 5- max (Laplace phi) \t 6- max (source) \t 7- variance (source) \t 8-z(redshift) " <<endl;
 
   out_snapshots<<"### The result of the snapshots produced over time for blow-up \n### d tau = "<< dtau<<endl;
   out_snapshots<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
@@ -551,6 +551,9 @@ for (x.first(); x.test(); x.next())
 double avg_pi = 0.;
 double avg_zeta = 0.;
 double avg_phi = 0.;
+double avg_source = 0.;
+double avg_Laplace_phi = 0.;
+
 double max_zeta_old = 0.;
 double avg_zeta_old = 0.;
 double avg_pi_old = 0.;
@@ -558,6 +561,9 @@ double avg_pi_old = 0.;
 double max_pi = 0.;
 double max_zeta = 0.;
 double max_phi = 0.;
+double max_Laplace_phi= 0.;
+double max_source = 0.;
+double var_source = 0.;
 
 int norm_kFT_squared = 0.;
 
@@ -584,51 +590,25 @@ string str_filename3 ;
       //****************************
       //****PRINTING AVERAGE OVER TIME
       //****************************
-      // check_field(  zeta_half, 1. , " H pi_k", numpts3d);
-      avg_pi =average(  pi_k, Hconf(a, fourpiG, cosmo), numpts3d ) ;
-      avg_zeta =average(  zeta_half,1., numpts3d ) ;
-      avg_phi =average(  phi , 1., numpts3d ) ;
+      avg_pi =average(pi_k, Hconf(a, fourpiG, cosmo), numpts3d ) ;
+      avg_zeta =average(zeta_half,1., numpts3d) ;
+      avg_phi =average(phi , 1., numpts3d ) ;
+      avg_source =average( source , 1., numpts3d ) ;
+      avg_Laplace_phi = average_laplace(phi, 1./dx/dx, numpts3d);
 
-      max_pi =maximum(  pi_k, Hconf(a, fourpiG, cosmo), numpts3d ) ;
-      max_zeta =maximum(  zeta_half,1., numpts3d ) ;
-      max_phi =maximum(  phi , 1., numpts3d ) ;
+      max_pi =maximum(pi_k, Hconf(a, fourpiG, cosmo), numpts3d ) ;
+      max_zeta =maximum(zeta_half, 1., numpts3d ) ;
+      max_phi =maximum(phi , 1., numpts3d ) ;
+      max_Laplace_phi =maximum_laplace(phi, 1./dx/dx, numpts3d ) ;
+      max_source =maximum(source, 1., numpts3d) ;
+      var_source =variance(source, 1., avg_source, numpts3d);
 
-      COUT << scientific << setprecision(8);
-      // if(parallel.isRoot())
-      // {
-        // fprintf(Result_avg,"\n %20.20e %20.20e ", tau, avg ) ;
-      out_avg<<setw(9) << tau <<"\t"<< setw(9) << avg_pi<<"\t"<< setw(9) << avg_zeta<<"\t"<< setw(9) << avg_phi<<"\t"<< setw(9) << 1./a -1.<<endl;
+      COUT << scientific << setprecision(4);
 
-      out_max<<setw(9) << tau <<"\t"<< setw(9) << max_pi<<"\t"<< setw(9) << max_zeta<<"\t"<< setw(9) << max_phi<<"\t"<< setw(9) << 1./a -1.<<endl;
-      // }
-      //****************************
-      //****PRINTING REAL SPACE INFO
-      //****************************
-      // for (x.first(); x.test(); x.next())
-    	// {
-      //     //NL_test, Printing out average
-      //   if(x.coord(0)==32 && x.coord(1)==20 && x.coord(2)==10)
-      //   {
-      //     // if(parallel.isRoot())
-      //     // {
-      //     out_real<<setw(9) << tau <<"\t"<< setw(9) <<pi_k (x)<<"\t"<< setw(9)<<zeta_half (x)<<"\t"<<x<<endl;
-      //     // }
-      //   }
-    	// }
-      //****************************
-      //FOURIER PRINTING
-      //****************************
-      // for(kFT.first();kFT.test();kFT.next())
-      // {
-      //   norm_kFT_squared= kFT.coord(0)*kFT.coord(0) + kFT.coord(1) * kFT.coord(1) + kFT.coord(2) * kFT.coord(2);
-      //   if(norm_kFT_squared == 1)
-      //   {
-      //     out_fourier<<setw(9) << tau <<"\t"<< setw(9) << scalarFT_pi(kFT)<<"\t"<< setw(9)<<scalarFT_zeta_half (kFT)<<"\t"<<kFT<<"\t"<<norm_kFT_squared<<endl;
-      //   }
-      // }
-      //**********************
-      //END ADDED************
-      //**********************
+      out_avg<<setw(9) << tau <<"\t"<< setw(9) << avg_pi<<"\t"<< setw(9) << avg_zeta<<"\t"<< setw(9) << avg_phi<<"\t"<< setw(9) << avg_Laplace_phi<<"\t"<< setw(9) << avg_source<<"\t"<< setw(9) << 1./a -1.<<endl;
+
+      out_max<<setw(5) << tau << "\t" << setw(5) << max_pi<< "\t" << setw(5) << max_zeta<< "\t" << setw(5) << max_phi << "\t" << setw(5) << max_Laplace_phi << "\t" << setw(5) <<max_source<<"\t"<< setw(5) << var_source << "\t" << setw(5) << 1./a -1. <<endl;
+
 #endif
 
 #ifdef BENCHMARK

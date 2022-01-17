@@ -287,7 +287,6 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 
 #ifdef BACKREACTION_TEST
   //Checking field
-  //Credit: David  and Lorenzo!
     template <class FieldType>
     void check_field(Field<FieldType> & field, double constant , string field_name, long n3, string message = "")
     {
@@ -342,13 +341,25 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
     sum /= n3;
     hom /= n3;
     return hom * constant;
-    // COUT << scientific << setprecision(6);
-    // COUT << message
-    // << setw(17) << field_name
-    // << " Max = " << setw(9) << max * constant
-    // << " hom = " << setw(9) << hom * constant
-    // << endl;
-    // cout.flags(f);
+    }
+
+    template <class FieldType>
+    double average_laplace(Field<FieldType> & field, double constant, long n3)
+    {
+    Site x(field.lattice());
+    ios::fmtflags f(cout.flags());
+    double max = 0., temp, hom;
+    for(x.first(); x.test(); x.next())
+    {
+    temp= field(x-0) + field(x+0) - 2. * field(x);
+    temp+=field(x+1) + field(x-1) - 2. * field(x);
+    temp+=field(x+2) + field(x-2) - 2. * field(x);
+    temp= temp;
+    hom += temp;
+    parallel.sum(hom);
+    hom /= n3;
+    return hom * constant;
+    }
     }
 
 
@@ -382,6 +393,45 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
     // << " hom = " << setw(9) << hom * constant
     // << endl;
     // cout.flags(f);
+    }
+
+    template <class FieldType>
+    double variance(Field<FieldType> & field, double constant, double avg , long n3)
+    {
+    Site x(field.lattice());
+    ios::fmtflags f(cout.flags());
+    double var = 0., temp;
+    for(x.first(); x.test(); x.next())
+    {
+    temp = field(x);
+    var += (temp - avg) * (temp - avg);
+    }
+    parallel.sum(var);
+    var = var/n3;
+    return (var * constant);
+    }
+
+    template <class FieldType>
+    double maximum_laplace(Field<FieldType> & field, double constant, long n3)
+    {
+    Site x(field.lattice());
+    ios::fmtflags f(cout.flags());
+    double max = 0., temp;
+    for(x.first(); x.test(); x.next())
+    {
+    temp= field(x-0) + field(x+0) - 2. * field(x);
+    temp+=field(x+1) + field(x-1) - 2. * field(x);
+    temp+=field(x+2) + field(x-2) - 2. * field(x);
+    temp= temp;
+    // hom += temp;
+    // sum += fabs(temp);
+    if(fabs(temp) >= max)
+    {
+    max = fabs(temp);
+    }
+    }
+    parallel.max(max);
+    return max * constant;
     }
 
 #endif
