@@ -1,6 +1,6 @@
 COMPILER     := /usr/local/bin/mpic++
-INCLUDE      := -I/Users/farbod/Documents/GitHub/hi_class_pub_devel/include -I//usr/local/Cellar/fftw/3.3.9//include -I/usr/local/Cellar/gsl/2.6/include -I/usr/local/Cellar/hdf5/1.12.0_1/include -I./../LATfield2 # add the path to LATfield2 and other libraries (if necessary)
-LIB          := -L/Users/farbod/Documents/GitHub/hi_class_pub_devel -L/usr/local/Cellar/hdf5/1.12.0_1/lib -L/usr/local/Cellar/gsl/2.6/lib  -L//usr/local/Cellar/fftw/3.3.9//lib -lfftw3 -lm -lhdf5 -lgsl -lgslcblas -lclass
+INCLUDE      := -I/Users/farbod/Documents/GitHub/hi_class_pub_devel/include -I//usr/local/Cellar/fftw/3.3.10//include -I/usr/local/Cellar/gsl/2.7/include -I/usr/local/Cellar/hdf5/1.12.1/include -I./../LATfield2 # add the path to LATfield2 and other libraries (if necessary)
+LIB          := -L/Users/farbod/Documents/GitHub/hi_class_pub_devel -L/usr/local/Cellar/hdf5/1.12.1/lib -L/usr/local/Cellar/gsl/2.7/lib  -L//usr/local/Cellar/fftw/3.3.10//lib -lfftw3 -lm -lhdf5 -lgsl -lgslcblas -lclass
 
 
 # target and source

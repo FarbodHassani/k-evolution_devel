@@ -436,6 +436,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         Laplace_pi=0.;
         Gradpi_Gradpi=0.;
         Gradpi_prime_Gradpi=0.;
+        grad_pi_grad_pi_gradgrad_pi = 0.;
 
 				Site x(pi.lattice());
 				for (x.first(); x.test(); x.next())
@@ -447,9 +448,9 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
   					Laplace_pi+=pi(x+1) + pi(x-1) - 2. * pi(x);
   					Laplace_pi+=pi(x+2) + pi(x-2) - 2. * pi(x);
             Laplace_pi= Laplace_pi/(dx*dx);
-            //*************
-            //Gradpi_Gradpi
-            //*************
+            // // *************
+            // // Gradpi_Gradpi
+            // // *************
             Gradpi_Gradpi= 0.25 * (pi(x + 0)  - pi(x - 0)) * (pi(x + 0) - pi(x - 0)) / (dx * dx);
             Gradpi_Gradpi+=0.25 * (pi(x + 1)  - pi(x - 1)) * (pi(x + 1) - pi(x - 1)) / (dx * dx);
             Gradpi_Gradpi+=0.25 * (pi(x + 2)  - pi(x - 2)) * (pi(x + 2) - pi(x - 2)) / (dx * dx);
@@ -460,9 +461,9 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
             Gradpi_prime_Gradpi+=0.25* (pi_prime(x+1) - pi_prime(x-1) ) * (pi(x+1) - pi(x-1)) / (dx * dx);
             Gradpi_prime_Gradpi+=0.25* (pi_prime(x+2) - pi_prime(x-2) ) * (pi(x+2) - pi(x-2)) / (dx * dx);
 
-            //*************************************************************
-            //dpi_dx * dpj_dx * d^i d^j pi
-            //*************************************************************
+            //// *************************************************************
+            //// dpi_dx * dpj_dx * d^i d^j pi
+            //// *************************************************************
             grad_pi_grad_pi_gradgrad_pi =  //1:  + pi^{(2,0,0}(x,y,z) pi^{(1,0,0)}(x,y,z)^2
             + ((pi(x - 0) + pi(x + 0) - 2.*pi(x))/(1.0 * dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx));
             grad_pi_grad_pi_gradgrad_pi +=  //2:  + pi^{(0,2,0}(x,y,z) pi^{(0,1,0)}(x,y,z)^2
@@ -480,7 +481,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
             X = (pi_prime(x) * pi_prime(x) - Gradpi_Gradpi)/(2. * a * a); // Kinetic term
             K = -g0 + g2 * (X - X_hat) * (X - X_hat) + g4 * pow(X - X_hat,4); // K(X,phi)
             dK_dX = 2.0 * g2 * (X - X_hat) + 4.0 * g4 * pow(X - X_hat,3);
-            d2K_dX2 = 2.0 * g2 + 12. * g4 * (X - X_hat) * (X - X_hat) ;
+            d2K_dX2 = 0.0; //2.0 * g2 + 12. * g4 * (X - X_hat) * (X - X_hat) ;
             dK_dpi = 0.;
             d2K_dpidX =0.;
 
@@ -604,30 +605,40 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
              }
       }
 
-      //////////////////////////
-      // Update K-essence field (pi)
-      //////////////////////////
-      // Description:
-      //   Updating K-essence pi_k field based on equation obtained by energy momentum conservation
-      //
-      // Arguments:
-      //   phi        reference to field configuration
-      //   pi_k       reference to k-essence field
-      //   pi_prime      reference to pi_prime of kessence at (n+1/2)
-      // Returns:
-      //
-      //////////////////////////
-      template <class FieldType>
-      void update_pi_RK2(double dtau, Field<FieldType> & pi, Field<FieldType> & pi_prime, Field<FieldType> & pi_prime_dot)
-      {
-        Site x(pi.lattice());
-        for (x.first(); x.test(); x.next())
-          {
-            // tmp(x) = pi_prime_dot(x);
-            pi(x) = pi(x)  + dtau * ( pi_prime(x) + dtau/2. * pi_prime_dot(x)) ; //  pi_k(n+1)
-            //*************************************************************************************
-          }
-      }
+        // RK implementaion! d pi/dt = f(pi, pi_prime, grad_pi, grad_pi_prime, ..) = pi_prime
+        // Function for updating the pi in RK methods
+        // Note that to save memory we define f for each points (x) where the values of pi, pi_prime, Laplace pi and all the lattice dependent variable are given!
+        double f_function_RK(double pi_prime_x)
+        {
+          return pi_prime_x; //;
+        }
+
+        // RK implementaion! d pi_prime/dt = g(pi, pi_prime, grad_pi, grad_pi_prime, ..)
+        // Function for updating the pi_prime in RK methods
+        // Note that to save memory we define f for each points (x) where the values of pi, pi_prime, Laplace pi and all the lattice dependent variable are given!
+        double g_function_RK(double pi_x, double pi_prime_x, double Laplace_pi, double Gradpi_Gradpi, double Gradpi_prime_Gradpi, double grad_pi_grad_pi_gradgrad_pi, double dx, double a, double X_hat ,double g0, double g2, double g4, double Hcon)
+        {
+          double X, K, dK_dX, d2K_dX2, dK_dpi, d2K_dpidX;
+          double d2pi_dt2, Rhs;
+          double term1, term2, term3, term4, term5, term6, term7;
+
+          // definitions
+          X = (pi_prime_x * pi_prime_x - Gradpi_Gradpi)/(2. * a * a); // Kinetic term
+          K = -g0 + g2 * (X - X_hat) * (X - X_hat) + g4 * pow(X - X_hat,4); // K(X,phi)
+          dK_dX = 2.0 * g2 * (X - X_hat) + 4.0 * g4 * pow(X - X_hat,3);
+          d2K_dX2 = 2.0 * g2 + 12. * g4 * (X - X_hat) * (X - X_hat) ;
+          dK_dpi = 0.;
+          d2K_dpidX =0.;
+          term1 = a * a * (dK_dpi  - pi_prime_x * pi_prime_x * d2K_dpidX/(a*a));
+          term2 = - Hcon * (2.0 * dK_dX - pi_prime_x * pi_prime_x * d2K_dX2/(a*a) ) * pi_prime_x;
+          term3 = dK_dX * Laplace_pi;
+          term4 = d2K_dpidX * Gradpi_Gradpi;//d2K_dpidX * dpi_dx * dpi_dx;
+          term5 = 2.0 * d2K_dX2 * pi_prime_x * Gradpi_prime_Gradpi/(a*a); //2.0 * d2K_dX2 * dpi_dt *dpi_dx * d2pi_dxdt/a**2;
+          term6 = -Hcon * d2K_dX2 * pi_prime_x * Gradpi_Gradpi/(a*a);
+          term7 = - d2K_dX2 * grad_pi_grad_pi_gradgrad_pi/(a*a);
+          Rhs = term1 + term2 + term3 + term4 +term5 +term6 + term7;
+          return Rhs/(dK_dX + pi_prime_x* pi_prime_x * d2K_dX2/(a*a));
+        }
 
 
       //////////////////////////
@@ -640,38 +651,27 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
       //   phi        reference to field configuration
       //   pi_k       reference to k-essence field
       //   piv_k      reference to first derivative of the field
-      //   n_correcor_steps Number of time which goes through predictor corrector method.
       // Returns:
       //
       //////////////////////////
       template <class FieldType>
-      void update_pi_prime_RK2(double dtau, double dx, double a, Field<FieldType> & pi, Field<FieldType> & pi_prime, Field<FieldType> & pi_prime_dot, Field<FieldType> & tmp, Field<FieldType> & cs2_full, double X_hat ,double g0, double g2, double g4, double Hcon)
+      void update_RK2(double dtau, double dx, double a, Field<FieldType> & pi, Field<FieldType> & pi_prime, Field<FieldType> & k1, Field<FieldType> & k2, Field<FieldType> & l1, Field<FieldType> & l2, Field<FieldType> & cs2_full, Field<FieldType> & det_gamma, double X_hat ,double g0, double g2, double g4, double Hcon)
         {
         double Laplace_pi, Gradpi_Gradpi, Gradpi_prime_Gradpi, grad_pi_grad_pi_gradgrad_pi;
-        double X, K, dK_dX, d2K_dX2, dK_dpi, d2K_dpidX;
-        double d2pi_dt2, d2pi_dt2_old, Rhs;
-        double term1, term2, term3, term4, term5, term6, term7;
+        double  X, dK_dX, d2K_dX2;
 
         //**************************************************************
         //When non-linearities are turned off we put non-linear temrs zero
         //**************************************************************
-        Laplace_pi=0.;
-        Gradpi_Gradpi=0.;
-        Gradpi_prime_Gradpi=0.;
-
+        // Laplace_pi=0.;
+        // Gradpi_Gradpi=0.;
+        // Gradpi_prime_Gradpi=0.;
         Site x(pi.lattice());
         for (x.first(); x.test(); x.next())
           {
             //****************************************************************
             //Laplace pi, pi(n) since pi is not updated yet
             //****************************************************************
-            pi(x) = pi(x) + dtau * pi_prime(x)/2.;
-            tmp(x) = pi_prime(x) + pi_prime_dot(x) * dtau/2. ;
-             //pi'(n) = pi'(n-1/2) + dtau/2 * pi_prime_dot(n)
-            // cout<<"tmp(x): "<<tmp(x)<<endl;
-            //det_gamma is just a name! To decrease memory allocation!
-            // cout<<"tmp: "<<tmp(x)<<" d2pi_dt2"<<d2pi_dt2<<endl;
-
             Laplace_pi= pi(x-0) + pi(x+0) - 2. * pi(x);
             Laplace_pi+=pi(x+1) + pi(x-1) - 2. * pi(x);
             Laplace_pi+=pi(x+2) + pi(x-2) - 2. * pi(x);
@@ -685,10 +685,9 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
             //*************************************************************
             //Gradpi_prime_Gradpi = Grad_pi . Grad_ (pi_prime )
             //*************************************************************
-            Gradpi_prime_Gradpi= 0.25* (tmp(x+0) - tmp(x-0) ) * (pi(x+0) - pi(x-0)) / (dx * dx);
-            Gradpi_prime_Gradpi+=0.25* (tmp(x+1) - tmp(x-1) ) * (pi(x+1) - pi(x-1)) / (dx * dx);
-            Gradpi_prime_Gradpi+=0.25* (tmp(x+2) - tmp(x-2) ) * (pi(x+2) - pi(x-2)) / (dx * dx);
-
+            Gradpi_prime_Gradpi= 0.25* (pi_prime(x+0) - pi_prime(x-0) ) * (pi(x+0) - pi(x-0)) / (dx * dx);
+            Gradpi_prime_Gradpi+=0.25* (pi_prime(x+1) - pi_prime(x-1) ) * (pi(x+1) - pi(x-1)) / (dx * dx);
+            Gradpi_prime_Gradpi+=0.25* (pi_prime(x+2) - pi_prime(x-2) ) * (pi(x+2) - pi(x-2)) / (dx * dx);
             //*************************************************************
             //dpi_dx * dpj_dx * d^i d^j pi
             //*************************************************************
@@ -704,120 +703,80 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
             + 2.0 * ((0.25 *(pi(x + 0 + 2) - pi(x + 0 - 2) - pi(x - 0 + 2) + pi(x - 0 - 2) )/(dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx)));
             grad_pi_grad_pi_gradgrad_pi +=  //6:  + 2.0 *  pi^{(0,1,1}(x,y,z) pi^{(0,1,0)}(x,y,z) pi^{(0,0,1)}(x,y,z)
             + 2.0 * ((0.25 *(pi(x + 1 + 2) - pi(x + 1 - 2) - pi(x - 1 + 2) + pi(x - 1 - 2) )/(dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx)));
-
             // definitions
-            X = (tmp(x) * tmp(x) - Gradpi_Gradpi)/(2. * a * a); // Kinetic term
-            K = -g0 + g2 * (X - X_hat) * (X - X_hat) + g4 * pow(X - X_hat,4); // K(X,phi)
-            dK_dX = 2.0 * g2 * (X - X_hat) + 4.0 * g4 * pow(X - X_hat,3);
-            d2K_dX2 = 2.0 * g2 + 12. * g4 * (X - X_hat) * (X - X_hat) ;
-            dK_dpi = 0.;
-            d2K_dpidX =0.;
-            term1 = a * a * (dK_dpi  - tmp(x) * tmp(x) * d2K_dpidX/(a*a));
-            term2 = - Hcon * (2.0 * dK_dX - tmp(x) * tmp(x) * d2K_dX2/(a*a) ) * tmp(x);
-            term3 = dK_dX * Laplace_pi;
-            term4 = d2K_dpidX * Gradpi_Gradpi;//d2K_dpidX * dpi_dx * dpi_dx;
-            term5 = 2.0 * d2K_dX2 * tmp(x) * Gradpi_prime_Gradpi/(a*a); //2.0 * d2K_dX2 * dpi_dt *dpi_dx * d2pi_dxdt/a**2;
-            term6 = -Hcon * d2K_dX2 * tmp(x) * Gradpi_Gradpi/(a*a);
-            term7 = - d2K_dX2 * grad_pi_grad_pi_gradgrad_pi/(a*a);
-            Rhs = term1 + term2 + term3 + term4 +term5 +term6 + term7;
-            d2pi_dt2 = Rhs/(dK_dX + tmp(x)* tmp(x) * d2K_dX2/(a*a));
-
-            pi_prime(x) = pi_prime(x) + dtau * (pi_prime_dot(x) + dtau/2. * d2pi_dt2);
-            pi_prime_dot(x) = d2pi_dt2;
-
-            // tmp(x) = (2.0 * dK_dX/a/a) * (2.0 * dK_dX/a/a) * (1. + 2. * X * d2K_dX2/dK_dX);
-            // cs2_full(x) = 1. + (2. * X * d2K_dX2 )/dK_dX;
-            cs2_full(x) = dK_dX/(2. * X * d2K_dX2 + dK_dX);
-
-             }
-      }
+            // RK2 coefficients!
+            // pi(n+1) = pi(n) + 1/2 (k1+k2)
+            // k1 = f(pi,pi_v,...) = pi_prime * dtau ****  k2 = dtau * (pi_prime + dtau * l1)
+            // l1 = dtau * pi_prime_prime = d^2 pi/dt^2 = g(pi, pi_prime, grad pi, grad pi_prime) **** l2 = dtau * (g(pi, pi_prime, grad pi, grad pi_prime) + dtau * g(pi + k1, pi_prime + l1, tau+dtau).
+            k1(x) = dtau * f_function_RK (pi_prime(x));
+            l1(x) = dtau * g_function_RK(pi(x), pi_prime(x), Laplace_pi, Gradpi_Gradpi, Gradpi_prime_Gradpi, grad_pi_grad_pi_gradgrad_pi, dx, a, X_hat , g0,  g2,  g4,  Hcon);
+          }
 
 
+          for (x.first(); x.test(); x.next())
+            {
+              //****************************************************************
+              //Laplace pi, pi(n) since pi is not updated yet
+              //****************************************************************
+              Laplace_pi= pi(x-0) + pi(x+0) - 2. * pi(x) + k1(x-0) + k1(x+0) - 2. * k1(x);
+              Laplace_pi+=pi(x+1) + pi(x-1) - 2. * pi(x) + k1(x+1) + k1(x-1) - 2. * k1(x);
+              Laplace_pi+=pi(x+2) + pi(x-2) - 2. * pi(x) + k1(x+2) + k1(x-2) - 2. * k1(x);
+              Laplace_pi= Laplace_pi/(dx*dx);
 
-// Function for updating the pi_prime in RK4 method. d^pi/dtau^2 = f(pi, pi', tau).
-// For a given point this function computes the full f(pi(x), pi(x);tau)
-  template <class FieldType>
- void f_function_RK4(Site x, Field<FieldType> pi, Field<FieldType> pi_1, Field<FieldType> pi_prime,  Field<FieldType> phi, double dx, double a, double X_hat ,double g0, double g2, double g4, double Hcon)
-  {
-    double Laplace_pi, Gradpi_Gradpi, Gradpi_prime_Gradpi, grad_pi_grad_pi_gradgrad_pi;
-    double X, K, dK_dX, d2K_dX2, dK_dpi, d2K_dpidX;
-    double d2pi_dt2, Rhs;
-    double term1, term2, term3, term4, term5, term6, term7;
+              //*************
+              //Gradpi_Gradpi
+              //*************
+              Gradpi_Gradpi= 0.25 * (pi(x + 0)  - pi(x - 0)) * (pi(x + 0) - pi(x - 0)) + 0.25 * (k1(x + 0)  - k1(x - 0)) * (k1(x + 0) - k1(x - 0));
+              Gradpi_Gradpi+=0.25 * (pi(x + 1)  - pi(x - 1)) * (pi(x + 1) - pi(x - 1)) + 0.25 * (k1(x + 1)  - k1(x - 1)) * (k1(x + 1) - k1(x - 1));
+              Gradpi_Gradpi+=0.25 * (pi(x + 2)  - pi(x - 2)) * (pi(x + 2) - pi(x - 2)) + 0.25 * (k1(x + 2)  - k1(x - 2)) * (k1(x + 2) - k1(x - 2));
+              Gradpi_Gradpi = Gradpi_Gradpi/ (dx * dx);
+              //*************************************************************
+              //Gradpi_prime_Gradpi = Grad_pi . Grad_ (pi_prime )
+              //*************************************************************
+              Gradpi_prime_Gradpi= 0.25* (pi_prime(x+0) - pi_prime(x-0) ) * (pi(x+0) - pi(x-0)) + 0.25* (l1(x+0) - l1(x-0) ) * (k1(x+0) - k1(x-0));
+              Gradpi_prime_Gradpi+=0.25* (pi_prime(x+1) - pi_prime(x-1) ) * (pi(x+1) - pi(x-1)) + 0.25* (l1(x+1) - l1(x-1) ) * (k1(x+1) - k1(x-1));
+              Gradpi_prime_Gradpi+=0.25* (pi_prime(x+2) - pi_prime(x-2) ) * (pi(x+2) - pi(x-2)) + 0.25* (l1(x+2) - l1(x-2) ) * (k1(x+2) - k1(x-2));
+              Gradpi_prime_Gradpi = Gradpi_prime_Gradpi/ (dx * dx);
+              //*************************************************************
+              //dpi_dx * dpj_dx * d^i d^j pi
+              //*************************************************************
+              grad_pi_grad_pi_gradgrad_pi =  //1:  + pi^{(2,0,0}(x,y,z) pi^{(1,0,0)}(x,y,z)^2
+              + ((pi(x - 0) + pi(x + 0) - 2.*pi(x))/(1.0 * dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx))          +     ((k1(x - 0) + k1(x + 0) - 2.*k1(x))/(1.0 * dx*dx)) * ((k1(x + 0)  - k1(x - 0))/(2.0*dx*dx)) * ((k1(x + 0)  - k1(x - 0))/(2.0*dx*dx));
+              grad_pi_grad_pi_gradgrad_pi +=  //2:  + pi^{(0,2,0}(x,y,z) pi^{(0,1,0)}(x,y,z)^2
+              + ((pi(x - 1) + pi(x + 1) - 2.*pi(x))/(1.0 * dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx))      +        ((k1(x - 1) + k1(x + 1) - 2.*k1(x))/(1.0 * dx*dx)) * ((k1(x + 1)  - k1(x - 1))/(2.0*dx*dx)) * ((k1(x + 1)  - k1(x - 1))/(2.0*dx*dx));
+              grad_pi_grad_pi_gradgrad_pi +=  //3:  + pi^{(0,0,2}(x,y,z) pi^{(0,0,1)}(x,y,z)^2
+              + ((pi(x - 2) + pi(x + 2) - 2.*pi(x))/(1.0 * dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx))       +       ((k1(x - 2) + k1(x + 2) - 2.*k1(x))/(1.0 * dx*dx)) * ((k1(x + 2)  - k1(x - 2))/(2.0*dx*dx)) * ((k1(x + 2)  - k1(x - 2))/(2.0*dx*dx));
+              grad_pi_grad_pi_gradgrad_pi +=  //4:  + 2.0 *  pi^{(1,1,0}(x,y,z) pi^{(1,0,0)}(x,y,z) pi^{(0,1,0)}(x,y,z)
+              + 2.0 * ((0.25 *(pi(x + 0 + 1) - pi(x + 0 - 1) - pi(x - 0 + 1) + pi(x - 0 - 1) )/(dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx)))        +        2.0 * ((0.25 *(k1(x + 0 + 1) - k1(x + 0 - 1) - k1(x - 0 + 1) + k1(x - 0 - 1) )/(dx*dx)) * ((k1(x + 0)  - k1(x - 0))/(2.0*dx*dx)) * ((k1(x + 1)  - k1(x - 1))/(2.0*dx*dx)) );
+              grad_pi_grad_pi_gradgrad_pi +=  //5:  + 2.0 *  pi^{(1,0,1}(x,y,z) pi^{(1,0,0)}(x,y,z) pi^{(0,0,1)}(x,y,z)
+              + 2.0 * ((0.25 *(pi(x + 0 + 2) - pi(x + 0 - 2) - pi(x - 0 + 2) + pi(x - 0 - 2) )/(dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx)))        +      2.0 * ((0.25 *(k1(x + 0 + 2) - k1(x + 0 - 2) - k1(x - 0 + 2) + k1(x - 0 - 2) )/(dx*dx)) * ((k1(x + 0)  - k1(x - 0))/(2.0*dx*dx)) * ((k1(x + 2)  - k1(x - 2))/(2.0*dx*dx)));
+              grad_pi_grad_pi_gradgrad_pi +=  //6:  + 2.0 *  pi^{(0,1,1}(x,y,z) pi^{(0,1,0)}(x,y,z) pi^{(0,0,1)}(x,y,z)
+              + 2.0 * ((0.25 *(pi(x + 1 + 2) - pi(x + 1 - 2) - pi(x - 1 + 2) + pi(x - 1 - 2) )/(dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx)))        +       2.0 * ((0.25 *(k1(x + 1 + 2) - k1(x + 1 - 2) - k1(x - 1 + 2) + k1(x - 1 - 2) )/(dx*dx)) * ((k1(x + 1)  - k1(x - 1))/(2.0*dx*dx)) * ((k1(x + 2)  - k1(x - 2))/(2.0*dx*dx)));
+              // definitions
+              // RK2 coefficients!
+              // pi(n+1) = pi(n) + 1/2 (k1+k2)
+              // k1 = f(pi,pi_v,...) = pi_prime * dtau ****  k2 = dtau * (pi_prime + dtau * l1)
+              // l1 = dtau * pi_prime_prime = d^2 pi/dt^2 = g(pi, pi_prime, grad pi, grad pi_prime) **** l2 = dtau * (g(pi, pi_prime, grad pi, grad pi_prime) + dtau * g(pi + k1, pi_prime + l1, tau+dtau).
+              k2(x) = dtau * f_function_RK (pi_prime(x) + l1(x));
+              l2(x) = dtau * g_function_RK(pi(x) + k1(x), pi_prime(x) + l1(x), Laplace_pi, Gradpi_Gradpi, Gradpi_prime_Gradpi, grad_pi_grad_pi_gradgrad_pi, dx, a, X_hat , g0,  g2,  g4,  Hcon);
 
-    //**************************************************************
-    //When non-linearities are turned off we put non-linear temrs zero
-    //**************************************************************
-    Laplace_pi=0.;
-    Gradpi_Gradpi=0.;
-    Gradpi_prime_Gradpi=0.;
+              // definitions
+              X = (pi_prime(x) * pi_prime(x) - Gradpi_Gradpi)/(2. * a * a); // Kinetic term
+              // K = -g0 + g2 * (X - X_hat) * (X - X_hat) + g4 * pow(X - X_hat,4); // K(X,phi)
+              dK_dX = 2.0 * g2 * (X - X_hat) + 4.0 * g4 * pow(X - X_hat,3);
+              d2K_dX2 = 2.0 * g2 + 12. * g4 * (X - X_hat) * (X - X_hat) ;
 
-    // pi.updateHalo();  // communicate halo values
-    // pi_prime.updateHalo();  // communicate halo values
 
-      phi(x) = pi(x) ;//+ add_pi_prime;
-      pi_prime(x) = pi_prime(x); //+ add_pi_prime;
-      //****************************************************************
-      //Laplace pi, pi(n) since pi is not updated yet
-      //****************************************************************
-      Laplace_pi= pi(x-0) + pi(x+0) - 2. * pi(x);
-      Laplace_pi+=pi(x+1) + pi(x-1) - 2. * pi(x);
-      Laplace_pi+=pi(x+2) + pi(x-2) - 2. * pi(x);
-      Laplace_pi= Laplace_pi/(dx*dx);
-      //*************
-      //Gradpi_Gradpi
-      //*************
-      Gradpi_Gradpi= 0.25 * (pi(x + 0)  - pi(x - 0)) * (pi(x + 0) - pi(x - 0)) / (dx * dx);
-      Gradpi_Gradpi+=0.25 * (pi(x + 1)  - pi(x - 1)) * (pi(x + 1) - pi(x - 1)) / (dx * dx);
-      Gradpi_Gradpi+=0.25 * (pi(x + 2)  - pi(x - 2)) * (pi(x + 2) - pi(x - 2)) / (dx * dx);
-      //*************************************************************
-      //Gradpi_prime_Gradpi = Grad_pi . Grad_ (pi_prime )
-      //*************************************************************
-      Gradpi_prime_Gradpi= 0.25* (pi_prime(x+0) - pi_prime(x-0) ) * (pi(x+0) - pi(x-0)) / (dx * dx);
-      Gradpi_prime_Gradpi+=0.25* (pi_prime(x+1) - pi_prime(x-1) ) * (pi(x+1) - pi(x-1)) / (dx * dx);
-      Gradpi_prime_Gradpi+=0.25* (pi_prime(x+2) - pi_prime(x-2) ) * (pi(x+2) - pi(x-2)) / (dx * dx);
+              cs2_full(x) = dK_dX/(2. * X * d2K_dX2 + dK_dX);
+              det_gamma(x) = (2.0 * dK_dX/a/a) * (2.0 * dK_dX/a/a) * (1. + 2. * X * d2K_dX2/dK_dX);
 
-      //*************************************************************
-      //dpi_dx * dpj_dx * d^i d^j pi
-      //*************************************************************
-      grad_pi_grad_pi_gradgrad_pi =  //1:  + pi^{(2,0,0}(x,y,z) pi^{(1,0,0)}(x,y,z)^2
-      + ((pi(x - 0) + pi(x + 0) - 2.*pi(x))/(1.0 * dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx));
-      grad_pi_grad_pi_gradgrad_pi +=  //2:  + pi^{(0,2,0}(x,y,z) pi^{(0,1,0)}(x,y,z)^2
-      + ((pi(x - 1) + pi(x + 1) - 2.*pi(x))/(1.0 * dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx));
-      grad_pi_grad_pi_gradgrad_pi +=  //3:  + pi^{(0,0,2}(x,y,z) pi^{(0,0,1)}(x,y,z)^2
-      + ((pi(x - 2) + pi(x + 2) - 2.*pi(x))/(1.0 * dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx));
-      grad_pi_grad_pi_gradgrad_pi +=  //4:  + 2.0 *  pi^{(1,1,0}(x,y,z) pi^{(1,0,0)}(x,y,z) pi^{(0,1,0)}(x,y,z)
-      + 2.0 * ((0.25 *(pi(x + 0 + 1) - pi(x + 0 - 1) - pi(x - 0 + 1) + pi(x - 0 - 1) )/(dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx)) );
-      grad_pi_grad_pi_gradgrad_pi +=  //5:  + 2.0 *  pi^{(1,0,1}(x,y,z) pi^{(1,0,0)}(x,y,z) pi^{(0,0,1)}(x,y,z)
-      + 2.0 * ((0.25 *(pi(x + 0 + 2) - pi(x + 0 - 2) - pi(x - 0 + 2) + pi(x - 0 - 2) )/(dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx)));
-      grad_pi_grad_pi_gradgrad_pi +=  //6:  + 2.0 *  pi^{(0,1,1}(x,y,z) pi^{(0,1,0)}(x,y,z) pi^{(0,0,1)}(x,y,z)
-      + 2.0 * ((0.25 *(pi(x + 1 + 2) - pi(x + 1 - 2) - pi(x - 1 + 2) + pi(x - 1 - 2) )/(dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx)));
+              // RK2 updating!
+              pi(x) = pi(x) + (k1(x) + k2(x))/2.;
+              pi_prime(x) = pi_prime(x) +  (l1(x) + l2(x))/2;
+            }
+          }
 
-      // definitions
-      X = (pi_prime(x) * pi_prime(x) - Gradpi_Gradpi)/(2. * a * a); // Kinetic term
-      K = -g0 + g2 * (X - X_hat) * (X - X_hat) + g4 * pow(X - X_hat,4); // K(X,phi)
-      dK_dX = 2.0 * g2 * (X - X_hat) + 4.0 * g4 * pow(X - X_hat,3);
-      d2K_dX2 = 2.0 * g2 + 12. * g4 * (X - X_hat) * (X - X_hat) ;
-      dK_dpi = 0.;
-      d2K_dpidX =0.;
-      term1 = a * a * (dK_dpi  - pi_prime(x) * pi_prime(x) * d2K_dpidX/(a*a));
-      term2 = - Hcon * (2.0 * dK_dX - pi_prime(x) * pi_prime(x) * d2K_dX2/(a*a) ) * pi_prime(x);
-      term3 = dK_dX * Laplace_pi;
-      term4 = d2K_dpidX * Gradpi_Gradpi;//d2K_dpidX * dpi_dx * dpi_dx;
-      term5 = 2.0 * d2K_dX2 * pi_prime(x) * Gradpi_prime_Gradpi/(a*a); //2.0 * d2K_dX2 * dpi_dt *dpi_dx * d2pi_dxdt/a**2;
-      term6 = -Hcon * d2K_dX2 * pi_prime(x) * Gradpi_Gradpi/(a*a);
-      term7 = - d2K_dX2 * grad_pi_grad_pi_gradgrad_pi/(a*a);
-      Rhs = term1 + term2 + term3 + term4 +term5 +term6 + term7;
-      d2pi_dt2 = Rhs/(dK_dX + pi_prime(x)* pi_prime(x) * d2K_dX2/(a*a));
 
-      // return d2pi_dt2;
-      return pi(x-0) + pi(x+0);
-    }
-
-  template <class FieldType>
-  double g_function_RK4( Site x, Field<FieldType> pi_prime,  double add_pi_prime)
-      {
-          return pi_prime(x); //+ add_pi_prime;
-      }
 
       //////////////////////////
       // Update K-essence field (pi)
