@@ -424,6 +424,7 @@ int main(int argc, char **argv)
   scalarFT_pi_prime.initialize(latFT,1);
   PlanFFT<Cplx> plan_pi_prime(&pi_prime, &scalarFT_pi_prime);
 
+
   l0.initialize(lat,1);
   scalarFT_l0.initialize(latFT,1);
   PlanFFT<Cplx> plan_l0(&l0, &scalarFT_l0);
@@ -612,20 +613,45 @@ COUT << " error: IC generator is wrongly chosen!- For this code you need to use 
 //Initial condition
 if (cosmo.MGtheory == 1) // Only if we use the full theory we add the BG
 {
-for (x.first(); x.test(); x.next())
+  if (cosmo.IC_scf == 1) // hiclass initial codnitions for the scalar field
   {
-    pi(x) += gsl_spline_eval(phi_smg, 1. / (1. + sim.z_in), acc) * gsl_spline_eval(H_spline, 1.0, acc)/
-    #ifdef HAVE_CLASS_BG
-    Hconf(1.0, fourpiG, H_spline, acc)
-    #else
-    Hconf(1.0, fourpiG, cosmo)
-    #endif
-    ;// phi has dimension of time so we multiply by H0_class/H_0 gevolution
-    pi_prime(x) +=  gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
-    det_gamma(x) = 0.;
+    for (x.first(); x.test(); x.next())
+      {
+        pi(x) += gsl_spline_eval(phi_smg, 1. / (1. + sim.z_in), acc) * gsl_spline_eval(H_spline, 1.0, acc)/
+        #ifdef HAVE_CLASS_BG
+        Hconf(1.0, fourpiG, H_spline, acc)
+        #else
+        Hconf(1.0, fourpiG, cosmo)
+        #endif
+        ;// phi has dimension of time so we multiply by H0_class/H_0 gevolution
+        pi_prime(x) +=  gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
+        det_gamma(x) = 0.;
+        k1(x) =0.;
+        k2(x) =0.;
+        l1(x) =0.;
+        l2(x) =0.;
+      }
+    pi_prime.updateHalo();  // communicate halo values
+    pi.updateHalo();  // communicate halo values
+
   }
-  pi_prime.updateHalo();  // communicate halo values
-  pi.updateHalo();  // communicate halo values
+  else if (cosmo.IC_scf == 0) // If the initial conditions are assumed to be small initially
+  {
+    for (x.first(); x.test(); x.next())
+      {
+        pi(x) = 0.0 + gsl_spline_eval(phi_smg, 1. / (1. + sim.z_in), acc) * gsl_spline_eval(H_spline, 1.0, acc)/
+        #ifdef HAVE_CLASS_BG
+        Hconf(1.0, fourpiG, H_spline, acc)
+        #else
+        Hconf(1.0, fourpiG, cosmo)
+        #endif
+        ;// phi has dimension of time so we multiply by H0_class/H_0 gevolution
+        pi_prime(x) = 0.000001 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc); // We consider the IC for phi_prime to be very small
+        det_gamma(x) = 0.;
+      }
+    pi_prime.updateHalo();  // communicate halo values
+    pi.updateHalo();  // communicate halo values
+  }
 }
 //   //****************************
 //   //****SAVE DATA To test Backreaction
@@ -726,6 +752,7 @@ string str_filename5 ;
 #endif
 
 
+  outfile = fopen(filename, "w");
 
 	while (true)    // main loop
 	{
@@ -1460,6 +1487,8 @@ ref_time = MPI_Wtime();
           if(cycle==0)
           {
           if(parallel.isRoot())  cout << "\033[1;34mThe fundamental theory is being solved using Euler method!\033[0m\n";
+          if(parallel.isRoot())  cout << "\033[1;34mThe Non-linear terms included: \033[0m"<<cosmo.NL<<endl;
+          if(parallel.isRoot())  cout << "\033[1;34mThe initial condition for the scalar field is made using hiclass: \033[0m"<<cosmo.IC_scf<<endl;
           }
         double a_kess=a;
 
@@ -1480,7 +1509,7 @@ ref_time = MPI_Wtime();
        #else
        Hconf(a_kess, fourpiG, cosmo)
        #endif
-        );
+        , cosmo.NL);
       pi_prime.updateHalo();
 
       update_pi_full(dtau/ sim.nKe_numsteps, pi, pi_prime_old); // H_old is updated here in the function
@@ -1578,7 +1607,7 @@ ref_time = MPI_Wtime();
        #else
        Hconf(a_kess, fourpiG, cosmo)
        #endif
-     );
+     , cosmo.NL);
       pi.updateHalo();
       pi_prime.updateHalo();
 

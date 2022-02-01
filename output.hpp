@@ -2042,12 +2042,30 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 	 //KESSENCE PART
 
    // Note that according to definition and since pi is dimensionfull, so in the output we write \pi * H_conf which is dimensionless and can be compared to class and hiclass
+
 	  if (sim.out_pk & MASK_PI_K)
 		{
+      gsl_spline * H_spline = NULL;
+      loadBGFunctions(class_background, H_spline, "H [1/Mpc]", sim.z_in);
+      gsl_interp_accel * acc = gsl_interp_accel_alloc();
+
 			plan_pi_k->execute(FFT_FORWARD);
 			extractPowerSpectrum(*scalarFT_pi , kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
 			sprintf(filename, "%s%s%03d_pi_k.dat", sim.output_path, sim.basename_pk, pkcount);
-			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of pi_k  (dimensionless)", a, sim.z_pk[pkcount]);
+			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI / Hconf(1.0, fourpiG,//TODO_EB
+			#ifdef HAVE_CLASS_BG
+			H_spline, acc
+		  #else
+			cosmo
+			#endif
+      )
+      / Hconf(1.0, fourpiG,//TODO_EB
+      #ifdef HAVE_CLASS_BG
+      H_spline, acc
+      #else
+      cosmo
+      #endif
+      ), filename, "power spectrum of pi_k * H0 (dimensionless)", a, sim.z_pk[pkcount]);
 		}
 
 	     if (sim.out_pk & MASK_zeta)

@@ -423,7 +423,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 			//////////////////////////
 
 			template <class FieldType>
-			void update_pi_prime_euler(double dtau, double dx, double a, Field<FieldType> & pi , Field<FieldType> & pi_prime, Field<FieldType> & det_gamma, Field<FieldType> & cs2_full, double X_hat ,double g0, double g2, double g4, double Hcon)
+			void update_pi_prime_euler(double dtau, double dx, double a, Field<FieldType> & pi , Field<FieldType> & pi_prime, Field<FieldType> & det_gamma, Field<FieldType> & cs2_full, double X_hat ,double g0, double g2, double g4, double Hcon, double NL)
 			  {
         double Laplace_pi, Gradpi_Gradpi, Gradpi_prime_Gradpi, grad_pi_grad_pi_gradgrad_pi;
         double X, K, dK_dX, d2K_dX2, dK_dpi, d2K_dpidX;
@@ -478,27 +478,26 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
             + 2.0 * ((0.25 *(pi(x + 1 + 2) - pi(x + 1 - 2) - pi(x - 1 + 2) + pi(x - 1 - 2) )/(dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx)));
 
             // definitions
-            X = (pi_prime(x) * pi_prime(x) - Gradpi_Gradpi)/(2. * a * a); // Kinetic term
+            X = (pi_prime(x) * pi_prime(x) - Gradpi_Gradpi * NL)/(2. * a * a); // Kinetic term
             K = -g0 + g2 * (X - X_hat) * (X - X_hat) + g4 * pow(X - X_hat,4); // K(X,phi)
             dK_dX = 2.0 * g2 * (X - X_hat) + 4.0 * g4 * pow(X - X_hat,3);
-            d2K_dX2 = 0.0; //2.0 * g2 + 12. * g4 * (X - X_hat) * (X - X_hat) ;
+            d2K_dX2 =2.0 * g2 + 12. * g4 * (X - X_hat) * (X - X_hat) ;
             dK_dpi = 0.;
             d2K_dpidX =0.;
 
             term1 = a * a * (dK_dpi  - pi_prime(x) * pi_prime(x) * d2K_dpidX/(a*a));
             term2 = - Hcon * (2.0 * dK_dX - pi_prime(x) * pi_prime(x) * d2K_dX2/(a*a) ) * pi_prime(x);
             term3 = dK_dX * Laplace_pi;
-            term4 = d2K_dpidX * Gradpi_Gradpi;//d2K_dpidX * dpi_dx * dpi_dx;
-            term5 = 2.0 * d2K_dX2 * pi_prime(x) * Gradpi_prime_Gradpi/(a*a); //2.0 * d2K_dX2 * dpi_dt *dpi_dx * d2pi_dxdt/a**2;
-            term6 = -Hcon * d2K_dX2 * pi_prime(x) * Gradpi_Gradpi/(a*a);
-            term7 = - d2K_dX2 * grad_pi_grad_pi_gradgrad_pi/(a*a);
+            term4 = d2K_dpidX * Gradpi_Gradpi * NL;//d2K_dpidX * dpi_dx * dpi_dx;
+            term5 = 2.0 * d2K_dX2 * pi_prime(x) * Gradpi_prime_Gradpi * NL/(a*a); //2.0 * d2K_dX2 * dpi_dt *dpi_dx * d2pi_dxdt/a**2;
+            term6 = -Hcon * d2K_dX2 * pi_prime(x) * Gradpi_Gradpi * NL/(a*a);
+            term7 = - d2K_dX2 * grad_pi_grad_pi_gradgrad_pi * NL/(a*a);
 
             Rhs = term1 + term2 + term3 + term4 +term5 +term6 + term7;
 
             d2pi_dt2 = Rhs/(dK_dX + pi_prime(x)* pi_prime(x) * d2K_dX2/(a*a));
             pi_prime(x) = pi_prime(x) + dtau * d2pi_dt2;
             det_gamma(x) = (2.0 * dK_dX/a/a) * (2.0 * dK_dX/a/a) * (1. + 2. * X * d2K_dX2/dK_dX);
-            // cs2_full(x) = 1. + (2. * X * d2K_dX2 )/dK_dX;
             cs2_full(x) = dK_dX/(2. * X * d2K_dX2 + dK_dX);
 
              }
@@ -616,14 +615,14 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         // RK implementaion! d pi_prime/dt = g(pi, pi_prime, grad_pi, grad_pi_prime, ..)
         // Function for updating the pi_prime in RK methods
         // Note that to save memory we define f for each points (x) where the values of pi, pi_prime, Laplace pi and all the lattice dependent variable are given!
-        double g_function_RK(double pi_x, double pi_prime_x, double Laplace_pi, double Gradpi_Gradpi, double Gradpi_prime_Gradpi, double grad_pi_grad_pi_gradgrad_pi, double dx, double a, double X_hat ,double g0, double g2, double g4, double Hcon)
+        double g_function_RK(double pi_x, double pi_prime_x, double Laplace_pi, double Gradpi_Gradpi, double Gradpi_prime_Gradpi, double grad_pi_grad_pi_gradgrad_pi, double dx, double a, double X_hat ,double g0, double g2, double g4, double Hcon, double NL)
         {
           double X, K, dK_dX, d2K_dX2, dK_dpi, d2K_dpidX;
           double d2pi_dt2, Rhs;
           double term1, term2, term3, term4, term5, term6, term7;
 
           // definitions
-          X = (pi_prime_x * pi_prime_x - Gradpi_Gradpi)/(2. * a * a); // Kinetic term
+          X = (pi_prime_x * pi_prime_x - Gradpi_Gradpi * NL)/(2. * a * a); // Kinetic term
           K = -g0 + g2 * (X - X_hat) * (X - X_hat) + g4 * pow(X - X_hat,4); // K(X,phi)
           dK_dX = 2.0 * g2 * (X - X_hat) + 4.0 * g4 * pow(X - X_hat,3);
           d2K_dX2 = 2.0 * g2 + 12. * g4 * (X - X_hat) * (X - X_hat) ;
@@ -632,10 +631,10 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
           term1 = a * a * (dK_dpi  - pi_prime_x * pi_prime_x * d2K_dpidX/(a*a));
           term2 = - Hcon * (2.0 * dK_dX - pi_prime_x * pi_prime_x * d2K_dX2/(a*a) ) * pi_prime_x;
           term3 = dK_dX * Laplace_pi;
-          term4 = d2K_dpidX * Gradpi_Gradpi;//d2K_dpidX * dpi_dx * dpi_dx;
-          term5 = 2.0 * d2K_dX2 * pi_prime_x * Gradpi_prime_Gradpi/(a*a); //2.0 * d2K_dX2 * dpi_dt *dpi_dx * d2pi_dxdt/a**2;
-          term6 = -Hcon * d2K_dX2 * pi_prime_x * Gradpi_Gradpi/(a*a);
-          term7 = - d2K_dX2 * grad_pi_grad_pi_gradgrad_pi/(a*a);
+          term4 = d2K_dpidX * Gradpi_Gradpi * NL;//d2K_dpidX * dpi_dx * dpi_dx;
+          term5 = 2.0 * d2K_dX2 * pi_prime_x * Gradpi_prime_Gradpi * NL/(a*a); //2.0 * d2K_dX2 * dpi_dt *dpi_dx * d2pi_dxdt/a**2;
+          term6 = -Hcon * d2K_dX2 * pi_prime_x * Gradpi_Gradpi * NL/(a*a);
+          term7 = - d2K_dX2 * grad_pi_grad_pi_gradgrad_pi * NL/(a*a);
           Rhs = term1 + term2 + term3 + term4 +term5 +term6 + term7;
           return Rhs/(dK_dX + pi_prime_x* pi_prime_x * d2K_dX2/(a*a));
         }
@@ -655,7 +654,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
       //
       //////////////////////////
       template <class FieldType>
-      void update_RK2(double dtau, double dx, double a, Field<FieldType> & pi, Field<FieldType> & pi_prime, Field<FieldType> & k1, Field<FieldType> & k2, Field<FieldType> & l1, Field<FieldType> & l2, Field<FieldType> & cs2_full, Field<FieldType> & det_gamma, double X_hat ,double g0, double g2, double g4, double Hcon)
+      void update_RK2(double dtau, double dx, double a, Field<FieldType> & pi, Field<FieldType> & pi_prime, Field<FieldType> & k1, Field<FieldType> & k2, Field<FieldType> & l1, Field<FieldType> & l2, Field<FieldType> & cs2_full, Field<FieldType> & det_gamma, double X_hat ,double g0, double g2, double g4, double Hcon, double NL)
         {
         double Laplace_pi, Gradpi_Gradpi, Gradpi_prime_Gradpi, grad_pi_grad_pi_gradgrad_pi;
         double  X, dK_dX, d2K_dX2;
@@ -663,9 +662,9 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         //**************************************************************
         //When non-linearities are turned off we put non-linear temrs zero
         //**************************************************************
-        // Laplace_pi=0.;
-        // Gradpi_Gradpi=0.;
-        // Gradpi_prime_Gradpi=0.;
+        Laplace_pi=0.;
+        Gradpi_Gradpi=0.;
+        Gradpi_prime_Gradpi=0.;
         Site x(pi.lattice());
         for (x.first(); x.test(); x.next())
           {
@@ -709,9 +708,11 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
             // k1 = f(pi,pi_v,...) = pi_prime * dtau ****  k2 = dtau * (pi_prime + dtau * l1)
             // l1 = dtau * pi_prime_prime = d^2 pi/dt^2 = g(pi, pi_prime, grad pi, grad pi_prime) **** l2 = dtau * (g(pi, pi_prime, grad pi, grad pi_prime) + dtau * g(pi + k1, pi_prime + l1, tau+dtau).
             k1(x) = dtau * f_function_RK (pi_prime(x));
-            l1(x) = dtau * g_function_RK(pi(x), pi_prime(x), Laplace_pi, Gradpi_Gradpi, Gradpi_prime_Gradpi, grad_pi_grad_pi_gradgrad_pi, dx, a, X_hat , g0,  g2,  g4,  Hcon);
+            l1(x) = dtau * g_function_RK(pi(x), pi_prime(x), Laplace_pi, Gradpi_Gradpi, Gradpi_prime_Gradpi, grad_pi_grad_pi_gradgrad_pi, dx, a, X_hat , g0,  g2,  g4,  Hcon, NL);
           }
 
+          k1.updateHalo();
+          l1.updateHalo();
 
           for (x.first(); x.test(); x.next())
             {
@@ -758,22 +759,24 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
               // k1 = f(pi,pi_v,...) = pi_prime * dtau ****  k2 = dtau * (pi_prime + dtau * l1)
               // l1 = dtau * pi_prime_prime = d^2 pi/dt^2 = g(pi, pi_prime, grad pi, grad pi_prime) **** l2 = dtau * (g(pi, pi_prime, grad pi, grad pi_prime) + dtau * g(pi + k1, pi_prime + l1, tau+dtau).
               k2(x) = dtau * f_function_RK (pi_prime(x) + l1(x));
-              l2(x) = dtau * g_function_RK(pi(x) + k1(x), pi_prime(x) + l1(x), Laplace_pi, Gradpi_Gradpi, Gradpi_prime_Gradpi, grad_pi_grad_pi_gradgrad_pi, dx, a, X_hat , g0,  g2,  g4,  Hcon);
+              l2(x) = dtau * g_function_RK(pi(x) + k1(x), pi_prime(x) + l1(x), Laplace_pi, Gradpi_Gradpi, Gradpi_prime_Gradpi, grad_pi_grad_pi_gradgrad_pi, dx, a, X_hat , g0,  g2,  g4,  Hcon, NL);
 
               // definitions
-              X = (pi_prime(x) * pi_prime(x) - Gradpi_Gradpi)/(2. * a * a); // Kinetic term
-              // K = -g0 + g2 * (X - X_hat) * (X - X_hat) + g4 * pow(X - X_hat,4); // K(X,phi)
-              dK_dX = 2.0 * g2 * (X - X_hat) + 4.0 * g4 * pow(X - X_hat,3);
-              d2K_dX2 = 2.0 * g2 + 12. * g4 * (X - X_hat) * (X - X_hat) ;
-
-
-              cs2_full(x) = dK_dX/(2. * X * d2K_dX2 + dK_dX);
-              det_gamma(x) = (2.0 * dK_dX/a/a) * (2.0 * dK_dX/a/a) * (1. + 2. * X * d2K_dX2/dK_dX);
-
-              // RK2 updating!
-              pi(x) = pi(x) + (k1(x) + k2(x))/2.;
-              pi_prime(x) = pi_prime(x) +  (l1(x) + l2(x))/2;
             }
+            k2.updateHalo();
+            l2.updateHalo();
+
+            for (x.first(); x.test(); x.next())
+              {
+                pi(x) = pi(x) + (k1(x) + k2(x))/2.;
+                pi_prime(x) = pi_prime(x) +  (l1(x) + l2(x))/2;
+                X = (pi_prime(x) * pi_prime(x) - Gradpi_Gradpi)/(2. * a * a); // Kinetic term
+                // K = -g0 + g2 * (X - X_hat) * (X - X_hat) + g4 * pow(X - X_hat,4); // K(X,phi)
+                dK_dX = 2.0 * g2 * (X - X_hat) + 4.0 * g4 * pow(X - X_hat,3);
+                d2K_dX2 = 2.0 * g2 + 12. * g4 * (X - X_hat) * (X - X_hat) ;
+                cs2_full(x) = dK_dX/(2. * X * d2K_dX2 + dK_dX);
+                det_gamma(x) = (2.0 * dK_dX/a/a) * (2.0 * dK_dX/a/a) * (1. + 2. * X * d2K_dX2/dK_dX);
+              }
           }
 
 

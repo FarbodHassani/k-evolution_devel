@@ -300,7 +300,9 @@ struct cosmology
   double g0;
   double g2;
   double g4;
-  int solver_kessence = 1;
+  int solver_kessence;
+  int NL;
+  int IC_scf;
   //
   // fld CLASS
   // double Omega_fld=0.0;

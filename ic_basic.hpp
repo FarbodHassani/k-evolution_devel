@@ -1930,6 +1930,9 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
   gsl_spline * rho_cdm_spline = NULL;
   gsl_spline * rho_b_spline = NULL;
   gsl_spline * rho_crit_spline = NULL;
+	gsl_spline * phi_smg_spline = NULL;
+	gsl_spline * phi_smg_prime_spline = NULL;
+  gsl_spline * phi_smg_prime_prime_spline = NULL;
 
 
 	//TODO_EB:add BG functions here
@@ -1940,12 +1943,20 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
   loadBGFunctions(class_background, rho_cdm_spline, "(.)rho_cdm", sim.z_in);
   loadBGFunctions(class_background, rho_b_spline, "(.)rho_b", sim.z_in);
   loadBGFunctions(class_background, rho_crit_spline, "(.)rho_crit", sim.z_in);
+  loadBGFunctions(class_background, phi_smg_spline, "phi_smg", sim.z_in);
+  loadBGFunctions(class_background, phi_smg_prime_spline, "phi_prime_smg", sim.z_in);
+  loadBGFunctions(class_background, phi_smg_prime_prime_spline, "phi_prime_prime_smg", sim.z_in);
 
   double Omega_smg_spl = gsl_spline_eval(rho_smg_spline, a, acc)/gsl_spline_eval(rho_crit_spline, a, acc);
   double Omega_rad_spl = gsl_spline_eval(rho_rad_spline, a, acc)/gsl_spline_eval(rho_crit_spline, a, acc);
   double Omega_m_spl = (gsl_spline_eval(rho_cdm_spline, a, acc)+gsl_spline_eval(rho_b_spline, a, acc))/gsl_spline_eval(rho_crit_spline, a, acc);
   double w_smg_spl = gsl_spline_eval(p_smg_spline, a, acc)/gsl_spline_eval(rho_smg_spline, a, acc);
-
+  // phi_smg bg
+  double phi_smg = gsl_spline_eval(phi_smg_spline, a, acc);
+  double phi_smg_prime = gsl_spline_eval(phi_smg_prime_spline, a, acc);
+  double phi_smg_prime_prime = gsl_spline_eval(phi_smg_prime_prime_spline, a, acc);
+  double H_conf_hiclass = gsl_spline_eval(H_spline, a, acc) * a; // H_conf = H_physical * a
+  double H0_hiclass = gsl_spline_eval(H_spline, 1.0, acc); // H0 hiclass
 #endif
 
 
@@ -2087,13 +2098,6 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 		gsl_spline_free(tk_t1);
 
 
-		//////////////////////////////////////////////////////
-		//// End of K_essence IC part/
-		//////////////////////////////////////////////////////
-
-
-
-
     if ( cosmo.MGtheory == 1)
     {
       #ifdef HAVE_CLASS
@@ -2103,8 +2107,6 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
       double * kess_field_prime = NULL;
       double * k_ess = NULL;
       int npts=0;
-      // if (ic.IC_MG == 1) //IC provided using hiclass
-      // {
       if (ic.tkfile[0] == '\0')
       {
         loadTransferFunctions(class_background, class_perturbs, tk_d_kess, tk_t_kess, "vx", sim.boxsize, sim.z_in, cosmo.h
@@ -2112,37 +2114,26 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
           , Hc, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
         #endif
           );
-
-      // BG test:
-  		#ifdef HAVE_CLASS_BG
-      gsl_spline * bg_data = NULL;
-      gsl_interp_accel * acc_bg_data;
-      acc_bg_data = gsl_interp_accel_alloc();
-      loadBGFunctions(class_background, bg_data, "H [1/Mpc]", sim.z_in);
-      // cout<<"value H: "<<gsl_spline_eval(bg_data,1.001,acc_bg_data)<<endl;
-  		#endif
-
       npts = tk_d_kess->size;
       kess_field = (double *) malloc(npts * sizeof(double));
       kess_field_prime = (double *) malloc(npts * sizeof(double));
       k_ess = (double *) malloc(npts * sizeof(double));
-      // double H0conf_hiclass=0.000219998079; // In units of 1/Mpc
-      // cout<<"HconfGev: "<<H0 <<endl;
       for (i = 0; i < npts; i++)
       {
-        // The relation between pi_k and delta and theta!
-        //\pi_conf in Newtonian in class : -(-\theta/k^2) pi here is pi_conf! k unit should be in 1/Mpc.
-        // In the below by (tk_t_kess->y[i]/(tk_d_kess->x[i] * cosmo.h)/(tk_d_kess->x[i] * cosmo.h) we wasily make pi_k_Newtonian from theta_kess as we do to make initial condition in python from class data! The rest is what we do to the pi_k to make it ready for pi_k as initial condition in k-evolution
-        k_ess[i] = tk_d_kess->x[i];
+        double phi_smg = gsl_spline_eval(phi_smg_spline, a, acc);
+        double phi_smg_prime = gsl_spline_eval(phi_smg_prime_spline, a, acc);
+        double phi_smg_prime_prime = gsl_spline_eval(phi_smg_prime_prime_spline, a, acc);
+        double H_conf_hiclass = gsl_spline_eval(H_spline, a, acc) * a; // H_conf = H_physical * a
 
-        kess_field[i] =  - M_PI * tk_d_kess->y[i] * sqrt(  Pk_primordial(tk_d_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_d_kess->x[i])
-         / tk_d_kess->x[i];
-        // zeta according to the definitions below:
-        // zeta = pi'(conformal_Newtonian) + H(conf)*pi - psi
-        // pi'(conformal_Newtonian) = cs^2/(1+w) delta_fld + Psi + H(conf)*pi (3 cs^2 -1)
-        // So zeta = cs^2/(1+w) delta + 3 cs^2 H(conf) * pi
-        //
-        kess_field_prime[i] = - M_PI * tk_t_kess->y[i] * sqrt( Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_t_kess->x[i])/ tk_t_kess->x[i];
+        k_ess[i] = tk_d_kess->x[i];
+        kess_field[i] =  - M_PI * tk_d_kess->y[i] * (phi_smg_prime/a) * (H0_hiclass/H0) * sqrt(  Pk_primordial(tk_d_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_d_kess->x[i])
+         / tk_d_kess->x[i]; // Initial conditions for delta phi = phi_bg' * V_X_smg/a where V_X_smg = tk_d_kess
+         // Since delta phi has unit of time we go to gevolution unit by delta phi(gev) = delta phi(hiclass) * H0(hiclass)/H0(gevolution).
+
+        kess_field_prime[i] = - M_PI * (phi_smg_prime/a) * (tk_t_kess->y[i] + (phi_smg_prime_prime/phi_smg_prime - H_conf_hiclass) * tk_d_kess->y[i]) * sqrt( Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_t_kess->x[i])/ tk_t_kess->x[i];
+        // Initial conditions for delta phi' = (phi_bg'/a) * [V'_X_smg + (phi_bg''/phi_bg' - H_conf ) V_X_smg]
+        // delta phi' = (phi_bg'/a) * [tk_t_kess + (phi_bg''/phi_bg' - H_conf ) tk_d_kess]
+        // delta phi' is dimensionless!
       }
       // Field realization
       gsl_spline_free(tk_d_kess);

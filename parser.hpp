@@ -1714,6 +1714,14 @@ if (ic.IC_kess == 1)
   {
       cosmo.solver_kessence=2; // Default is RK4
   }
+  if (!parseParameter(params, numparam, "Non-linear derivatives",  cosmo.NL))
+  {
+      cosmo.NL=1; // Default is 1 which are terms are included
+  }
+  if (!parseParameter(params, numparam, "IC fields",  cosmo.IC_scf))
+  {
+      cosmo.IC_scf=1; // Default is 1 which is hiclass IC
+  }
   // EFT kessence
 	if (!parseParameter(params, numparam, "cs2_kessence",  cosmo.cs2_kessence))
 	{
