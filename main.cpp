@@ -646,7 +646,7 @@ if (cosmo.MGtheory == 1) // Only if we use the full theory we add the BG
         Hconf(1.0, fourpiG, cosmo)
         #endif
         ;// phi has dimension of time so we multiply by H0_class/H_0 gevolution
-        pi_prime(x) = 0.000001 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc); // We consider the IC for phi_prime to be very small
+        pi_prime(x) = 0.0000000* phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc) * gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc)/2./a/a  - cosmo.X_hat; // We consider the IC for phi_prime to be very small
         det_gamma(x) = 0.;
       }
     pi_prime.updateHalo();  // communicate halo values
@@ -1512,7 +1512,7 @@ ref_time = MPI_Wtime();
         , cosmo.NL);
       pi_prime.updateHalo();
 
-      update_pi_full(dtau/ sim.nKe_numsteps, pi, pi_prime_old); // H_old is updated here in the function
+      // update_pi_full(dtau/ sim.nKe_numsteps, pi, pi_prime_old); // H_old is updated here in the function
       pi.updateHalo();
       // Although it's an Euler algorithm we can update the BG part twice in each step to increase the precision!
       rungekutta4bg(a_kess, fourpiG,
