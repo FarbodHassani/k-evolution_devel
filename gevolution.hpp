@@ -345,13 +345,6 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
     sum /= n3;
     hom /= n3;
     return hom * constant;
-    // COUT << scientific << setprecision(6);
-    // COUT << message
-    // << setw(17) << field_name
-    // << " Max = " << setw(9) << max * constant
-    // << " hom = " << setw(9) << hom * constant
-    // << endl;
-    // cout.flags(f);
     }
 
 
@@ -361,23 +354,36 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
     {
     Site x(field.lattice());
     ios::fmtflags f(cout.flags());
-    double max = 0., hom = 0., sum = 0., temp;
+    double max = 0.,temp;
     for(x.first(); x.test(); x.next())
     {
     temp = field(x);
-    hom += temp;
-    sum += fabs(temp);
-    if(fabs(temp) >= max)
+    if(temp >= max)
     {
-    max = fabs(temp);
+    max = temp;
     }
     }
     parallel.max(max);
-    parallel.sum(sum);
-    parallel.sum(hom);
-    sum /= n3;
-    hom /= n3;
     return max * constant;
+    }
+
+    // Printing out Minimum
+    template <class FieldType>
+    double minimum(Field<FieldType> & field, double constant , long n3)
+    {
+    Site x(field.lattice());
+    ios::fmtflags f(cout.flags());
+    double min = 10.0, temp;
+    for(x.first(); x.test(); x.next())
+    {
+    temp = field(x);
+    if(temp <= min)
+    {
+    min = temp;
+    }
+    }
+    parallel.min(min);
+    return min * constant;
     }
 
 #endif
@@ -407,24 +413,10 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
             //*************************************************************************************
 			    }
 			}
-			// //////////////////////////
-			// // Update K-essence velocity field (zeta)
-			// //////////////////////////
-			// // Description:
-			// //   Updating K-essence zeta field based on equation obtained by energy momentum conservation
-			// //
-			// // Arguments:
-			// //   phi        reference to field configuration
-			// //   pi_k       reference to k-essence field
-			// //   piv_k      reference to first derivative of the field
-      // //   n_correcor_steps Number of time which goes through predictor corrector method.
-			// // Returns:
-			// //
-			// //////////////////////////
-      //
-			// template <class FieldType>
-			// void update_pi_prime_euler(double dtau, double dx, double a, Field<FieldType> & pi , Field<FieldType> & deltaX, Field<FieldType> & det_gamma, Field<FieldType> & cs2_full, double X_hat ,double g0, double g2, double g4, double Hcon, double NL)
-			//   {
+
+      // template <class FieldType>
+      // void update_pi_prime_euler(double dtau, double dx, double a, Field<FieldType> & pi , Field<FieldType> & deltaX, Field<FieldType> & pi_prime, Field<FieldType> & det_gamma, Field<FieldType> & cs2_full, double X_hat ,double g0, double g2, double g4, double Hcon, double NL)
+      //   {
       //   double Laplace_pi, Gradpi_Gradpi, Gradpi_prime_Gradpi, grad_pi_grad_pi_gradgrad_pi;
       //   double X, K, dK_dX, d2K_dX2, dK_dpi, d2K_dpidX;
       //   double phi_prime_squared;
@@ -439,44 +431,44 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
       //   Gradpi_prime_Gradpi=0.;
       //   grad_pi_grad_pi_gradgrad_pi = 0.;
       //
-			// 	Site x(pi.lattice());
-			// 	for (x.first(); x.test(); x.next())
-			// 		{
+      //   Site x(pi.lattice());
+      //   for (x.first(); x.test(); x.next())
+      //     {
       //       //****************************************************************
       //       //Laplace pi, pi(n) since pi is not updated yet
       //       //****************************************************************
-  		// 			// Laplace_pi= pi(x-0) + pi(x+0) - 2. * pi(x);
-  		// 			// Laplace_pi+=pi(x+1) + pi(x-1) - 2. * pi(x);
-  		// 			// Laplace_pi+=pi(x+2) + pi(x-2) - 2. * pi(x);
-      //       // Laplace_pi= Laplace_pi/(dx*dx);
-      //       // // // *************
-      //       // // // Gradpi_Gradpi
-      //       // // // *************
-      //       // Gradpi_Gradpi= 0.25 * (pi(x + 0)  - pi(x - 0)) * (pi(x + 0) - pi(x - 0)) / (dx * dx);
-      //       // Gradpi_Gradpi+=0.25 * (pi(x + 1)  - pi(x - 1)) * (pi(x + 1) - pi(x - 1)) / (dx * dx);
-      //       // Gradpi_Gradpi+=0.25 * (pi(x + 2)  - pi(x - 2)) * (pi(x + 2) - pi(x - 2)) / (dx * dx);
-      //       // //*************************************************************
-      //       // //Gradpi_prime_Gradpi = Grad_pi . Grad_ (pi_prime )
-      //       // //*************************************************************
-      //       // Gradpi_prime_Gradpi= 0.25* (pi_prime(x+0) - pi_prime(x-0) ) * (pi(x+0) - pi(x-0)) / (dx * dx);
-      //       // Gradpi_prime_Gradpi+=0.25* (pi_prime(x+1) - pi_prime(x-1) ) * (pi(x+1) - pi(x-1)) / (dx * dx);
-      //       // Gradpi_prime_Gradpi+=0.25* (pi_prime(x+2) - pi_prime(x-2) ) * (pi(x+2) - pi(x-2)) / (dx * dx);
+      //       Laplace_pi= pi(x-0) + pi(x+0) - 2. * pi(x);
+      //       Laplace_pi+=pi(x+1) + pi(x-1) - 2. * pi(x);
+      //       Laplace_pi+=pi(x+2) + pi(x-2) - 2. * pi(x);
+      //       Laplace_pi= Laplace_pi/(dx*dx);
+      //       // // *************
+      //       // // Gradpi_Gradpi
+      //       // // *************
+      //       Gradpi_Gradpi= 0.25 * (pi(x + 0)  - pi(x - 0)) * (pi(x + 0) - pi(x - 0)) / (dx * dx);
+      //       Gradpi_Gradpi+=0.25 * (pi(x + 1)  - pi(x - 1)) * (pi(x + 1) - pi(x - 1)) / (dx * dx);
+      //       Gradpi_Gradpi+=0.25 * (pi(x + 2)  - pi(x - 2)) * (pi(x + 2) - pi(x - 2)) / (dx * dx);
+      //       //*************************************************************
+      //       //Gradpi_prime_Gradpi = Grad_pi . Grad_ (pi_prime )
+      //       //*************************************************************
+      //       Gradpi_prime_Gradpi= 0.25* (pi_prime(x+0) - pi_prime(x-0) ) * (pi(x+0) - pi(x-0)) / (dx * dx);
+      //       Gradpi_prime_Gradpi+=0.25* (pi_prime(x+1) - pi_prime(x-1) ) * (pi(x+1) - pi(x-1)) / (dx * dx);
+      //       Gradpi_prime_Gradpi+=0.25* (pi_prime(x+2) - pi_prime(x-2) ) * (pi(x+2) - pi(x-2)) / (dx * dx);
       //
-      //       //// *************************************************************
-      //       //// dpi_dx * dpj_dx * d^i d^j pi
-      //       //// *************************************************************
-      //       // grad_pi_grad_pi_gradgrad_pi =  //1:  + pi^{(2,0,0}(x,y,z) pi^{(1,0,0)}(x,y,z)^2
-      //       // + ((pi(x - 0) + pi(x + 0) - 2.*pi(x))/(1.0 * dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx));
-      //       // grad_pi_grad_pi_gradgrad_pi +=  //2:  + pi^{(0,2,0}(x,y,z) pi^{(0,1,0)}(x,y,z)^2
-      //       // + ((pi(x - 1) + pi(x + 1) - 2.*pi(x))/(1.0 * dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx));
-      //       // grad_pi_grad_pi_gradgrad_pi +=  //3:  + pi^{(0,0,2}(x,y,z) pi^{(0,0,1)}(x,y,z)^2
-      //       // + ((pi(x - 2) + pi(x + 2) - 2.*pi(x))/(1.0 * dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx));
-      //       // grad_pi_grad_pi_gradgrad_pi +=  //4:  + 2.0 *  pi^{(1,1,0}(x,y,z) pi^{(1,0,0)}(x,y,z) pi^{(0,1,0)}(x,y,z)
-      //       // + 2.0 * ((0.25 *(pi(x + 0 + 1) - pi(x + 0 - 1) - pi(x - 0 + 1) + pi(x - 0 - 1) )/(dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx)) );
-      //       // grad_pi_grad_pi_gradgrad_pi +=  //5:  + 2.0 *  pi^{(1,0,1}(x,y,z) pi^{(1,0,0)}(x,y,z) pi^{(0,0,1)}(x,y,z)
-      //       // + 2.0 * ((0.25 *(pi(x + 0 + 2) - pi(x + 0 - 2) - pi(x - 0 + 2) + pi(x - 0 - 2) )/(dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx)));
-      //       // grad_pi_grad_pi_gradgrad_pi +=  //6:  + 2.0 *  pi^{(0,1,1}(x,y,z) pi^{(0,1,0)}(x,y,z) pi^{(0,0,1)}(x,y,z)
-      //       // + 2.0 * ((0.25 *(pi(x + 1 + 2) - pi(x + 1 - 2) - pi(x - 1 + 2) + pi(x - 1 - 2) )/(dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx)));
+      //       // *************************************************************
+      //       // dpi_dx * dpj_dx * d^i d^j pi
+      //       // *************************************************************
+      //       grad_pi_grad_pi_gradgrad_pi =  //1:  + pi^{(2,0,0}(x,y,z) pi^{(1,0,0)}(x,y,z)^2
+      //       + ((pi(x - 0) + pi(x + 0) - 2.*pi(x))/(1.0 * dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx));
+      //       grad_pi_grad_pi_gradgrad_pi +=  //2:  + pi^{(0,2,0}(x,y,z) pi^{(0,1,0)}(x,y,z)^2
+      //       + ((pi(x - 1) + pi(x + 1) - 2.*pi(x))/(1.0 * dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx));
+      //       grad_pi_grad_pi_gradgrad_pi +=  //3:  + pi^{(0,0,2}(x,y,z) pi^{(0,0,1)}(x,y,z)^2
+      //       + ((pi(x - 2) + pi(x + 2) - 2.*pi(x))/(1.0 * dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx));
+      //       grad_pi_grad_pi_gradgrad_pi +=  //4:  + 2.0 *  pi^{(1,1,0}(x,y,z) pi^{(1,0,0)}(x,y,z) pi^{(0,1,0)}(x,y,z)
+      //       + 2.0 * ((0.25 *(pi(x + 0 + 1) - pi(x + 0 - 1) - pi(x - 0 + 1) + pi(x - 0 - 1) )/(dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx)) );
+      //       grad_pi_grad_pi_gradgrad_pi +=  //5:  + 2.0 *  pi^{(1,0,1}(x,y,z) pi^{(1,0,0)}(x,y,z) pi^{(0,0,1)}(x,y,z)
+      //       + 2.0 * ((0.25 *(pi(x + 0 + 2) - pi(x + 0 - 2) - pi(x - 0 + 2) + pi(x - 0 - 2) )/(dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx)));
+      //       grad_pi_grad_pi_gradgrad_pi +=  //6:  + 2.0 *  pi^{(0,1,1}(x,y,z) pi^{(0,1,0)}(x,y,z) pi^{(0,0,1)}(x,y,z)
+      //       + 2.0 * ((0.25 *(pi(x + 1 + 2) - pi(x + 1 - 2) - pi(x - 1 + 2) + pi(x - 1 - 2) )/(dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx)));
       //
       //       // definitions
       //       // X = (pi_prime(x) * pi_prime(x) - Gradpi_Gradpi * NL)/(2. * a * a); // Kinetic term
@@ -498,11 +490,130 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
       //
       //       d2pi_dt2 = Rhs/(dK_dX + pi_prime(x)* pi_prime(x) * d2K_dX2/(a*a));
       //       pi_prime(x) = pi_prime(x) + dtau * d2pi_dt2;
+      //
       //       det_gamma(x) = (2.0 * dK_dX/a/a) * (2.0 * dK_dX/a/a) * (1. + 2. * X * d2K_dX2/dK_dX);
       //       cs2_full(x) = dK_dX/(2. * X * d2K_dX2 + dK_dX);
       //
       //        }
       // }
+			//////////////////////////
+			// Update K-essence velocity field (zeta)
+			//////////////////////////
+			// Description:
+			//   Updating K-essence zeta field based on equation obtained by energy momentum conservation
+			//
+			// Arguments:
+			//   phi        reference to field configuration
+			//   pi_k       reference to k-essence field
+			//   piv_k      reference to first derivative of the field
+      //   n_correcor_steps Number of time which goes through predictor corrector method.
+			// Returns:
+			//
+			//////////////////////////
+
+			template <class FieldType>
+			void update_pi_prime_euler(double dtau, double dx, double a, Field<FieldType> & pi , Field<FieldType> & deltaX, Field<FieldType> & pi_prime, Field<FieldType> & det_gamma, Field<FieldType> & cs2_full, double X_hat ,double g0, double g2, double g4, double Hcon, double NL)
+			  {
+        double Laplace_pi, Gradpi_Gradpi, Gradpi_prime_Gradpi, grad_pi_grad_pi_gradgrad_pi;
+        double X, K, dK_dX, d2K_dX2, dK_dpi, d2K_dpidX;
+        double d2pi_dt2, Rhs, deltaX_prime;
+        double term1, term2, term3, term4, term5, term6, term7;
+
+        //**************************************************************
+        //When non-linearities are turned off we put non-linear temrs zero
+        //**************************************************************
+        Laplace_pi=0.;
+        Gradpi_Gradpi=0.;
+        Gradpi_prime_Gradpi=0.;
+        grad_pi_grad_pi_gradgrad_pi = 0.;
+
+				Site x(pi.lattice());
+				for (x.first(); x.test(); x.next())
+					{
+            //****************************************************************
+            //Laplace pi, pi(n) since pi is not updated yet
+            //****************************************************************
+  					Laplace_pi= pi(x-0) + pi(x+0) - 2. * pi(x);
+  					Laplace_pi+=pi(x+1) + pi(x-1) - 2. * pi(x);
+  					Laplace_pi+=pi(x+2) + pi(x-2) - 2. * pi(x);
+            Laplace_pi= Laplace_pi/(dx*dx);
+            // // *************
+            // // Gradpi_Gradpi
+            // // *************
+            Gradpi_Gradpi= 0.25 * (pi(x + 0)  - pi(x - 0)) * (pi(x + 0) - pi(x - 0)) / (dx * dx);
+            Gradpi_Gradpi+=0.25 * (pi(x + 1)  - pi(x - 1)) * (pi(x + 1) - pi(x - 1)) / (dx * dx);
+            Gradpi_Gradpi+=0.25 * (pi(x + 2)  - pi(x - 2)) * (pi(x + 2) - pi(x - 2)) / (dx * dx);
+
+            //****************************************************************
+            //Constructing pi_prime from the delta X at all 6 neighbours
+            //****************************************************************
+            // pi_prime is made out of deltaX
+            pi_prime(x) = sqrt(2. * a * a * (deltaX(x) + X_hat) + Gradpi_Gradpi);// delta X = (pi'^2 - d_i pi d^i pi)/2a^2 -Xhat --> pi' = sqrt(2 a^2 (delta X + Xhat) + d_i pi d^i pi)
+            pi_prime(x-0) = sqrt(2. * a * a * (deltaX(x-0) + X_hat) + Gradpi_Gradpi);
+            pi_prime(x+0) = sqrt(2. * a * a * (deltaX(x+0) + X_hat) + Gradpi_Gradpi);
+            pi_prime(x-1) = sqrt(2. * a * a * (deltaX(x-1) + X_hat) + Gradpi_Gradpi);
+            pi_prime(x+1) = sqrt(2. * a * a * (deltaX(x+1) + X_hat) + Gradpi_Gradpi);
+            pi_prime(x-2) = sqrt(2. * a * a * (deltaX(x-2) + X_hat) + Gradpi_Gradpi);
+            pi_prime(x+2) = sqrt(2. * a * a * (deltaX(x+2) + X_hat) + Gradpi_Gradpi);
+
+            //*************************************************************
+            //Gradpi_prime_Gradpi = Grad_pi . Grad_ (pi_prime )
+            //*************************************************************
+            Gradpi_prime_Gradpi= 0.25* (pi_prime(x+0) - pi_prime(x-0) ) * (pi(x+0) - pi(x-0)) / (dx * dx);
+            Gradpi_prime_Gradpi+=0.25* (pi_prime(x+1) - pi_prime(x-1) ) * (pi(x+1) - pi(x-1)) / (dx * dx);
+            Gradpi_prime_Gradpi+=0.25* (pi_prime(x+2) - pi_prime(x-2) ) * (pi(x+2) - pi(x-2)) / (dx * dx);
+
+            // *************************************************************
+            // dpi_dx * dpj_dx * d^i d^j pi
+            // *************************************************************
+            grad_pi_grad_pi_gradgrad_pi =  //1:  + pi^{(2,0,0}(x,y,z) pi^{(1,0,0)}(x,y,z)^2
+            + ((pi(x - 0) + pi(x + 0) - 2.*pi(x))/(1.0 * dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx));
+            grad_pi_grad_pi_gradgrad_pi +=  //2:  + pi^{(0,2,0}(x,y,z) pi^{(0,1,0)}(x,y,z)^2
+            + ((pi(x - 1) + pi(x + 1) - 2.*pi(x))/(1.0 * dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx));
+            grad_pi_grad_pi_gradgrad_pi +=  //3:  + pi^{(0,0,2}(x,y,z) pi^{(0,0,1)}(x,y,z)^2
+            + ((pi(x - 2) + pi(x + 2) - 2.*pi(x))/(1.0 * dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx));
+            grad_pi_grad_pi_gradgrad_pi +=  //4:  + 2.0 *  pi^{(1,1,0}(x,y,z) pi^{(1,0,0)}(x,y,z) pi^{(0,1,0)}(x,y,z)
+            + 2.0 * ((0.25 *(pi(x + 0 + 1) - pi(x + 0 - 1) - pi(x - 0 + 1) + pi(x - 0 - 1) )/(dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx)) );
+            grad_pi_grad_pi_gradgrad_pi +=  //5:  + 2.0 *  pi^{(1,0,1}(x,y,z) pi^{(1,0,0)}(x,y,z) pi^{(0,0,1)}(x,y,z)
+            + 2.0 * ((0.25 *(pi(x + 0 + 2) - pi(x + 0 - 2) - pi(x - 0 + 2) + pi(x - 0 - 2) )/(dx*dx)) * ((pi(x + 0)  - pi(x - 0))/(2.0*dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx)));
+            grad_pi_grad_pi_gradgrad_pi +=  //6:  + 2.0 *  pi^{(0,1,1}(x,y,z) pi^{(0,1,0)}(x,y,z) pi^{(0,0,1)}(x,y,z)
+            + 2.0 * ((0.25 *(pi(x + 1 + 2) - pi(x + 1 - 2) - pi(x - 1 + 2) + pi(x - 1 - 2) )/(dx*dx)) * ((pi(x + 1)  - pi(x - 1))/(2.0*dx*dx)) * ((pi(x + 2)  - pi(x - 2))/(2.0*dx*dx)));
+
+
+            K = -g0 + g2 * deltaX(x) * deltaX(x) + g4 * pow(deltaX(x),4); // K(X,phi)
+            X = deltaX(x) + X_hat;
+            dK_dX = 2.0 * g2 * deltaX(x) + 4.0 * g4 * pow(deltaX(x),3);
+            d2K_dX2 =2.0 * g2 + 12. * g4 * deltaX(x) * deltaX(x) ;
+            dK_dpi = 0.;
+            d2K_dpidX =0.;
+
+            term1 = a * a * (dK_dpi  - pi_prime(x) * pi_prime(x) * d2K_dpidX/(a*a));
+            term2 = - Hcon * (2.0 * dK_dX - pi_prime(x) * pi_prime(x) * d2K_dX2/(a*a) ) * pi_prime(x);
+            term3 = dK_dX * Laplace_pi;
+            term4 = d2K_dpidX * Gradpi_Gradpi * NL;//d2K_dpidX * dpi_dx * dpi_dx;
+            term5 = 2.0 * d2K_dX2 * pi_prime(x) * Gradpi_prime_Gradpi * NL/(a*a); //2.0 * d2K_dX2 * dpi_dt *dpi_dx * d2pi_dxdt/a**2;
+            term6 = -Hcon * d2K_dX2 * pi_prime(x) * Gradpi_Gradpi * NL/(a*a);
+            term7 = - d2K_dX2 * grad_pi_grad_pi_gradgrad_pi * NL/(a*a);
+
+            Rhs = term1 + term2 + term3 + term4 +term5 +term6 + term7;
+
+            d2pi_dt2 = Rhs/(dK_dX + pi_prime(x)* pi_prime(x) * d2K_dX2/(a*a));
+
+            deltaX_prime = (2. * pi_prime(x) * d2pi_dt2 - 4. * a * a * Hcon * (deltaX(x) + X_hat))/(2. * a * a);
+            deltaX(x) = deltaX(x) + dtau * deltaX_prime;
+            det_gamma(x) = (2.0 * dK_dX/a/a) * (2.0 * dK_dX/a/a) * (1. + 2. * X * d2K_dX2/dK_dX);
+            cs2_full(x) = dK_dX/(2. * X * d2K_dX2 + dK_dX);
+             }
+
+           for (x.first(); x.test(); x.next())
+   			    {
+               //*****************************************
+               //pi Updating which is linear by definition using pi_prime
+               //*****************************************
+               pi(x) = pi(x)  + dtau * ( pi_prime(x)) ; //  pi_k(n+1)
+               //*************************************************************************************
+   			    }
+      }
 
       template <class FieldType>
       void update_pi_prime_euler(double dtau, double dx, double a, Field<FieldType> & pi , Field<FieldType> & deltaX, Field<FieldType> & det_gamma, Field<FieldType> & cs2_full, double X_hat ,double g0, double g2, double g4, double Hcon, double NL)

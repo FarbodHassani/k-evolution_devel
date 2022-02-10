@@ -124,6 +124,7 @@ int main(int argc, char **argv)
 	gsl_spline * H_spline = NULL;
   gsl_spline * phi_smg = NULL;
   gsl_spline * phi_smg_prime = NULL;
+
   // gsl_spline * phi_smg_prime_prime = NULL;
 	gsl_spline * cs2_spline = NULL;
 	gsl_spline * rho_smg_spline = NULL;
@@ -278,6 +279,7 @@ int main(int argc, char **argv)
   Field<Real> stress_tensor;
   Field<Real> pi_old;
   Field<Real> det_gamma;
+  Field<Real> Gradpi_Gradpi;
   Field<Real> det_gamma_old;
   Field<Real> pi_prime_old;
   Field<Real> pi_prime_dot;
@@ -287,6 +289,7 @@ int main(int argc, char **argv)
   Field<Cplx> scalarFT_pi_prime_old;
   Field<Cplx> scalarFT_pi_prime_dot;
   Field<Cplx> scalarFT_det_gamma;
+  Field<Cplx> scalarFT_Gradpi_Gradpi;
   Field<Cplx> scalarFT_det_gamma_old;
   Field<Cplx> scalarFT_cs2_full;
   #endif
@@ -382,6 +385,11 @@ int main(int argc, char **argv)
     scalarFT_det_gamma.initialize(latFT,1);
     PlanFFT<Cplx> plan_det_gamma(&det_gamma, &scalarFT_det_gamma);
 
+
+    Gradpi_Gradpi.initialize(lat,1);
+    scalarFT_Gradpi_Gradpi.initialize(latFT,1);
+    PlanFFT<Cplx> plan_Gradpi_Gradpi(&Gradpi_Gradpi, &scalarFT_Gradpi_Gradpi);
+
     det_gamma_old.initialize(lat,1);
     scalarFT_det_gamma_old.initialize(latFT,1);
     PlanFFT<Cplx> plan_det_gamma_old(&det_gamma_old, &scalarFT_det_gamma_old);
@@ -424,6 +432,11 @@ int main(int argc, char **argv)
   scalarFT_pi_prime.initialize(latFT,1);
   PlanFFT<Cplx> plan_pi_prime(&pi_prime, &scalarFT_pi_prime);
 
+  Field<Real> deltaX;
+  Field<Cplx> scalarFT_deltaX;
+  deltaX.initialize(lat,1); // deltaX = X - Xhat
+  scalarFT_deltaX.initialize(latFT,1);
+  PlanFFT<Cplx> plan_deltaX(&deltaX, &scalarFT_deltaX);
 
   l0.initialize(lat,1);
   scalarFT_l0.initialize(latFT,1);
@@ -617,6 +630,14 @@ if (cosmo.MGtheory == 1) // Only if we use the full theory we add the BG
   {
     for (x.first(); x.test(); x.next())
       {
+        Gradpi_Gradpi(x)= 0.25 * (pi(x + 0)  - pi(x - 0)) * (pi(x + 0) - pi(x - 0)) / (dx * dx); // Gradpi_Gradpi
+        Gradpi_Gradpi(x)+=0.25 * (pi(x + 1)  - pi(x - 1)) * (pi(x + 1) - pi(x - 1)) / (dx * dx); // Gradpi_Gradpi
+        Gradpi_Gradpi(x)+=0.25 * (pi(x + 2)  - pi(x - 2)) * (pi(x + 2) - pi(x - 2)) / (dx * dx); // Gradpi_Gradpi
+      }
+    for (x.first(); x.test(); x.next())
+      {
+        pi_prime(x) += gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
+        deltaX(x) =(pi_prime(x) * pi_prime(x) - Gradpi_Gradpi(x))/2./a/a  - cosmo.X_hat; // definition of deltaX_ini from phi_ini = phi_bar_ini + delta phi_ini and d^ipi d_i pi
         pi(x) += gsl_spline_eval(phi_smg, 1. / (1. + sim.z_in), acc) * gsl_spline_eval(H_spline, 1.0, acc)/
         #ifdef HAVE_CLASS_BG
         Hconf(1.0, fourpiG, H_spline, acc)
@@ -624,32 +645,34 @@ if (cosmo.MGtheory == 1) // Only if we use the full theory we add the BG
         Hconf(1.0, fourpiG, cosmo)
         #endif
         ;// phi has dimension of time so we multiply by H0_class/H_0 gevolution
-        pi_prime(x) +=  gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
+        // pi_prime(x) +=  gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
         det_gamma(x) = 0.;
-        k1(x) =0.;
-        k2(x) =0.;
-        l1(x) =0.;
-        l2(x) =0.;
+        // k1(x) =0.;
+        // k2(x) =0.;
+        // l1(x) =0.;
+        // l2(x) =0.;
       }
     pi_prime.updateHalo();  // communicate halo values
+    deltaX.updateHalo();  // communicate halo values
     pi.updateHalo();  // communicate halo values
-
   }
   else if (cosmo.IC_scf == 0) // If the initial conditions are assumed to be small initially
   {
     for (x.first(); x.test(); x.next())
       {
-        pi(x) = 0.0 + gsl_spline_eval(phi_smg, 1. / (1. + sim.z_in), acc) * gsl_spline_eval(H_spline, 1.0, acc)/
+        pi(x) = cosmo.IC_amplitude * phi(x) + gsl_spline_eval(phi_smg, 1. / (1. + sim.z_in), acc) * gsl_spline_eval(H_spline, 1.0, acc)/
         #ifdef HAVE_CLASS_BG
         Hconf(1.0, fourpiG, H_spline, acc)
         #else
         Hconf(1.0, fourpiG, cosmo)
         #endif
         ;// phi has dimension of time so we multiply by H0_class/H_0 gevolution
-        pi_prime(x) = 0.0000000* phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc) * gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc)/2./a/a  - cosmo.X_hat; // We consider the IC for phi_prime to be very small
-        det_gamma(x) = 0.;
+        deltaX(x) = 0.0 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc) * gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc)/2./a/a  - cosmo.X_hat; // We consider the IC for delta X to be very small
+        pi_prime(x) = 0.0 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
+        det_gamma(x) = 0.; // delta X
       }
     pi_prime.updateHalo();  // communicate halo values
+    deltaX.updateHalo();  // communicate halo values
     pi.updateHalo();  // communicate halo values
   }
 }
@@ -660,6 +683,7 @@ if (cosmo.MGtheory == 1) // Only if we use the full theory we add the BG
   FILE* Result_real;
   FILE* Result_fourier;
   FILE* Result_max;
+  FILE* Result_min;
   FILE* Redshifts;
   FILE* snapshots_file;
 
@@ -667,6 +691,7 @@ if (cosmo.MGtheory == 1) // Only if we use the full theory we add the BG
   char filename_real[60];
   char filename_fourier[60];
   char filename_max[60];
+  char filename_min[60];
   char filename_redshift[60];
   char filename_snapshot[60];
 
@@ -674,6 +699,7 @@ if (cosmo.MGtheory == 1) // Only if we use the full theory we add the BG
   snprintf(filename_real, sizeof(filename_real),"./output/Result_real.txt");
   snprintf(filename_fourier, sizeof(filename_fourier),"./output/Result_fourier.txt");
   snprintf(filename_max, sizeof(filename_max),"./output/Results_max.txt");
+  snprintf(filename_min, sizeof(filename_min),"./output/Results_min.txt");
   snprintf(filename_snapshot, sizeof(filename_snapshot),"./output/snapshots.txt");
 
   // ofstream out(filename_avg,ios::out);
@@ -681,6 +707,7 @@ if (cosmo.MGtheory == 1) // Only if we use the full theory we add the BG
   ofstream out_real(filename_real,ios::out);
   ofstream out_fourier(filename_fourier,ios::out);
   ofstream out_max(filename_max,ios::out);
+  ofstream out_min(filename_min,ios::out);
   ofstream out_snapshots(filename_snapshot,ios::out);
   snapshots_file=fopen(filename_snapshot,"w");
 
@@ -689,6 +716,7 @@ if (cosmo.MGtheory == 1) // Only if we use the full theory we add the BG
   Result_real=fopen(filename_real,"w");
   Result_fourier=fopen(filename_fourier,"w");
   Result_max=fopen(filename_max,"w");
+  Result_min=fopen(filename_min,"w");
   snapshots_file=fopen(filename_snapshot,"w");
 
   out_avg<<"### The result of the average over time \n### d tau = "<< dtau<<endl;
@@ -707,8 +735,12 @@ else
   out_max<<"### The result of the maximum over time \n### d tau = "<< dtau<<endl;
   out_max<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
   out_max<<"### initial time = "<< tau <<endl;
-  out_max<<"### 1- tau\t2- max(H pi)\t3- max (zeta)\t 4- max (phi)   " <<endl;
+  out_max<<"### 1- z\t2- max(H pi)\t3- max (zeta)\t 4- max (phi)\t 5- max(c_s^2)   " <<endl;
 
+  out_min<<"### The result of the maximum over time \n### d tau = "<< dtau<<endl;
+  out_min<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
+  out_min<<"### initial time = "<< tau <<endl;
+  out_min<<"### 1- z\t2- min(H pi)\t3- min(zeta)\t 4- min(phi)\t 5- min(c_s^2)   " <<endl;
 
   out_real<<"### The result of the average over time \n### d tau = "<< dtau<<endl;
   out_real<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
@@ -739,7 +771,14 @@ double avg_pi_old = 0.;
 double max_pi = 0.;
 double max_pi_old = 0.;
 double max_zeta = 0.;
+double max_cs2 = 0.;
 double max_phi = 0.;
+
+double min_pi = 0.;
+double min_pi_old = 0.;
+double min_zeta = 0.;
+double min_cs2 = 0.;
+double min_phi = 0.;
 
 int norm_kFT_squared = 0.;
 
@@ -758,66 +797,70 @@ string str_filename5 ;
 	{
     //Kessence IC
 
-#ifdef BACKREACTION_TEST
-      //****************************
-      //****PRINTING AVERAGE OVER TIME
-      //****************************
-      // check_field(  pi_prime, 1. , " H pi", numpts3d);
-      avg_pi =average(  pi, Hconf(1.0, fourpiG,//TODO_EB
-			#ifdef HAVE_CLASS_BG
-				H_spline, acc
-			#else
-				cosmo
-			#endif
-				), numpts3d ) ;
-      avg_zeta =average( pi_prime,1., numpts3d ) ;
-      avg_phi =average(  phi , 1., numpts3d ) ;
-      avg_det_gamma =average(  det_gamma , 1., numpts3d ) ;
-      avg_cs2_full =average(  cs2_full , 1., numpts3d ) ;
-
-      max_pi =maximum(  pi, 1., numpts3d ) ;
-      max_pi_old =maximum(  pi_old, 1., numpts3d ) ;
-      max_zeta =maximum(  pi_prime,1., numpts3d ) ;
-      max_phi =maximum(  phi , 1., numpts3d ) ;
-
-      COUT << scientific << setprecision(8);
-        if (cosmo.MGtheory == 0)
-      {
-        cout<<"z = "<<1./a - 1<<" p_smg_spline:"<<gsl_spline_eval(p_smg_spline, a, acc)<<" rho_smg_spline:"<<gsl_spline_eval(rho_smg_spline, a, acc)<<endl;
-        out_avg<<setw(9) << 1./a -1. <<"\t"<< setw(15) <<setprecision(15) << avg_pi<<"\t"<< setw(15)<<setprecision(15) << avg_zeta<<"\t"<< setw(9) << gsl_spline_eval(p_smg_spline, a, acc)/gsl_spline_eval(rho_smg_spline, a, acc) <<"\t"<< setw(9) << avg_phi<<"\t"<< setw(15) <<setprecision(15) <<gsl_spline_eval(cs2_spline, a, acc) <<"\t"<< setw(9) << tau<<endl;
-      }
-      else
-      {
-        out_avg<<setw(9) << 1./a -1. <<"\t"<< setw(15) <<setprecision(15) << avg_pi<<"\t"<< setw(15)<<setprecision(15) << avg_zeta<<"\t"<< setw(9) << avg_det_gamma<<"\t"<< setw(9) << avg_phi<<"\t"<< setw(15) <<setprecision(15) <<avg_cs2_full <<"\t"<< setw(9) << tau<<endl;
-      }
-        out_max<<setw(9) << tau <<"\t"<< setw(9) << max_pi<<"\t"<< setw(9) << max_zeta<<"\t"<< setw(9) << max_phi<<endl;
-
-        for (x.first(); x.test(); x.next())
-    	{
-          //NL_test, Printing out average
-        if(x.coord(0)==32 && x.coord(1)==20 && x.coord(2)==10)
-        {
-          // if(parallel.isRoot())
-          // {
-          out_real<<setw(9) << tau <<"\t"<< setw(9) <<pi (x)<<"\t"<< setw(9)<<pi_prime (x)<<"\t"<<x<<endl;
-          // }
-        }
-    	}
-      //****************************
-      //FOURIER PRINTING
-      //****************************
-      for(kFT.first();kFT.test();kFT.next())
-      {
-        norm_kFT_squared= kFT.coord(0)*kFT.coord(0) + kFT.coord(1) * kFT.coord(1) + kFT.coord(2) * kFT.coord(2);
-        if(norm_kFT_squared == 1)
-        {
-          out_fourier<<setw(9) << tau <<"\t"<< setw(9) << scalarFT_pi(kFT)<<"\t"<< setw(9)<<scalarFT_pi_prime (kFT)<<"\t"<<kFT<<"\t"<<norm_kFT_squared<<endl;
-        }
-      }
-      //**********************
-      //END ADDED************
-      //**********************
-#endif
+// #ifdef BACKREACTION_TEST
+//       //****************************
+//       //****PRINTING AVERAGE OVER TIME
+//       //****************************
+//       // check_field(  pi_prime, 1. , " H pi", numpts3d);
+//       avg_pi =average(  pi, Hconf(1.0, fourpiG,//TODO_EB
+// 			#ifdef HAVE_CLASS_BG
+// 				H_spline, acc
+// 			#else
+// 				cosmo
+// 			#endif
+// 				), numpts3d ) ;
+//       avg_zeta =average( pi_prime,1., numpts3d ) ;
+//       avg_phi =average(  phi , 1., numpts3d ) ;
+//       avg_det_gamma =average(  det_gamma , 1., numpts3d ) ;
+//       avg_cs2_full =average(  cs2_full , 1., numpts3d ) ;
+//
+//       max_pi =maximum(  pi, 1., numpts3d ) ;
+//       max_pi_old =maximum(  pi_old, 1., numpts3d ) ;
+//       max_zeta =maximum(  pi_prime,1., numpts3d ) ;
+//       max_phi =maximum(  phi , 1., numpts3d ) ;
+//
+//       COUT << scientific << setprecision(8);
+//       if(isnan(avg_pi))
+//       {
+//         parallel.abortForce();
+//       }
+//         if (cosmo.MGtheory == 0)
+//       {
+//         cout<<"z = "<<1./a - 1<<" p_smg_spline:"<<gsl_spline_eval(p_smg_spline, a, acc)<<" rho_smg_spline:"<<gsl_spline_eval(rho_smg_spline, a, acc)<<endl;
+//         out_avg<<setw(9) << 1./a -1. <<"\t"<< setw(15) <<setprecision(15) << avg_pi<<"\t"<< setw(15)<<setprecision(15) << avg_zeta<<"\t"<< setw(9) << gsl_spline_eval(p_smg_spline, a, acc)/gsl_spline_eval(rho_smg_spline, a, acc) <<"\t"<< setw(9) << avg_phi<<"\t"<< setw(15) <<setprecision(15) <<gsl_spline_eval(cs2_spline, a, acc) <<"\t"<< setw(9) << tau<<endl;
+//       }
+//       else
+//       {
+//         out_avg<<setw(9) << 1./a -1. <<"\t"<< setw(15) <<setprecision(15) << avg_pi<<"\t"<< setw(15)<<setprecision(15) << avg_zeta<<"\t"<< setw(9) << avg_det_gamma<<"\t"<< setw(9) << avg_phi<<"\t"<< setw(15) <<setprecision(15) <<avg_cs2_full <<"\t"<< setw(9) << tau<<endl;
+//       }
+//         out_max<<setw(9) << tau <<"\t"<< setw(9) << max_pi<<"\t"<< setw(9) << max_zeta<<"\t"<< setw(9) << max_phi<<endl;
+//
+//         for (x.first(); x.test(); x.next())
+//     	{
+//           //NL_test, Printing out average
+//         if(x.coord(0)==32 && x.coord(1)==20 && x.coord(2)==10)
+//         {
+//           // if(parallel.isRoot())
+//           // {
+//           out_real<<setw(9) << tau <<"\t"<< setw(9) <<pi (x)<<"\t"<< setw(9)<<pi_prime (x)<<"\t"<<x<<endl;
+//           // }
+//         }
+//     	}
+//       //****************************
+//       //FOURIER PRINTING
+//       //****************************
+//       for(kFT.first();kFT.test();kFT.next())
+//       {
+//         norm_kFT_squared= kFT.coord(0)*kFT.coord(0) + kFT.coord(1) * kFT.coord(1) + kFT.coord(2) * kFT.coord(2);
+//         if(norm_kFT_squared == 1)
+//         {
+//           out_fourier<<setw(9) << tau <<"\t"<< setw(9) << scalarFT_pi(kFT)<<"\t"<< setw(9)<<scalarFT_pi_prime (kFT)<<"\t"<<kFT<<"\t"<<norm_kFT_squared<<endl;
+//         }
+//       }
+//       //**********************
+//       //END ADDED************
+//       //**********************
+// #endif
 
 #ifdef BENCHMARK
 		cycle_start_time = MPI_Wtime();
@@ -1048,6 +1091,8 @@ string str_filename5 ;
 		if (kFT.setCoord(0, 0, 0))
 		{
 			sprintf(filename, "%s%s_background.dat", sim.output_path, sim.basename_generic);
+      if (cycle == 0)
+        outfile = fopen(filename, "w");
 			outfile = fopen(filename, "a");
 			if (outfile == NULL)
 			{
@@ -1451,6 +1496,7 @@ ref_time = MPI_Wtime();
              // {
              // out_snapshots<<"### 1- tau\t2- z \t3- a\t 4- zeta_avg\t 5- avg_pi\t 6- avg_phi\t 7- tau/boxsize\t 8- H_conf/H0 \t 9- snap_count"<<endl;
 
+
              out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(a_kess) -1.0 <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << avg_zeta <<"\t"<< setw(9) << avg_pi <<"\t"<< setw(9) << avg_phi <<"\t"<< setw(9) <<tau <<"\t"<< setw(9) << Hconf(a_kess, fourpiG,//TODO_EB
    					#ifdef HAVE_CLASS_BG
    						H_spline, acc
@@ -1489,6 +1535,8 @@ ref_time = MPI_Wtime();
           if(parallel.isRoot())  cout << "\033[1;34mThe fundamental theory is being solved using Euler method!\033[0m\n";
           if(parallel.isRoot())  cout << "\033[1;34mThe Non-linear terms included: \033[0m"<<cosmo.NL<<endl;
           if(parallel.isRoot())  cout << "\033[1;34mThe initial condition for the scalar field is made using hiclass: \033[0m"<<cosmo.IC_scf<<endl;
+          if(parallel.isRoot() & (cosmo.IC_scf==0) )  cout << "\033[1;34mThe amplitude of the initial condition is set as p_prime(x) = 0 and pi(x) = phi_bg(hiclass) + Amplitude * Phi(x) where the Amplitude is \033[0m"<<cosmo.IC_amplitude<<endl;
+
           }
         double a_kess=a;
 
@@ -1497,22 +1545,73 @@ ref_time = MPI_Wtime();
       //****************************************************
       for (i=0;i<sim.nKe_numsteps;i++)
       {
-        for (x.first(); x.test(); x.next())
-          {
-             pi_old(x) = pi(x);
-             pi_prime_old(x) = pi_prime(x);
-             det_gamma_old (x) = det_gamma(x);
-          }
-      update_pi_prime_euler(dtau/ sim.nKe_numsteps, dx, a_kess, pi, pi_prime, det_gamma, cs2_full, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
+
+        #ifdef BACKREACTION_TEST
+              //****************************
+              //****PRINTING AVERAGE OVER TIME
+              //****************************
+              avg_pi =average(  pi, Hconf(1.0, fourpiG,//TODO_EB
+        			#ifdef HAVE_CLASS_BG
+        				H_spline, acc
+        			#else
+        				cosmo
+        			#endif
+        				), numpts3d ) ;
+              avg_zeta =average( pi_prime,1., numpts3d ) ;
+              avg_phi =average(  phi , 1., numpts3d ) ;
+              avg_det_gamma =average(  det_gamma , 1., numpts3d ) ;
+              avg_cs2_full =average(  cs2_full , 1., numpts3d ) ;
+
+              max_pi =maximum(  pi, Hconf(1.0, fourpiG,//TODO_EB
+        			#ifdef HAVE_CLASS_BG
+        				H_spline, acc
+        			#else
+        				cosmo
+        			#endif
+        				), numpts3d ) ;
+              // max_pi_old =maximum(  pi_old, 1., numpts3d ) ;
+              max_zeta =maximum(  pi_prime,1., numpts3d ) ;
+              max_phi =maximum(  phi , 1., numpts3d ) ;
+              max_cs2 = maximum(  cs2_full , 1., numpts3d ) ;
+              //
+              min_pi =minimum(  pi, Hconf(1.0, fourpiG,//TODO_EB
+              #ifdef HAVE_CLASS_BG
+                H_spline, acc
+              #else
+                cosmo
+              #endif
+                ), numpts3d ) ;
+              min_zeta =minimum(  pi_prime, 1., numpts3d ) ;
+              min_phi =minimum(  phi , 1., numpts3d ) ;
+              min_cs2 = minimum(  cs2_full , 1., numpts3d ) ;
+
+              COUT << scientific << setprecision(8);
+              if(isnan(avg_zeta) & isnan(avg_pi))
+              {
+                parallel.abortForce();
+              }
+                if (cosmo.MGtheory == 0)
+              {
+                cout<<"z = "<<1./a_kess - 1<<" p_smg_spline:"<<gsl_spline_eval(p_smg_spline, a_kess, acc)<<" rho_smg_spline:"<<gsl_spline_eval(rho_smg_spline, a_kess, acc)<<endl;
+                out_avg<<setw(9) << 1./a_kess -1. <<"\t"<< setw(15) <<setprecision(15) << avg_pi<<"\t"<< setw(15)<<setprecision(15) << avg_zeta<<"\t"<< setw(9) << gsl_spline_eval(p_smg_spline, a_kess, acc)/gsl_spline_eval(rho_smg_spline, a_kess, acc) <<"\t"<< setw(9) << avg_phi<<"\t"<< setw(15) <<setprecision(15) <<gsl_spline_eval(cs2_spline, a_kess, acc) <<"\t"<< setw(9) << tau<<endl;
+              }
+              else
+              {
+                out_avg<<setw(9) << 1./a_kess -1. <<"\t"<< setw(9) << avg_pi<<"\t"<< setw(9) << avg_zeta<<"\t"<< setw(9) << avg_det_gamma<<"\t"<< setw(9) << avg_phi<<"\t"<< setw(9) <<avg_cs2_full <<"\t"<< setw(9) << tau<<endl;
+              }
+                out_max<<setw(9) << 1./a_kess - 1 <<"\t"<< setw(9) << max_pi<<"\t"<< setw(9) << max_zeta<<"\t"<< setw(9) << max_phi<<"\t"<< setw(9) << max_cs2 <<endl;
+
+                out_min<< setw(9) << 1./a_kess - 1 <<"\t"<< setw(9) << min_pi<<"\t"<< setw(9) << min_zeta<<"\t"<< setw(9) << min_phi<<"\t"<< setw(9) << min_cs2 <<endl;
+        #endif
+      update_pi_prime_euler(dtau/ sim.nKe_numsteps, dx, a_kess, pi, deltaX, pi_prime, det_gamma, cs2_full, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
        #ifdef HAVE_CLASS_BG
        Hconf(a_kess, fourpiG, H_spline, acc)
        #else
        Hconf(a_kess, fourpiG, cosmo)
        #endif
         , cosmo.NL);
+      deltaX.updateHalo();
       pi_prime.updateHalo();
-
-      // update_pi_full(dtau/ sim.nKe_numsteps, pi, pi_prime_old); // H_old is updated here in the function
       pi.updateHalo();
       // Although it's an Euler algorithm we can update the BG part twice in each step to increase the precision!
       rungekutta4bg(a_kess, fourpiG,

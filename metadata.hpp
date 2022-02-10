@@ -303,6 +303,7 @@ struct cosmology
   int solver_kessence;
   int NL;
   int IC_scf;
+  double IC_amplitude;
   //
   // fld CLASS
   // double Omega_fld=0.0;

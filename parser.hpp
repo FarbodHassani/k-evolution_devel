@@ -1722,6 +1722,10 @@ if (ic.IC_kess == 1)
   {
       cosmo.IC_scf=1; // Default is 1 which is hiclass IC
   }
+  if ((cosmo.IC_scf==0) & !parseParameter(params, numparam, "IC_amplitude",  cosmo.IC_amplitude))
+  {
+      cosmo.IC_amplitude=0; // Default is 0 * phi(x)
+  }
   // EFT kessence
 	if (!parseParameter(params, numparam, "cs2_kessence",  cosmo.cs2_kessence))
 	{
