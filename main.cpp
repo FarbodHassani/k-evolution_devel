@@ -628,6 +628,11 @@ if (cosmo.MGtheory == 1) // Only if we use the full theory we add the BG
 {
   if (cosmo.IC_scf == 1) // hiclass initial codnitions for the scalar field
   {
+    if(cycle==0)
+    {
+    if(parallel.isRoot())  cout << "\033[1;34mThe initial condition for the scalar field is made using hiclass: \033[0m"<<1<<endl;
+    if(parallel.isRoot() & (cosmo.IC_scf==0) )  cout << "\033[1;34mThe amplitude of the initial condition is set as field(x) = phi_bg(hiclass) + Amplitude * field(x) where the Amplitude is \033[0m"<<cosmo.IC_amplitude<<endl;
+    }
     for (x.first(); x.test(); x.next())
       {
         Gradpi_Gradpi(x)= 0.25 * (pi(x + 0)  - pi(x - 0)) * (pi(x + 0) - pi(x - 0)) / (dx * dx); // Gradpi_Gradpi
@@ -647,29 +652,40 @@ if (cosmo.MGtheory == 1) // Only if we use the full theory we add the BG
         ;// phi has dimension of time so we multiply by H0_class/H_0 gevolution
         // pi_prime(x) +=  gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
         det_gamma(x) = 0.;
-        // k1(x) =0.;
-        // k2(x) =0.;
-        // l1(x) =0.;
-        // l2(x) =0.;
       }
     pi_prime.updateHalo();  // communicate halo values
     deltaX.updateHalo();  // communicate halo values
     pi.updateHalo();  // communicate halo values
   }
+
   else if (cosmo.IC_scf == 0) // If the initial conditions are assumed to be small initially
   {
+    if(cycle==0)
+    {
+    if(parallel.isRoot())  cout << "\033[1;34mThe initial condition for the scalar field is made using hiclass: \033[0m"<<1<<endl;
+    if(parallel.isRoot() & (cosmo.IC_scf==0) )  cout << "\033[1;34mThe amplitude of the initial condition is set as p_prime(x) = 0 and field(x) = phi_bg(hiclass) + Amplitude * field(x) where the Amplitude is \033[0m"<<cosmo.IC_amplitude<<endl;
+    }
+
     for (x.first(); x.test(); x.next())
       {
-        pi(x) = cosmo.IC_amplitude * phi(x) + gsl_spline_eval(phi_smg, 1. / (1. + sim.z_in), acc) * gsl_spline_eval(H_spline, 1.0, acc)/
+        Gradpi_Gradpi(x)= 0.25 * (pi(x + 0)  - pi(x - 0)) * (pi(x + 0) - pi(x - 0)) / (dx * dx); // Gradpi_Gradpi
+        Gradpi_Gradpi(x)+=0.25 * (pi(x + 1)  - pi(x - 1)) * (pi(x + 1) - pi(x - 1)) / (dx * dx); // Gradpi_Gradpi
+        Gradpi_Gradpi(x)+=0.25 * (pi(x + 2)  - pi(x - 2)) * (pi(x + 2) - pi(x - 2)) / (dx * dx); // Gradpi_Gradpi
+      }
+    for (x.first(); x.test(); x.next())
+      {
+        // We multiplu the initial power by an amplitude
+        pi_prime(x) = pi_prime(x) * cosmo.IC_amplitude + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
+        deltaX(x) =(pi_prime(x) * pi_prime(x) - Gradpi_Gradpi(x))/2./a/a  - cosmo.X_hat; // definition of deltaX_ini from phi_ini = phi_bar_ini + delta phi_ini and d^ipi d_i pi
+        // We multiplu the initial power by an amplitude
+        pi(x) = pi(x) * cosmo.IC_amplitude + gsl_spline_eval(phi_smg, 1. / (1. + sim.z_in), acc) * gsl_spline_eval(H_spline, 1.0, acc)/
         #ifdef HAVE_CLASS_BG
         Hconf(1.0, fourpiG, H_spline, acc)
         #else
         Hconf(1.0, fourpiG, cosmo)
         #endif
-        ;// phi has dimension of time so we multiply by H0_class/H_0 gevolution
-        deltaX(x) = 0.0 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc) * gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc)/2./a/a  - cosmo.X_hat; // We consider the IC for delta X to be very small
-        pi_prime(x) = 0.0 * phi(x) + gsl_spline_eval(phi_smg_prime, 1. / (1. + sim.z_in), acc);
-        det_gamma(x) = 0.; // delta X
+        ;
+        det_gamma(x) = 0.;
       }
     pi_prime.updateHalo();  // communicate halo values
     deltaX.updateHalo();  // communicate halo values
@@ -1532,10 +1548,10 @@ ref_time = MPI_Wtime();
         {
           if(cycle==0)
           {
-          if(parallel.isRoot())  cout << "\033[1;34mThe fundamental theory is being solved using Euler method!\033[0m\n";
+          if(parallel.isRoot())  cout << "\033[1;34mThe fundamental theory is being solved using the Euler method!\033[0m\n";
           if(parallel.isRoot())  cout << "\033[1;34mThe Non-linear terms included: \033[0m"<<cosmo.NL<<endl;
-          if(parallel.isRoot())  cout << "\033[1;34mThe initial condition for the scalar field is made using hiclass: \033[0m"<<cosmo.IC_scf<<endl;
-          if(parallel.isRoot() & (cosmo.IC_scf==0) )  cout << "\033[1;34mThe amplitude of the initial condition is set as p_prime(x) = 0 and pi(x) = phi_bg(hiclass) + Amplitude * Phi(x) where the Amplitude is \033[0m"<<cosmo.IC_amplitude<<endl;
+          // if(parallel.isRoot())  cout << "\033[1;34mThe initial condition for the scalar field is made using hiclass: \033[0m"<<cosmo.IC_scf<<endl;
+          // if(parallel.isRoot() & (cosmo.IC_scf==0) )  cout << "\033[1;34mThe amplitude of the initial condition is set as p_prime(x) = 0 and pi(x) = phi_bg(hiclass) + Amplitude * Phi(x) where the Amplitude is \033[0m"<<cosmo.IC_amplitude<<endl;
 
           }
         double a_kess=a;
@@ -1588,6 +1604,7 @@ ref_time = MPI_Wtime();
               COUT << scientific << setprecision(8);
               if(isnan(avg_zeta) & isnan(avg_pi))
               {
+                if(parallel.isRoot()) cout << "\033[1;34mThe PDE blowus at z=: \033[0m"<<1./a_kess - 1<<endl;
                 parallel.abortForce();
               }
                 if (cosmo.MGtheory == 0)
@@ -1623,7 +1640,6 @@ ref_time = MPI_Wtime();
   			dtau  / sim.nKe_numsteps );// We don't use the BG in the update pi, so we need to update it once!
     }
   }
-
     //Euler method end!
 
 
@@ -1646,8 +1662,6 @@ ref_time = MPI_Wtime();
              #endif
               );            // zeta_integer.updateHalo();
             pi_prime.updateHalo(); // phi' (n-1/2)
-
-          // }
         }
 
       //****************************************************
