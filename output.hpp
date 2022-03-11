@@ -120,7 +120,7 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 	if (sim.out_snapshot & MASK_PI_K)
 			pi_k->saveHDF5_server_open(h5filename + filename + "_pi_k");
 
-	if (sim.out_snapshot & MASK_zeta)
+	if (sim.out_snapshot & MASK_ZETA)
 			zeta->saveHDF5_server_open(h5filename + filename + "_zeta");
 	//Kessence end
 
@@ -272,6 +272,16 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 			pi_k->saveHDF5_coarseGrain3D(h5filename + filename + "_pi_k.h5", sim.downgrade_factor);
 		else
 			pi_k->saveHDF5(h5filename + filename + "_pi_k.h5");
+#endif
+
+if (sim.out_snapshot & MASK_ZETA)
+#ifdef EXTERNAL_IO
+  zeta->saveHDF5_server_write(NUMBER_OF_IO_FILES);
+#else
+  if (sim.downgrade_factor > 1)
+    zeta->saveHDF5_coarseGrain3D(h5filename + filename + "_zeta.h5", sim.downgrade_factor);
+  else
+    zeta->saveHDF5(h5filename + filename + "_zeta.h5");
 #endif
 
 	if (sim.out_snapshot & MASK_CHI)
@@ -2068,7 +2078,7 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
       ), filename, "power spectrum of pi_k * H0 (dimensionless)", a, sim.z_pk[pkcount]);
 		}
 
-	     if (sim.out_pk & MASK_zeta)
+	     if (sim.out_pk & MASK_ZETA)
 		{
 			plan_zeta->execute(FFT_FORWARD);
 			extractPowerSpectrum(*scalarFT_zeta, kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);

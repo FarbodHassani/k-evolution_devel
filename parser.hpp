@@ -661,10 +661,10 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 				else if (strcmp(item, "phi_prime") == 0 || strcmp(item, "Phi_prime") == 0)
 						pvalue |= MASK_PHI_PRIME;
 				else if (strcmp(item, "pi_k") == 0 || strcmp(item, "Pi_k") == 0)
-					pvalue |= MASK_PI_K;
-				else if (strcmp(item, "zeta") == 0 || strcmp(item, "zeta") == 0)
-					pvalue |= MASK_zeta;
-          //Kessence end
+          pvalue |= MASK_PI_K;
+				else if (strcmp(item, "zeta") == 0 || strcmp(item, "Zeta") == 0)
+          pvalue |= MASK_ZETA;
+        //Kessence end
 				else if (strcmp(item, "Chi") == 0 || strcmp(item, "chi") == 0)
 					pvalue |= MASK_CHI;
 				else if (strcmp(item, "Pot") == 0 || strcmp(item, "pot") == 0 || strcmp(item, "Psi_N") == 0 || strcmp(item, "psi_N") == 0 || strcmp(item, "PsiN") == 0 || strcmp(item, "psiN") == 0)
@@ -717,7 +717,7 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 			else if (strcmp(start, "Pi_k") == 0 || strcmp(start, "pi_k") == 0)
 				pvalue |= MASK_PI_K;
 			else if (strcmp(start, "zeta") == 0 || strcmp(start, "zeta") == 0)
-				pvalue |= MASK_zeta;
+				pvalue |= MASK_ZETA;
         //Kessence end
 			else if (strcmp(start, "Chi") == 0 || strcmp(start, "chi") == 0)
 				pvalue |= MASK_CHI;

@@ -212,10 +212,10 @@ void writeRestartSettings(metadata & sim, icsettings & ic, cosmology & cosmo, co
 			if(sim.out_snapshot & MASK_PI_K)
 			{
 				fprintf(outfile, "pi_k");
-				if (sim.out_snapshot > MASK_zeta)
+				if (sim.out_snapshot > MASK_ZETA)
 					fprintf(outfile, ", ");
 			}
-			if(sim.out_snapshot & MASK_zeta)
+			if(sim.out_snapshot & MASK_ZETA)
 			{
 				fprintf(outfile, "zeta_k");
 				if (sim.out_snapshot > MASK_CHI)
@@ -333,10 +333,10 @@ void writeRestartSettings(metadata & sim, icsettings & ic, cosmology & cosmo, co
 			if(sim.out_snapshot & MASK_PI_K)
 			{
 				fprintf(outfile, "pi_k");
-				if (sim.out_snapshot > MASK_zeta)
+				if (sim.out_snapshot > MASK_ZETA)
 					fprintf(outfile, ", ");
 			}
-			if(sim.out_snapshot & MASK_zeta)
+			if(sim.out_snapshot & MASK_ZETA)
 			{
 				fprintf(outfile, "zeta");
 				if (sim.out_snapshot > MASK_CHI)

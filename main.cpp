@@ -110,6 +110,7 @@ int main(int argc, char **argv)
 	double maxvel[MAX_PCL_SPECIES];
 	FILE * outfile;
 	char filename[2*PARAM_MAX_LENGTH+24];
+  char filename_bg[2*PARAM_MAX_LENGTH+24];
 	string h5filename;
 	char * settingsfile = NULL;
 	char * precisionfile = NULL;
@@ -210,7 +211,6 @@ int main(int argc, char **argv)
 
 	sprintf(filename, "%s%s_settings_used.ini", sim.output_path, sim.basename_generic);
 	saveParameterFile(filename, params, numparam);
-
 	free(params);
 
 #ifdef HAVE_CLASS
@@ -747,7 +747,6 @@ else
   out_avg<<"### 1- z(redshift)\t2- average(H0 pi)\t3- average (zeta)\t 4- average (deta_gamma)\t 5- average (phi)\t6-avg(c_s2)  \t7-tau " <<endl;
 }
 
-
   out_max<<"### The result of the maximum over time \n### d tau = "<< dtau<<endl;
   out_max<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
   out_max<<"### initial time = "<< tau <<endl;
@@ -763,17 +762,15 @@ else
   out_real<<"### initial time = "<< tau <<endl;
   out_real<<"### 1- tau\t2- pi(x)\t3-zeta(x)\t 4-x" <<endl;
 
-
   out_fourier<<"### The result of the average over time \n### d tau = "<< dtau<<endl;
   out_fourier<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
   out_fourier<<"### initial time = "<< tau <<endl;
   out_fourier<<"### 1- tau\t 2- pi(k)\t\t3-zeta(k)\t\t4-|k|\t\t 5-vec{k} \t 6-|k|^2"<<endl;
 
-
   out_snapshots<<"### The result of the snapshots produced over time for blow-up \n### d tau = "<< dtau<<endl;
   out_snapshots<<"### number of kessence update = "<<  sim.nKe_numsteps <<endl;
   out_snapshots<<"### initial time = "<< tau <<endl;
-  out_snapshots<<"### 1- tau\t2- z \t3- a\t 4- zeta_avg\t 5- avg_pi\t 6- avg_phi\t 7- avg_det_gamma\t 8- H_conf/H0 \t 9- snap_count \t 10-cs2_full"<<endl;
+  out_snapshots<<"### 1- tau\t2- z \t3- a\t 4- zeta_avg\t 5- avg_pi\t 6- avg_phi\t 7- avg_c_s^2\t8- snap_count"<<endl;
 
 
 //defining the average
@@ -787,6 +784,8 @@ double avg_pi_old = 0.;
 double max_pi = 0.;
 double max_pi_old = 0.;
 double max_zeta = 0.;
+double max_zeta_old = 0.;
+double min_zeta_old = 0.;
 double max_cs2 = 0.;
 double max_phi = 0.;
 
@@ -795,7 +794,6 @@ double min_pi_old = 0.;
 double min_zeta = 0.;
 double min_cs2 = 0.;
 double min_phi = 0.;
-
 int norm_kFT_squared = 0.;
 
 // HDF5 outputs!
@@ -803,90 +801,25 @@ string str_filename ;
 string str_filename2 ;
 string str_filename3 ;
 string str_filename4 ;
-string str_filename5 ;
+// string str_filename5 ;
 #endif
 
 
-  outfile = fopen(filename, "w");
+  outfile = fopen(filename_bg, "w");
 
 	while (true)    // main loop
 	{
-    //Kessence IC
-
-// #ifdef BACKREACTION_TEST
-//       //****************************
-//       //****PRINTING AVERAGE OVER TIME
-//       //****************************
-//       // check_field(  pi_prime, 1. , " H pi", numpts3d);
-//       avg_pi =average(  pi, Hconf(1.0, fourpiG,//TODO_EB
-// 			#ifdef HAVE_CLASS_BG
-// 				H_spline, acc
-// 			#else
-// 				cosmo
-// 			#endif
-// 				), numpts3d ) ;
-//       avg_zeta =average( pi_prime,1., numpts3d ) ;
-//       avg_phi =average(  phi , 1., numpts3d ) ;
-//       avg_det_gamma =average(  det_gamma , 1., numpts3d ) ;
-//       avg_cs2_full =average(  cs2_full , 1., numpts3d ) ;
-//
-//       max_pi =maximum(  pi, 1., numpts3d ) ;
-//       max_pi_old =maximum(  pi_old, 1., numpts3d ) ;
-//       max_zeta =maximum(  pi_prime,1., numpts3d ) ;
-//       max_phi =maximum(  phi , 1., numpts3d ) ;
-//
-//       COUT << scientific << setprecision(8);
-//       if(isnan(avg_pi))
-//       {
-//         parallel.abortForce();
-//       }
-//         if (cosmo.MGtheory == 0)
-//       {
-//         cout<<"z = "<<1./a - 1<<" p_smg_spline:"<<gsl_spline_eval(p_smg_spline, a, acc)<<" rho_smg_spline:"<<gsl_spline_eval(rho_smg_spline, a, acc)<<endl;
-//         out_avg<<setw(9) << 1./a -1. <<"\t"<< setw(15) <<setprecision(15) << avg_pi<<"\t"<< setw(15)<<setprecision(15) << avg_zeta<<"\t"<< setw(9) << gsl_spline_eval(p_smg_spline, a, acc)/gsl_spline_eval(rho_smg_spline, a, acc) <<"\t"<< setw(9) << avg_phi<<"\t"<< setw(15) <<setprecision(15) <<gsl_spline_eval(cs2_spline, a, acc) <<"\t"<< setw(9) << tau<<endl;
-//       }
-//       else
-//       {
-//         out_avg<<setw(9) << 1./a -1. <<"\t"<< setw(15) <<setprecision(15) << avg_pi<<"\t"<< setw(15)<<setprecision(15) << avg_zeta<<"\t"<< setw(9) << avg_det_gamma<<"\t"<< setw(9) << avg_phi<<"\t"<< setw(15) <<setprecision(15) <<avg_cs2_full <<"\t"<< setw(9) << tau<<endl;
-//       }
-//         out_max<<setw(9) << tau <<"\t"<< setw(9) << max_pi<<"\t"<< setw(9) << max_zeta<<"\t"<< setw(9) << max_phi<<endl;
-//
-//         for (x.first(); x.test(); x.next())
-//     	{
-//           //NL_test, Printing out average
-//         if(x.coord(0)==32 && x.coord(1)==20 && x.coord(2)==10)
-//         {
-//           // if(parallel.isRoot())
-//           // {
-//           out_real<<setw(9) << tau <<"\t"<< setw(9) <<pi (x)<<"\t"<< setw(9)<<pi_prime (x)<<"\t"<<x<<endl;
-//           // }
-//         }
-//     	}
-//       //****************************
-//       //FOURIER PRINTING
-//       //****************************
-//       for(kFT.first();kFT.test();kFT.next())
-//       {
-//         norm_kFT_squared= kFT.coord(0)*kFT.coord(0) + kFT.coord(1) * kFT.coord(1) + kFT.coord(2) * kFT.coord(2);
-//         if(norm_kFT_squared == 1)
-//         {
-//           out_fourier<<setw(9) << tau <<"\t"<< setw(9) << scalarFT_pi(kFT)<<"\t"<< setw(9)<<scalarFT_pi_prime (kFT)<<"\t"<<kFT<<"\t"<<norm_kFT_squared<<endl;
-//         }
-//       }
-//       //**********************
-//       //END ADDED************
-//       //**********************
-// #endif
+    for (x.first(); x.test(); x.next())
+    {
+      pi_prime_old(x) = pi_prime(x);
+    }
 
 #ifdef BENCHMARK
 		cycle_start_time = MPI_Wtime();
 #endif
 		// construct stress-energy tensor
 		projection_init(&source);
-// #ifdef HAVE_CLASS
-// 		if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
-// 			projection_T00_project(class_background, class_perturbs, source, scalarFT, &plan_source, sim, ic, cosmo, fourpiG, a);
-// #endif
+
 		if (sim.gr_flag > 0)
 		{
 			projection_T00_project(&pcls_cdm, &source, a, &phi);
@@ -1049,10 +982,6 @@ string str_filename5 ;
         #endif
           );
 
-        // #ifdef BACKREACTION_TEST
-        //
-        // prepareFTsource_BackReactionTest<Real>(short_wave, dx, phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hc * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hc * Hc * dx * dx, sim.boxsize);  // prepare nonlinear source for phi update
-        // #else
         prepareFTsource<Real>(phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hc * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hc * Hc * dx * dx);  // prepare nonlinear source for phi update
         // #endif
 
@@ -1106,10 +1035,10 @@ string str_filename5 ;
 		// record some background data
 		if (kFT.setCoord(0, 0, 0))
 		{
-			sprintf(filename, "%s%s_background.dat", sim.output_path, sim.basename_generic);
+			sprintf(filename_bg, "%s%s_background.dat", sim.output_path, sim.basename_generic);
       if (cycle == 0)
-        outfile = fopen(filename, "w");
-			outfile = fopen(filename, "a");
+        outfile = fopen(filename_bg, "w");
+			outfile = fopen(filename_bg, "a");
 			if (outfile == NULL)
 			{
 				cout << " error opening file for background output!" << endl;
@@ -1228,7 +1157,7 @@ ref_time = MPI_Wtime();
         #ifdef HAVE_CLASS_BG
         H_spline, acc,
         #endif
-        &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi,&pi_prime, &chi, &Bi, &source, &Bi, &Sij, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij
+        &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi, &pi_prime, &chi, &Bi, &source, &Bi, &Sij, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij
 #ifdef CHECK_B
 				, &Bi_check, &BiFT_check, &plan_Bi_check
 #endif
@@ -1550,9 +1479,6 @@ ref_time = MPI_Wtime();
           {
           if(parallel.isRoot())  cout << "\033[1;34mThe fundamental theory is being solved using the Euler method!\033[0m\n";
           if(parallel.isRoot())  cout << "\033[1;34mThe Non-linear terms included: \033[0m"<<cosmo.NL<<endl;
-          // if(parallel.isRoot())  cout << "\033[1;34mThe initial condition for the scalar field is made using hiclass: \033[0m"<<cosmo.IC_scf<<endl;
-          // if(parallel.isRoot() & (cosmo.IC_scf==0) )  cout << "\033[1;34mThe amplitude of the initial condition is set as p_prime(x) = 0 and pi(x) = phi_bg(hiclass) + Amplitude * Phi(x) where the Amplitude is \033[0m"<<cosmo.IC_amplitude<<endl;
-
           }
         double a_kess=a;
 
@@ -1562,64 +1488,6 @@ ref_time = MPI_Wtime();
       for (i=0;i<sim.nKe_numsteps;i++)
       {
 
-        #ifdef BACKREACTION_TEST
-              //****************************
-              //****PRINTING AVERAGE OVER TIME
-              //****************************
-              avg_pi =average(  pi, Hconf(1.0, fourpiG,//TODO_EB
-        			#ifdef HAVE_CLASS_BG
-        				H_spline, acc
-        			#else
-        				cosmo
-        			#endif
-        				), numpts3d ) ;
-              avg_zeta =average( pi_prime,1., numpts3d ) ;
-              avg_phi =average(  phi , 1., numpts3d ) ;
-              avg_det_gamma =average(  det_gamma , 1., numpts3d ) ;
-              avg_cs2_full =average(  cs2_full , 1., numpts3d ) ;
-
-              max_pi =maximum(  pi, Hconf(1.0, fourpiG,//TODO_EB
-        			#ifdef HAVE_CLASS_BG
-        				H_spline, acc
-        			#else
-        				cosmo
-        			#endif
-        				), numpts3d ) ;
-              // max_pi_old =maximum(  pi_old, 1., numpts3d ) ;
-              max_zeta =maximum(  pi_prime,1., numpts3d ) ;
-              max_phi =maximum(  phi , 1., numpts3d ) ;
-              max_cs2 = maximum(  cs2_full , 1., numpts3d ) ;
-              //
-              min_pi =minimum(  pi, Hconf(1.0, fourpiG,//TODO_EB
-              #ifdef HAVE_CLASS_BG
-                H_spline, acc
-              #else
-                cosmo
-              #endif
-                ), numpts3d ) ;
-              min_zeta =minimum(  pi_prime, 1., numpts3d ) ;
-              min_phi =minimum(  phi , 1., numpts3d ) ;
-              min_cs2 = minimum(  cs2_full , 1., numpts3d ) ;
-
-              COUT << scientific << setprecision(8);
-              if(isnan(avg_zeta) & isnan(avg_pi))
-              {
-                if(parallel.isRoot()) cout << "\033[1;34mThe PDE blowus at z=: \033[0m"<<1./a_kess - 1<<endl;
-                parallel.abortForce();
-              }
-                if (cosmo.MGtheory == 0)
-              {
-                cout<<"z = "<<1./a_kess - 1<<" p_smg_spline:"<<gsl_spline_eval(p_smg_spline, a_kess, acc)<<" rho_smg_spline:"<<gsl_spline_eval(rho_smg_spline, a_kess, acc)<<endl;
-                out_avg<<setw(9) << 1./a_kess -1. <<"\t"<< setw(15) <<setprecision(15) << avg_pi<<"\t"<< setw(15)<<setprecision(15) << avg_zeta<<"\t"<< setw(9) << gsl_spline_eval(p_smg_spline, a_kess, acc)/gsl_spline_eval(rho_smg_spline, a_kess, acc) <<"\t"<< setw(9) << avg_phi<<"\t"<< setw(15) <<setprecision(15) <<gsl_spline_eval(cs2_spline, a_kess, acc) <<"\t"<< setw(9) << tau<<endl;
-              }
-              else
-              {
-                out_avg<<setw(9) << 1./a_kess -1. <<"\t"<< setw(9) << avg_pi<<"\t"<< setw(9) << avg_zeta<<"\t"<< setw(9) << avg_det_gamma<<"\t"<< setw(9) << avg_phi<<"\t"<< setw(9) <<avg_cs2_full <<"\t"<< setw(9) << tau<<endl;
-              }
-                out_max<<setw(9) << 1./a_kess - 1 <<"\t"<< setw(9) << max_pi<<"\t"<< setw(9) << max_zeta<<"\t"<< setw(9) << max_phi<<"\t"<< setw(9) << max_cs2 <<endl;
-
-                out_min<< setw(9) << 1./a_kess - 1 <<"\t"<< setw(9) << min_pi<<"\t"<< setw(9) << min_zeta<<"\t"<< setw(9) << min_phi<<"\t"<< setw(9) << min_cs2 <<endl;
-        #endif
       update_pi_prime_euler(dtau/ sim.nKe_numsteps, dx, a_kess, pi, deltaX, pi_prime, det_gamma, cs2_full, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
        #ifdef HAVE_CLASS_BG
        Hconf(a_kess, fourpiG, H_spline, acc)
@@ -1638,6 +1506,85 @@ ref_time = MPI_Wtime();
   				cosmo,
   			#endif
   			dtau  / sim.nKe_numsteps );// We don't use the BG in the update pi, so we need to update it once!
+
+
+
+
+        #ifdef BACKREACTION_TEST // Blowup tests
+              //****************************
+              //****PRINTING AVERAGE OVER TIME
+              //****************************
+            avg_pi =average(  pi, Hconf(1.0, fourpiG,
+            #ifdef HAVE_CLASS_BG
+              H_spline, acc
+            #else
+              cosmo
+            #endif
+              ), numpts3d ) ;
+            avg_zeta =average( pi_prime,1., numpts3d ) ;
+            avg_phi =average(  phi , 1., numpts3d ) ;
+            avg_det_gamma =average(  det_gamma , 1., numpts3d ) ;
+            avg_cs2_full =average(  cs2_full , 1., numpts3d ) ;
+
+            max_pi =maximum(  pi, Hconf(1.0, fourpiG,
+            #ifdef HAVE_CLASS_BG
+              H_spline, acc
+            #else
+              cosmo
+            #endif
+              ), numpts3d ) ;
+            max_zeta =maximum(  pi_prime,1., numpts3d ) ;
+            max_zeta_old =maximum(  pi_prime_old, 1., numpts3d ) ;
+            max_phi =maximum(  phi , 1., numpts3d ) ;
+            max_cs2 = maximum(  cs2_full , 1., numpts3d ) ;
+            min_pi =minimum(  pi, Hconf(1.0, fourpiG,//TODO_EB
+            #ifdef HAVE_CLASS_BG
+              H_spline, acc
+            #else
+              cosmo
+            #endif
+              ), numpts3d ) ;
+            min_zeta =minimum(  pi_prime, 1., numpts3d ) ;
+            min_zeta_old =minimum(  pi_prime_old, 1., numpts3d ) ;
+            min_phi =minimum(  phi , 1., numpts3d ) ;
+            min_cs2 = minimum(  cs2_full , 1., numpts3d ) ;
+
+            out_avg<<setw(9) << 1./a_kess -1. <<"\t"<< setw(9) << avg_pi<<"\t"<< setw(9) << avg_zeta<<"\t"<< setw(9) << avg_det_gamma<<"\t"<< setw(9) << avg_phi<<"\t"<< setw(9) <<avg_cs2_full <<"\t"<< setw(9) << tau<<endl;
+
+            out_max<<setw(9) << 1./a_kess - 1 <<"\t"<< setw(9) << max_pi<<"\t"<< setw(9) << max_zeta<<"\t"<< setw(9) << max_phi<<"\t"<< setw(9) << max_cs2 <<endl;
+
+            out_min<< setw(9) << 1./a_kess - 1 <<"\t"<< setw(9) << min_pi<<"\t"<< setw(9) << min_zeta<<"\t"<< setw(9) << min_phi<<"\t"<< setw(9) << min_cs2 <<endl;
+
+            if ( (max_zeta>1.7e-03) && (max_zeta/max_zeta_old>1.05 || min_zeta/min_zeta_old>1.05 ))
+            {
+              if (!(isnan(avg_zeta)))
+              {
+              // dtau = dtau; // Decreasing the time step even more to capture the blowup point!
+
+              if(parallel.isRoot())  cout << "\033[1;32mThe blowup criteria are met, the requested snapshots being produced. \033[0m"<<" , max_pi_prime: "<< max_zeta<<" , max_pi_old/max_pi_prime_old: "<<max_zeta/max_zeta_old<<" , min_pi_prime/min_pi_prime_old: "<<min_zeta/min_zeta_old<<" , z:"<<1./a_kess - 1.<<endl;
+
+              str_filename =  "./output/pi_" + to_string(snapcount_b) + ".h5";
+              str_filename2 = "./output/zeta_" + to_string(snapcount_b) + ".h5";
+              str_filename3 = "./output/phi_" + to_string(snapcount_b) + ".h5";
+              str_filename4 = "./output/cs2_" + to_string(snapcount_b) + ".h5";
+
+              pi.saveHDF5(str_filename);
+              pi_prime.saveHDF5(str_filename2);
+              phi.saveHDF5(str_filename3);
+              cs2_full.saveHDF5(str_filename4);
+              snapcount_b++;
+
+              out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(a_kess) -1.0 <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << avg_zeta <<"\t"<< setw(9) << avg_pi <<"\t"<< setw(9) << avg_phi <<"\t"<< setw(9) <<avg_cs2_full <<"\t"<< setw(9) <<snapcount_b  <<endl;
+            }
+          }
+        #endif // Blowup tests
+
+        if(isnan(avg_zeta) || isnan(avg_pi))
+        {
+          if(parallel.isRoot()) cout << "\033[1;34mThe PDE blowus at z=: \033[0m"<<1./a_kess - 1.<<endl;
+          parallel.abortForce();
+        }
+
     }
   }
     //Euler method end!
@@ -1645,8 +1592,9 @@ ref_time = MPI_Wtime();
 
     else if (cosmo.solver_kessence==1) // Leap-frog method is being used!
       {
-        double a_kess=a;
-
+        if(parallel.isRoot()) cout << "\033[1;34mBe careful this solver is not tested well yet!"<<1./a_kess - 1<<endl;
+        parallel.abortForce();
+        // double a_kess=a;
         if(cycle==0)
         {
           if(parallel.isRoot())  cout << "\033[1;34mThe fundamental theory is being solved using leap-frog method!\033[0m\n";
@@ -1669,7 +1617,6 @@ ref_time = MPI_Wtime();
       //****************************************************
       for (i=0;i<sim.nKe_numsteps;i++)
       {
-
         update_pi_prime_leap_frog(dtau/ sim.nKe_numsteps, dx, a_kess,pi, pi_prime, pi_prime_dot, det_gamma, cs2_full, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
          #ifdef HAVE_CLASS_BG
          Hconf(a_kess, fourpiG, H_spline, acc)
@@ -1703,6 +1650,9 @@ ref_time = MPI_Wtime();
 
   else if (cosmo.solver_kessence==2) // RK2 method is being used!
     {
+      if(parallel.isRoot()) cout << "\033[1;34mBe careful this solver is not tested well yet!"<<1./a_kess - 1<<endl;
+      parallel.abortForce();
+
       double a_kess=a;
 
       if(cycle==0)
@@ -1738,6 +1688,9 @@ ref_time = MPI_Wtime();
 
 else if (cosmo.solver_kessence==3) // RK4 method is being used!
   {
+    if(parallel.isRoot()) cout << "\033[1;34mBe careful this solver is not tested well yet!"<<1./a_kess - 1<<endl;
+    parallel.abortForce();
+
     double a_kess=a;
 
     if(cycle==0)

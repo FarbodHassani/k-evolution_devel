@@ -64,7 +64,7 @@
 #define MASK_DELTA  4096
 #define MASK_DBARE  8192
 #define MASK_PI_K    16384
-#define MASK_zeta    32768
+#define MASK_ZETA    32768
 #define MASK_MULTI  65536
 #define MASK_VEL    131072
 #define MASK_T_KESS 262144
