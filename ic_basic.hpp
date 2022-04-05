@@ -2131,6 +2131,11 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
          // Since delta phi has unit of time we go to gevolution unit by delta phi(gev) = delta phi(hiclass) * H0(hiclass)/H0(gevolution).
 
         kess_field_prime[i] = - M_PI * (phi_smg_prime/a) * (tk_t_kess->y[i] + (phi_smg_prime_prime/phi_smg_prime - H_conf_hiclass) * tk_d_kess->y[i]) * sqrt( Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_t_kess->x[i])/ tk_t_kess->x[i];
+        if (k_ess[i]* cosmo.h / sim.boxsize > cosmo.IC_k_filter)
+        {
+          kess_field[i] = 0.;
+          kess_field_prime[i] = 0.;
+        }
         // Initial conditions for delta phi' = (phi_bg'/a) * [V'_X_smg + (phi_bg''/phi_bg' - H_conf ) V_X_smg]
         // delta phi' = (phi_bg'/a) * [tk_t_kess + (phi_bg''/phi_bg' - H_conf ) tk_d_kess]
         // delta phi' is dimensionless!

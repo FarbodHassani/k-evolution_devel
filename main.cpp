@@ -805,7 +805,7 @@ string str_filename4 ;
 #endif
 
 
-  outfile = fopen(filename_bg, "w");
+  // outfile = fopen(filename_bg, "w");
 
 	while (true)    // main loop
 	{
@@ -1413,7 +1413,7 @@ ref_time = MPI_Wtime();
           avg_pi =average(  pi,1., numpts3d ) ;
           avg_phi =average(  phi , 1., numpts3d ) ;
           avg_pi_old =average(  pi_old, 1., numpts3d ) ;
-         if (avg_zeta > 4.e-7 && abs(avg_pi/avg_pi_old)>1.015 && snapcount_b< sim.num_snapshot_kess )
+         if (avg_zeta > 4.e-7 && abs(avg_pi/avg_pi_old)>1.015 && snapcount_b<= sim.num_snapshot_kess )
          {
          if(parallel.isRoot())  cout << "\033[1;32mThe blowup criteria for EFT equations are met, the requested snapshots being produced\033[0m\n";
            writeSpectra(sim, cosmo, fourpiG, a, snapcount_b,
@@ -1479,6 +1479,8 @@ ref_time = MPI_Wtime();
           {
           if(parallel.isRoot())  cout << "\033[1;34mThe fundamental theory is being solved using the Euler method!\033[0m\n";
           if(parallel.isRoot())  cout << "\033[1;34mThe Non-linear terms included: \033[0m"<<cosmo.NL<<endl;
+          if(parallel.isRoot())  cout << "\033[1;34mThe metric perturbations are considered: \033[0m"<<cosmo.metric_consider<<endl;
+
           }
         double a_kess=a;
 
@@ -1488,13 +1490,13 @@ ref_time = MPI_Wtime();
       for (i=0;i<sim.nKe_numsteps;i++)
       {
 
-      update_pi_prime_euler(dtau/ sim.nKe_numsteps, dx, a_kess, pi, deltaX, pi_prime, det_gamma, cs2_full, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
+      update_pi_prime_euler(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi, deltaX, pi_prime, det_gamma, cs2_full, cosmo.X_hat, cosmo.g0, cosmo.g2, cosmo.g4,
        #ifdef HAVE_CLASS_BG
        Hconf(a_kess, fourpiG, H_spline, acc)
        #else
        Hconf(a_kess, fourpiG, cosmo)
        #endif
-        , cosmo.NL);
+        , cosmo.NL, cosmo.metric_consider);
       deltaX.updateHalo();
       pi_prime.updateHalo();
       pi.updateHalo();
@@ -1555,7 +1557,7 @@ ref_time = MPI_Wtime();
 
             out_min<< setw(9) << 1./a_kess - 1 <<"\t"<< setw(9) << min_pi<<"\t"<< setw(9) << min_zeta<<"\t"<< setw(9) << min_phi<<"\t"<< setw(9) << min_cs2 <<endl;
 
-            if ( (max_zeta>1.7e-03) && (max_zeta/max_zeta_old>1.05 || min_zeta/min_zeta_old>1.05 ))
+            if ( (max_zeta>1.7e-03) && (max_zeta/max_zeta_old>1.05 || min_zeta/min_zeta_old>1.05) && snapcount_b< sim.num_snapshot_kess)
             {
               if (!(isnan(avg_zeta)))
               {
@@ -1611,6 +1613,8 @@ ref_time = MPI_Wtime();
               );            // zeta_integer.updateHalo();
             pi_prime.updateHalo(); // phi' (n-1/2)
         }
+
+
 
       //****************************************************
       // Leap-frod algorithm

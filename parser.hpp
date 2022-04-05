@@ -1718,6 +1718,15 @@ if (ic.IC_kess == 1)
   {
       cosmo.NL=1; // Default is 1 which are terms are included
   }
+  if (!parseParameter(params, numparam, "metric perturbations",  cosmo.metric_consider))
+  {
+      cosmo.metric_consider=1; // Default is 1 which is the case that the metric perturbation are included in the field equations.
+  }
+  if (!parseParameter(params, numparam, "IC_k_filter",  cosmo.IC_k_filter))
+  {
+      cosmo.IC_k_filter=10; // Default is 10 h/Mpc
+  }
+
   if (!parseParameter(params, numparam, "IC fields",  cosmo.IC_scf))
   {
       cosmo.IC_scf=1; // Default is 1 which is hiclass IC

@@ -301,6 +301,8 @@ struct cosmology
   double g2;
   double g4;
   int solver_kessence;
+  int metric_consider; // metric perturbation consideration in the scalar field equations.
+  double IC_k_filter;
   int NL;
   int IC_scf;
   double IC_amplitude;
