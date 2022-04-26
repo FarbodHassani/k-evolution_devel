@@ -812,7 +812,11 @@ string str_filename4 ;
     for (x.first(); x.test(); x.next())
     {
       pi_prime_old(x) = pi_prime(x);
+      phi_old(x) = phi(x);
+      chi_old(x) = chi(x);
     }
+    phi_old.updateHalo();  // communicate halo values
+    chi_old.updateHalo();  // communicate halo values
 
 #ifdef BENCHMARK
 		cycle_start_time = MPI_Wtime();
