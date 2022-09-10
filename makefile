@@ -1,8 +1,9 @@
 # programming environment
 COMPILER     := /usr/local/bin/mpic++
-INCLUDE      := -I/Users/farbod/Documents/GitHub/class_public-2.7.1/include -I/usr/local/Cellar/fftw/3.3.9/include -I/usr/local/Cellar/gsl/2.6/include -I/usr/local/Cellar/hdf5/1.12.0_1/include -I./../LATfield2 # add the path to LATfield2 and other libraries (if necessary)
-LIB          := -L/Users/farbod/Documents/GitHub/class_public-2.7.1 -L/usr/local/Cellar/hdf5/1.12.0_1/lib -L/usr/local/Cellar/gsl/2.6/lib  -L/usr/local/Cellar/fftw/3.3.9/lib -lfftw3 -lm -lhdf5 -lgsl -lgslcblas -lclass
-
+INCLUDE      := -I/Users/farbod/Documents/GitHub/hi_class_pub_devel/include -I/usr/local/Cellar/fftw/3.3.10/include -I/usr/local/Cellar/gsl/2.7.1/include -I/usr/local/Cellar/hdf5/1.12.2/include -I./../LATfield2 # add the path to LATfield2 and other libraries (if necessary)
+LIB          := -L/Users/farbod/Documents/GitHub/hi_class_pub_devel -L/usr/local/Cellar/hdf5/1.12.2/lib -L/usr/local/Cellar/gsl/2.7.1/lib  -L/usr/local/Cellar/fftw/3.3.10/lib -lfftw3 -lm -lhdf5 -lgsl -lgslcblas -lclass
+# /Users/farbod/Documents/GitHub/hi_class_pub_devel
+# /Users/farbod/Documents/GitHub/class_public-2.7.1/
 # target and source
 EXEC         := gevolution
 SOURCE       := main.cpp
@@ -24,7 +25,7 @@ DGEVOLUTION  += -DEXACT_OUTPUT_REDSHIFTS
 #DGEVOLUTION  += -DVELOCITY      # enables velocity field utilities
 #DGEVOLUTION  += -DCOLORTERMINAL
 #DGEVOLUTION  += -DCHECK_B
-DGEVOLUTION  += -DHAVE_CLASS    # requires LIB -lclass
+DGEVOLUTION  += -DHAVE_HICLASS    # or -DHAVE_HICLASS requires LIB -lclass -DHAVE_HICLASS
 #DGEVOLUTION  += -DHAVE_HEALPIX  # requires LIB -lchealpix
 
 # further compiler options

@@ -40,14 +40,19 @@
 #include<fstream>
 #include<sstream>
 #endif
-#ifdef HAVE_CLASS
+#if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
 #include "class.h"
 #undef MAX			// due to macro collision this has to be done BEFORE including LATfield2 headers!
 #undef MIN
 #endif
 #include "LATfield2.hpp"
 #include "metadata.hpp"
+#ifdef HAVE_CLASS
 #include "class_tools.hpp"
+#endif
+#ifdef HAVE_HICLASS
+#include "hiclass_tools.hpp"
+#endif
 #include "tools.hpp"
 #include "background.hpp"
 #include "Particles_gevolution.hpp"
@@ -136,7 +141,7 @@ int main(int argc, char **argv)
 				m =  atoi(argv[++i]); //size of the dim 2 of the processor grid
 				break;
 			case 'p':
-#ifndef HAVE_CLASS
+  #if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
 				cout << "HAVE_CLASS needs to be set at compilation to use CLASS precision files" << endl;
 				exit(-100);
 #endif
@@ -196,13 +201,15 @@ int main(int argc, char **argv)
 
 	sprintf(filename, "%s%s_settings_used.ini", sim.output_path, sim.basename_generic);
 	saveParameterFile(filename, params, numparam);
+  sprintf(filename, "%s%s_background.dat", sim.output_path, sim.basename_generic);
+  outfile = fopen(filename, "w");
 
 	free(params);
 
-#ifdef HAVE_CLASS
-	background class_background;
-  	perturbs class_perturbs;
-  	spectra class_spectra;
+  #if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
+  background class_background;
+  thermo class_thermo;
+  perturbs class_perturbs;
 
   	if (precisionfile != NULL)
 	  	numparam = loadParameterFile(precisionfile, params);
@@ -405,7 +412,6 @@ int main(int argc, char **argv)
 
 
 	dtau_old = 0.;
-
 	if (ic.generator == ICGEN_BASIC)
 		generateIC_basic(sim, ic, cosmo, fourpiG, &pcls_cdm, &pcls_b, pcls_ncdm, maxvel, &phi, &pi_k, &zeta_half, &chi, &Bi, &source, &Sij, &scalarFT, &scalarFT_pi, &scalarFT_zeta_half, &BiFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_source, &plan_Sij, params, numparam);
 	// generates ICs on the fly
@@ -464,7 +470,7 @@ int main(int argc, char **argv)
 	COUT << COLORTEXT_GREEN << " initialization complete." << COLORTEXT_RESET << endl << endl;
 #endif
 
-#ifdef HAVE_CLASS
+#if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
 
   if(sim.fluid_flag > 0 )
   {
@@ -473,10 +479,10 @@ int main(int argc, char **argv)
   }
 	if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
 	{
-		initializeCLASSstructures(sim, ic, cosmo, class_background, class_perturbs, class_spectra, params, numparam);
+		initializeCLASSstructures(sim, ic, cosmo, class_background, class_thermo, class_perturbs, params, numparam);
 		if (sim.gr_flag > 0 && a < 1. / (sim.z_switch_linearchi + 1.) && (ic.generator == ICGEN_BASIC || (ic.generator == ICGEN_READ_FROM_DISK && cycle == 0)))
 		{
-			prepareFTchiLinear(class_background, class_perturbs, class_spectra, scalarFT, sim, ic, cosmo, fourpiG, a);
+			prepareFTchiLinear(class_background, class_perturbs, scalarFT, sim, ic, cosmo, fourpiG, a);
 			plan_source.execute(FFT_BACKWARD);
 			for (x.first(); x.test(); x.next())
 				chi(x) += source(x);
@@ -607,7 +613,6 @@ string str_filename3 ;
 
 // writeSpectra(sim, cosmo, fourpiG, a, pkcount, &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k, &zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij);
 
-
 	while (true)    // main loop
 	{
     //Kessence
@@ -681,9 +686,9 @@ string str_filename3 ;
 #endif
 		// construct stress-energy tensor
 		projection_init(&source);
-#ifdef HAVE_CLASS
+#if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
 		if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
-			projection_T00_project(class_background, class_perturbs, class_spectra, source, scalarFT, &plan_source, sim, ic, cosmo, fourpiG, a);
+			projection_T00_project(class_background, class_perturbs, source, scalarFT, &plan_source, sim, ic, cosmo, fourpiG, a);
 #endif
 		if (sim.gr_flag > 0)
 		{
@@ -902,10 +907,10 @@ if (sim.Kess_source_gravity==1)
 		fft_count += 6;
 #endif
 
-#ifdef HAVE_CLASS
+#if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
 		if (sim.radiation_flag > 0 && a < 1. / (sim.z_switch_linearchi + 1.))
 		{
-			prepareFTchiLinear(class_background, class_perturbs, class_spectra, scalarFT, sim, ic, cosmo, fourpiG, a);
+			prepareFTchiLinear(class_background, class_perturbs, scalarFT, sim, ic, cosmo, fourpiG, a);
 			projectFTscalar(SijFT, scalarFT, 1);
 		}
 		else
@@ -1007,8 +1012,9 @@ for (x.first(); x.test(); x.next())
 writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
 
 			writeSpectra(sim, cosmo, fourpiG, a, pkcount,
-#ifdef HAVE_CLASS
-				class_background, class_perturbs, class_spectra, ic,
+#if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
+
+				class_background, class_perturbs, ic,
 #endif
 				&pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k,&zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess ,&source, &Sij, &scalarFT, &scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k , &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij
 #ifdef CHECK_B
@@ -1031,8 +1037,8 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
     		if (pkcount < sim.num_pk && 1. / tmp < sim.z_pk[pkcount] + 1.)
     		{
     			writeSpectra(sim, cosmo, fourpiG, a, pkcount,
-    #ifdef HAVE_CLASS
-    					class_background, class_perturbs, class_spectra, ic,
+#if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
+    					class_background, class_perturbs, ic,
     #endif
     					&pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij
     #ifdef CHECK_B
@@ -1361,9 +1367,9 @@ writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount, &phi_prime, &phi_prime_s
 		ref_time = MPI_Wtime();
 #endif
 
-#ifdef HAVE_CLASS
+#if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
 	if (sim.radiation_flag > 0 || sim.fluid_flag > 0)
-		freeCLASSstructures(class_background, class_perturbs, class_spectra);
+		freeCLASSstructures(class_background, class_thermo, class_perturbs);
 #endif
 
 #ifdef BENCHMARK

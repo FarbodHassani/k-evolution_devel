@@ -15,7 +15,7 @@
 #ifndef IC_PREVOLUTION_HEADER
 #define IC_PREVOLUTION_HEADER
 
-#ifndef HAVE_CLASS
+#if defined(!HAVE_CLASS) || defined(!HAVE_HICLASS)
 #error This version of the prevolution IC generator requires CLASS to be linked as a library! Recompile with -DHAVE_CLASS -lclass
 #endif
 
@@ -68,7 +68,7 @@ using namespace LATfield2;
 
 void generateIC_prevolution(metadata & sim, icsettings & ic, cosmology & cosmo, const double fourpiG, double & a, double & tau, double & dtau, double & dtau_old, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, double * maxvel, Field<Real> * phi, Field<Real> * chi, Field<Real> * Bi, Field<Real> * source, Field<Real> * Sij, Field<Cplx> * scalarFT, Field<Cplx> * BiFT, Field<Cplx> * SijFT, PlanFFT<Cplx> * plan_phi, PlanFFT<Cplx> * plan_chi, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_source, PlanFFT<Cplx> * plan_Sij, parameter * params, int & numparam)
 {
-#ifdef HAVE_CLASS
+  #if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
 	int i, j, p;
 	float * pcldata = NULL;
 	string h5filename;

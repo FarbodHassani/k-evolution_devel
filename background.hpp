@@ -142,7 +142,7 @@ double Hconf(const double a, const double fourpiG, const cosmology cosmo)
 	// cout<<"Omega_rad: "<<cosmo.Omega_rad<<" cosmo.Omega_Lambda"<<cosmo.Omega_Lambda<<endl;
 }
 
-// Here the normalization factor is not \rho_crit=1, it is what it should be in th enormal unit.
+// Here the normalization factor is not \rho_crit=1, it is what it should be in the normal unit.
 // So Omega_m is the matter density at arbitrary redshift and is not normalized, since we did not use Hconf in the fomrula
 // While Hconf is normalized to critical density 1 so H^2/H_0^2= H^2/(8piG/3) which is used in the last formula.
 double Omega_m(const double a, const cosmology cosmo) { return cosmo.Omega_m / (cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo) + cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence)* a * a * a + cosmo.Omega_Lambda * a * a * a + cosmo.Omega_rad / a); }
@@ -151,6 +151,9 @@ double Omega_rad(const double a, const cosmology cosmo) { return (cosmo.Omega_ra
 
 //Here Omega_Lambda is just Lambda
 double Omega_Lambda(const double a, const cosmology cosmo) { return cosmo.Omega_Lambda / ((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) / a / a / a + cosmo.Omega_Lambda + cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence) + cosmo.Omega_rad / a / a / a / a);}
+
+double Omega_mg(const double a, const cosmology cosmo) { return (cosmo.Omega_Lambda+ cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence)) / ((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) / a / a / a + cosmo.Omega_Lambda + cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence) + cosmo.Omega_rad / a / a / a / a);}
+// Omega_mg = (rho_kess + rho_Lambda)/rho_tot, however in k-evolution Omega_lambda is so tiny and is there because of making sure that Omega_k=0 (the Universe is flat).
 
 double Hconf_class(const double a, const cosmology cosmo)
 {

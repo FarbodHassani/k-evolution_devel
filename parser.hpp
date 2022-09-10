@@ -896,7 +896,7 @@ if (ic.IC_kess == 1)
 }
   if (ic.IC_kess == 0)
 {
-  COUT << " initial conditions for kessence fields (pi,zeta) will be computed using CLASS" << endl;
+  COUT << " initial conditions for kessence fields (pi,zeta) will be computed using CLASS/hiclass" << endl;
 }
 
 // if (!parseParameter(params, numparam, "T_kessence file", ic.tk_kessence) && ic.generator != ICGEN_READ_FROM_DISK);
@@ -914,7 +914,7 @@ if (ic.IC_kess == 1)
 		)
 #endif
 	{
-#ifdef HAVE_CLASS
+#if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
 		COUT << " initial transfer functions will be computed by calling CLASS" << endl;
 #else
 		COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": no power spectrum file nor transfer function file specified!" << endl;
@@ -1034,7 +1034,7 @@ if (ic.IC_kess == 1)
 			sim.radiation_flag = 0;
 			COUT << " radiation treatment set to: " << COLORTEXT_CYAN << "background" << COLORTEXT_RESET << endl;
 		}
-#ifdef HAVE_CLASS
+  #if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
 		else if (par_string[0] == 'c' || par_string[0] == 'C')
 		{
 			sim.radiation_flag = 1;
@@ -1074,7 +1074,7 @@ if (ic.IC_kess == 1)
 			sim.fluid_flag = 0;
 			COUT << " fluid treatment set to: " << COLORTEXT_CYAN << "background" << COLORTEXT_RESET << endl;
 		}
-#ifdef HAVE_CLASS
+  #if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
 		else if (par_string[0] == 'c' || par_string[0] == 'C')
 		{
 			sim.fluid_flag = 1;
@@ -1833,9 +1833,10 @@ if (ic.IC_kess == 1)
 	else
 	{
 		//Kessence part added
-    COUT << "Kessence source gravity = " << sim.Kess_source_gravity<< ", Non-linear kessence = " << sim.NL_kessence<< ", Number of kessence update = " <<sim.nKe_numsteps <<endl;
-		COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad << ", h = " << cosmo.h << ", Omega_kessence0= "<<cosmo.Omega_kessence<<", w_kessence= "<<cosmo.w_kessence<<", cs^2 (kessence)= "<<cosmo.cs2_kessence<<endl;
 		cosmo.Omega_Lambda = 1. - cosmo.Omega_m - cosmo.Omega_kessence - cosmo.Omega_rad;
+
+    COUT << "Kessence source gravity = " << sim.Kess_source_gravity<< ", Non-linear kessence = " << sim.NL_kessence<< ", Number of kessence update = " <<sim.nKe_numsteps <<endl;
+    COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad<< ", Omega_g0 = " << cosmo.Omega_g<< ", Omega_ur0 = " << cosmo.Omega_ur << ", h = " << cosmo.h << ", Omega_kessence0= "<<cosmo.Omega_kessence<<", w0_kessence= "<<cosmo.w_kessence<<", cs^2 (kessence)= "<<cosmo.cs2_kessence<<", alpha_k (hiclas)= "<<3.0 * (1.0 + cosmo.w_kessence)/cosmo.cs2_kessence<< ", Omega_Lambda= "<<cosmo.Omega_Lambda<<" "<<endl;
 	}
 
 	if(!parseParameter(params, numparam, "switch delta_rad", sim.z_switch_deltarad))
