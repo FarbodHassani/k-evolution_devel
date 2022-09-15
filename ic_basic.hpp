@@ -1964,12 +1964,14 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
   #if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
 		if (ic.tkfile[0] == '\0')
 		{
-      loadTransferFunctions(class_background, class_perturbs, tk_d1, tk_t1, "tot", sim.boxsize, sim.z_in, cosmo.h, Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence);
+      loadTransferFunctions(class_background, class_perturbs, tk_d1, tk_t1, "tot", sim.boxsize, sim.z_in, cosmo.h
+      #ifdef HAVE_HICLASS
+      , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+      #endif
+      );
 		}
 		else
 #endif
-
-
 		loadTransferFunctions(ic.tkfile, tk_d1, tk_t1, "tot", sim.boxsize, cosmo.h);
 
 		if (tk_d1 == NULL || tk_t1 == NULL)
@@ -2023,7 +2025,11 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
       if(parallel.isRoot()) COUT << "\033[1;32m The initial condition for k-essence fileds (pi,zeta) are computed using CLASS\033[0m\n";
       // Note that in the below we read delta_fld and theta_fld so we have to convert to pi_k and zeta!
       // initializeCLASSstructures(sim, ic, cosmo, class_background, class_perturbs, class_spectra, params, numparam);
-      loadTransferFunctions(class_background, class_perturbs, tk_d_kess, tk_t_kess, "fld", sim.boxsize, sim.z_in, cosmo.h, Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence);
+      loadTransferFunctions(class_background, class_perturbs, tk_d_kess, tk_t_kess, "fld", sim.boxsize, sim.z_in, cosmo.h
+      #ifdef HAVE_HICLASS
+      , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+      #endif
+      );
 
     npts = tk_d_kess->size;
     kess_field_pi = (double *) malloc(npts * sizeof(double));
@@ -2079,7 +2085,7 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 
   #ifdef HAVE_HICLASS
 
-      if (ic.IC_kess == 0)
+      if (ic.IC_kess == 2)
       {
       if (ic.tkfile[0] != '\0')
       {
@@ -2097,8 +2103,7 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
       kess_field_pi = (double *) malloc(npts * sizeof(double));
       kess_field_zeta = (double *) malloc(npts * sizeof(double));
       k_ess = (double *) malloc(npts * sizeof(double));
-      // double H0conf_hiclass=0.000219998079; // In units of 1/Mpc
-      // cout<<"HconfGev: "<<Hconf(1, fourpiG, cosmo) <<endl;
+
       for (i = 0; i < npts; i++)
       {
         // The relation between pi_k and delta and theta!
@@ -2106,15 +2111,12 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
         // In the below by (tk_t_kess->y[i]/(tk_d_kess->x[i] * cosmo.h)/(tk_d_kess->x[i] * cosmo.h) we wasily make pi_k_Newtonian from theta_kess as we do to make initial condition in python from class data! The rest is what we do to the pi_k to make it ready for pi_k as initial condition in k-evolution
         // Note that based on the CLASS tools we multiply t_k to boxsize/h so here we need to multiply to h/boxsize to compensate
         // We also multiply by H_class/H_gev to go to gevolution units
-        kess_field_pi[i] = ( Hconf_class( a, cosmo)/Hconf(a, fourpiG, cosmo) ) * (tk_t_kess->y[i] * cosmo.h / sim.boxsize)/(tk_t_kess->x[i] * cosmo.h/sim.boxsize)/(tk_t_kess->x[i] * cosmo.h /sim.boxsize);
-        kess_field_pi[i] =  - M_PI * kess_field_pi[i] * sqrt( Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_t_kess->x[i])/ tk_t_kess->x[i];
+        kess_field_pi[i] =  - M_PI * (Hconf_class( a, cosmo)/Hconf(a, fourpiG, cosmo) ) * (tk_d_kess->y[i]) * sqrt( Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_t_kess->x[i])/ tk_t_kess->x[i];
         // zeta according to the definitions below:
         // zeta = pi'(conformal_Newtonian) + H(conf)*pi - psi
         // pi'(conformal_Newtonian) = cs^2/(1+w) delta_fld + Psi + H(conf)*pi (3 cs^2 -1)
         // So zeta = cs^2/(1+w) delta_fld + 3 cs^2 H_class(conf) * pi_class
-        kess_field_zeta[i] = (cosmo.cs2_kessence/(1.0+cosmo.w_kessence)) * tk_d_kess->y[i] + 3.0 * cosmo.cs2_kessence *  Hconf_class(a, cosmo) * (tk_t_kess->y[i] * cosmo.h / sim.boxsize)/(tk_t_kess->x[i] * cosmo.h/ sim.boxsize)/(tk_t_kess->x[i] * cosmo.h/ sim.boxsize);
-
-        kess_field_zeta[i] = - M_PI * kess_field_zeta[i] * sqrt( Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_t_kess->x[i])/ tk_t_kess->x[i];
+        kess_field_zeta[i] = - M_PI * tk_t_kess->y[i] * sqrt( Pk_primordial(tk_t_kess->x[i] * cosmo.h / sim.boxsize, ic)/ tk_t_kess->x[i])/ tk_t_kess->x[i];
         k_ess[i] = tk_d_kess->x[i];
       }
       // Field realization
@@ -2197,14 +2199,31 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 		//////////////////////////////////////////////////////
 
 
-#ifdef HAVE_CLASS
+#ifdef HAVE_HICLASS
+if (sim.gr_flag == 0)
+{
+  if(parallel.isRoot())  cout << " \033[1;31merror:\033[0m"<< " \033[1;31merror: Newtonian case is not implemented while using hiclass!!\033[0m" << endl;
+  parallel.abortForce();
+}
+#endif
+#if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
+
 		if (ic.tkfile[0] == '\0')
 		{
-      if(parallel.isRoot()) COUT << "\033[1;32m The initial conditions are provided using CLASS\033[0m\n";
+      #if defined(HAVE_CLASS)
+      if(parallel.isRoot()) COUT << "\033[1;34m The initial conditions are provided using CLASS\033[0m\n";
+      #endif
+      #if defined(HAVE_HICLASS)
+      if(parallel.isRoot()) COUT << "\033[1;34m The initial conditions are provided using hi-CLASS\033[0m\n";
+      #endif
 
 			if (sim.gr_flag == 0)
 			{
-				loadTransferFunctions(class_background, class_perturbs, tk_d1, tk_t1, NULL, sim.boxsize, sim.z_in, cosmo.h, Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence);
+				loadTransferFunctions(class_background, class_perturbs, tk_d1, tk_t1, NULL, sim.boxsize, sim.z_in, cosmo.h
+        #ifdef HAVE_HICLASS
+        , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+        #endif
+          );
 
 				for (i = 0; i < tk_d1->size; i++)
 					temp1[i] = -tk_d1->y[i];
@@ -2212,7 +2231,11 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 				gsl_spline_free(tk_d1);
 				gsl_spline_free(tk_t1);
 
-				loadTransferFunctions(class_background, class_perturbs, tk_d1, tk_t1, NULL, sim.boxsize, (sim.z_in + 0.01) / 0.99, cosmo.h, Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence);
+				loadTransferFunctions(class_background, class_perturbs, tk_d1, tk_t1, NULL, sim.boxsize, (sim.z_in + 0.01) / 0.99, cosmo.h
+        #ifdef HAVE_HICLASS
+        , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+        #endif
+        );
 
 				for (i = 0; i < tk_d1->size; i++)
 					temp1[i] += tk_d1->y[i];
@@ -2220,7 +2243,11 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 				gsl_spline_free(tk_d1);
 				gsl_spline_free(tk_t1);
 
-				loadTransferFunctions(class_background, class_perturbs, tk_d1, tk_t1, "tot", sim.boxsize, (sim.z_in + 0.01) / 0.99, cosmo.h, Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence);
+				loadTransferFunctions(class_background, class_perturbs, tk_d1, tk_t1, "tot", sim.boxsize, (sim.z_in + 0.01) / 0.99, cosmo.h
+        #ifdef HAVE_HICLASS
+        , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+        #endif
+        );
 
 				for (i = 0; i < tk_d1->size; i++) // construct gauge correction for N-body gauge velocities
 					temp1[i] = -99.5 * Hconf(0.995 * a, fourpiG, cosmo) * (3. * temp1[i] * M_PI * sqrt(Pk_primordial(tk_d1->x[i] * cosmo.h / sim.boxsize, ic) / tk_d1->x[i]) / tk_d1->x[i] + (temp2[i] + 3. * Hconf(0.99 * a, fourpiG, cosmo)  * M_PI * tk_t1->y[i] * sqrt(Pk_primordial(tk_d1->x[i] * cosmo.h / sim.boxsize, ic) / tk_d1->x[i]) / tk_d1->x[i] / tk_d1->x[i] / tk_d1->x[i]));
@@ -2232,11 +2259,16 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 				gsl_spline_free(tk_t1);
 			}
 
-			loadTransferFunctions(class_background, class_perturbs, tk_d1, tk_t1, "cdm", sim.boxsize, sim.z_in, cosmo.h, Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence);
+			loadTransferFunctions(class_background, class_perturbs, tk_d1, tk_t1, "cdm", sim.boxsize, sim.z_in, cosmo.h
+      #ifdef HAVE_HICLASS
+      , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+      #endif
+      );
 		}
 		else
 #endif
-		loadTransferFunctions(ic.tkfile, tk_d1, tk_t1, "cdm", sim.boxsize, cosmo.h);	// get transfer functions for CDM
+		loadTransferFunctions(ic.tkfile, tk_d1, tk_t1, "cdm", sim.boxsize, cosmo.h );
+    	// get transfer functions for CDM
 
 		if (tk_d1 == NULL || tk_t1 == NULL)
 		{
@@ -2246,12 +2278,17 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 
 		if (sim.baryon_flag > 0)
 		{
-#ifdef HAVE_CLASS
+#if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
 			if (ic.tkfile[0] == '\0')
-				loadTransferFunctions(class_background, class_perturbs, tk_d2, tk_t2, "b", sim.boxsize, sim.z_in, cosmo.h, Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence);
+				loadTransferFunctions(class_background, class_perturbs, tk_d2, tk_t2, "b", sim.boxsize, sim.z_in, cosmo.h
+        #ifdef HAVE_HICLASS
+        , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+        #endif
+        );
 			else
 #endif
-			loadTransferFunctions(ic.tkfile, tk_d2, tk_t2, "b", sim.boxsize, cosmo.h);	// get transfer functions for baryons
+			loadTransferFunctions(ic.tkfile, tk_d2, tk_t2, "b", sim.boxsize, cosmo.h);
+      	// get transfer functions for baryons
 
 			if (tk_d2 == NULL || tk_t2 == NULL)
 			{
@@ -2546,12 +2583,16 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
 		if (ic.pkfile[0] == '\0')
 		{
 			sprintf(ncdm_name, "ncdm[%d]", p);
-#ifdef HAVE_CLASS
+#if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
 			if (ic.tkfile[0] == '\0')
-				loadTransferFunctions(class_background, class_perturbs, tk_d1, tk_t1, ncdm_name, sim.boxsize, sim.z_in, cosmo.h, Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence);
+				loadTransferFunctions(class_background, class_perturbs, tk_d1, tk_t1, ncdm_name, sim.boxsize, sim.z_in, cosmo.h
+        #ifdef HAVE_HICLASS
+        , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+        #endif
+        );
 			else
 #endif
-			loadTransferFunctions(ic.tkfile, tk_d1, tk_t1, ncdm_name, sim.boxsize, cosmo.h);
+			loadTransferFunctions(ic.tkfile, tk_d1, tk_t1, ncdm_name, sim.boxsize, cosmo.h );
 
 			if (tk_d1 == NULL || tk_t1 == NULL)
 			{

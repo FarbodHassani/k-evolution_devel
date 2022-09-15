@@ -293,6 +293,7 @@ struct cosmology
 	double Omega_kessence;
   double w_kessence;
 	double cs2_kessence;
+  int params_time_depend;
   // fld CLASS
   // double Omega_fld=0.0;
 	// double w0_fld=0.0;

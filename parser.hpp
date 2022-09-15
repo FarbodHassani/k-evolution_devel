@@ -819,8 +819,11 @@ int parseMetadata(parameter * & params, const int numparam, metadata & sim, cosm
   {
     if (par_string[0] == 'f' || par_string[0] == 'F')
       ic.IC_kess = 1;
+    else if (par_string[0] == 'h' || par_string[0] == 'H')
+      ic.IC_kess = 2;
+    else if(par_string[0] == 'c' || par_string[0] == 'C')
+      ic.IC_kess = 0;
   }
-
 
 	if (parseParameter(params, numparam, "IC generator", par_string))
 	{
@@ -894,13 +897,27 @@ if (ic.IC_kess == 1)
 #endif
   }
 }
+
   if (ic.IC_kess == 0)
 {
-  COUT << " initial conditions for kessence fields (pi,zeta) will be computed using CLASS/hiclass" << endl;
+  COUT << " initial conditions for kessence fields (pi,zeta) will be computed using CLASS" << endl;
+  #ifndef HAVE_CLASS
+  if(parallel.isRoot())  cout << " \033[1;31merror:\033[0m"  << "\033[1;35m CLASS interface requested while the code has been compiled without it!\033[0m" <<endl;
+  #ifdef LATFIELD2_HPP
+  parallel.abortForce();
+  #endif
+  #endif
 }
-
-// if (!parseParameter(params, numparam, "T_kessence file", ic.tk_kessence) && ic.generator != ICGEN_READ_FROM_DISK);
-//kessence end
+if (ic.IC_kess == 2)
+{
+COUT << " initial conditions for kessence fields (pi,zeta) will be computed using hiclass" << endl;
+#ifndef HAVE_HICLASS
+if(parallel.isRoot())  cout << " \033[1;31merror:\033[0m"  << "\033[1;35m HICLASS interface requested while the code has been compiled without it!\033[0m" <<endl;
+#ifdef LATFIELD2_HPP
+      parallel.abortForce();
+#endif
+#endif
+}
 
 
 #ifdef ICGEN_FALCONIC
@@ -914,8 +931,10 @@ if (ic.IC_kess == 1)
 		)
 #endif
 	{
-#if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
+#if defined(HAVE_CLASS)
 		COUT << " initial transfer functions will be computed by calling CLASS" << endl;
+#elif  defined(HAVE_HICLASS)
+		COUT << " initial transfer functions will be computed by calling hiCLASS" << endl;
 #else
 		COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": no power spectrum file nor transfer function file specified!" << endl;
 #ifdef LATFIELD2_HPP
@@ -1034,7 +1053,7 @@ if (ic.IC_kess == 1)
 			sim.radiation_flag = 0;
 			COUT << " radiation treatment set to: " << COLORTEXT_CYAN << "background" << COLORTEXT_RESET << endl;
 		}
-  #if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
+  #if defined(HAVE_CLASS)
 		else if (par_string[0] == 'c' || par_string[0] == 'C')
 		{
 			sim.radiation_flag = 1;
@@ -1055,6 +1074,10 @@ if (ic.IC_kess == 1)
 #ifdef LATFIELD2_HPP
 			parallel.abortForce();
 #endif
+#if defined(HAVE_HICLASS)
+if(parallel.isRoot())  cout << " \033[1;31merror:\033[0m"<< " \033[1;31merror: radiation treat-ment using hiclass interface is not supported!\033[0m" << endl;
+parallel.abortForce();
+#endif
 		}
 #else
 		else
@@ -1074,7 +1097,7 @@ if (ic.IC_kess == 1)
 			sim.fluid_flag = 0;
 			COUT << " fluid treatment set to: " << COLORTEXT_CYAN << "background" << COLORTEXT_RESET << endl;
 		}
-  #if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
+  #if defined(HAVE_CLASS)
 		else if (par_string[0] == 'c' || par_string[0] == 'C')
 		{
 			sim.fluid_flag = 1;
@@ -1102,6 +1125,10 @@ if (ic.IC_kess == 1)
 			sim.fluid_flag = 0;
 			COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": CLASS is not available, setting fluid treatment = background" << endl;
 		}
+#endif
+#if defined(HAVE_HICLASS)
+if(parallel.isRoot())  cout << " \033[1;31merror:\033[0m"<< " \033[1;31merror: fluid treat-ment using hiclass interface is not tested!\033[0m" << endl;
+parallel.abortForce();
 #endif
 	}
 	else
@@ -1836,7 +1863,7 @@ if (ic.IC_kess == 1)
 		cosmo.Omega_Lambda = 1. - cosmo.Omega_m - cosmo.Omega_kessence - cosmo.Omega_rad;
 
     COUT << "Kessence source gravity = " << sim.Kess_source_gravity<< ", Non-linear kessence = " << sim.NL_kessence<< ", Number of kessence update = " <<sim.nKe_numsteps <<endl;
-    COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad<< ", Omega_g0 = " << cosmo.Omega_g<< ", Omega_ur0 = " << cosmo.Omega_ur << ", h = " << cosmo.h << ", Omega_kessence0= "<<cosmo.Omega_kessence<<", w0_kessence= "<<cosmo.w_kessence<<", cs^2 (kessence)= "<<cosmo.cs2_kessence<<", alpha_k (hiclas)= "<<3.0 * (1.0 + cosmo.w_kessence)/cosmo.cs2_kessence<< ", Omega_Lambda= "<<cosmo.Omega_Lambda<<" "<<endl;
+    COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad<< ", Omega_g0 = " << cosmo.Omega_g<< ", Omega_ur0 = " << cosmo.Omega_ur << ", h = " << cosmo.h << ", Omega_kessence0= "<<cosmo.Omega_kessence<<", w0_kessence= "<<cosmo.w_kessence<<", cs^2 (kessence)= "<<cosmo.cs2_kessence<<", alpha_k (hiclass)= "<<3.0 * (1.0 + cosmo.w_kessence)/cosmo.cs2_kessence<< ", Omega_Lambda= "<<cosmo.Omega_Lambda<<" "<<endl;
 	}
 
 	if(!parseParameter(params, numparam, "switch delta_rad", sim.z_switch_deltarad))

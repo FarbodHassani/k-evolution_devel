@@ -438,7 +438,7 @@ void loadTransferFunctions(background & class_background, perturbs & class_pertu
 	char coltitles[_MAXTITLESTRINGLENGTH_] = {0};
 	char dname[32];
 	char tname[32];
-	char kname[8];
+	char kname[16];
 	char * ptr;
   // hiclass bg inputs
   double a = 1./(1.+z);
@@ -496,8 +496,8 @@ void loadTransferFunctions(background & class_background, perturbs & class_pertu
     alpha_prime = data[i*cols + psicol] + data[i*cols + phicol] - data[i*cols + etacol];
     if (strncmp(qname,"vx",strlen("vx")) == 0)
      {
-      tk_d[i] = data[i*cols + dcol] + alpha; // gauge correction NOTE that v_x is in [1/Mpc] and pi(Newt)[hiclass unit] = V_x +alpha where pi(sync) =  V_x
-      tk_t[i] = data[i*cols + tcol] + alpha_prime;// gauge correction where pi'(Newt)[hiclass unit==1] = V'_x == pi'
+      tk_d[i] = -data[i*cols + dcol] + alpha; // gauge correction NOTE that v_x is in [1/Mpc] and pi(Newt)[hiclass unit] = V_x +alpha where pi(sync) =  V_x
+      tk_t[i] = -data[i*cols + tcol] + alpha_prime;// gauge correction where pi'(Newt)[hiclass unit==1] = V'_x == pi'
       tk_t[i] += tk_d[i] * Hconf_class  - data[i*cols + psicol];  // zeta  = pi'(conformal_Newtonian) + H(conf)*pi - psi
      }
 

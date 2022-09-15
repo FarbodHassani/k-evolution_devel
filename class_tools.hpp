@@ -13,7 +13,7 @@
 #ifndef CLASS_TOOLS_HEADER
 #define CLASS_TOOLS_HEADER
 
-#if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
+#if defined(HAVE_CLASS)
 
 #include <gsl/gsl_spline.h>
 #include "parser.hpp"
