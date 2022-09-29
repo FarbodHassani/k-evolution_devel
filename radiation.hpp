@@ -55,11 +55,51 @@ void projection_T00_project(background & class_background, perturbs & class_pert
 	Site x(source.lattice());
 	rKSite kFT(scalarFT.lattice());
 
+  #ifdef HAVE_CLASS_BG
+  gsl_interp_accel * acc = gsl_interp_accel_alloc();
+  //Background variables EFTevolution : add as many as necessary
+  gsl_spline * H_spline = NULL;
+  gsl_spline * rho_smg_spline = NULL;
+  gsl_spline * p_smg_spline = NULL;
+  gsl_spline * rho_rad_spline = NULL;
+  gsl_spline * rho_cdm_spline = NULL;
+  gsl_spline * rho_b_spline = NULL;
+  gsl_spline * rho_crit_spline = NULL;
+
+
+  // add BG functions here
+  loadBGFunctions(class_background, H_spline, "H [1/Mpc]", sim.z_in);
+  loadBGFunctions(class_background, rho_smg_spline, "(.)rho_smg", sim.z_in);
+  loadBGFunctions(class_background, p_smg_spline, "(.)p_smg", sim.z_in);
+  loadBGFunctions(class_background, rho_rad_spline, "(.)rho_g", sim.z_in);
+  loadBGFunctions(class_background, rho_cdm_spline, "(.)rho_cdm", sim.z_in);
+  loadBGFunctions(class_background, rho_b_spline, "(.)rho_b", sim.z_in);
+  loadBGFunctions(class_background, rho_crit_spline, "(.)rho_crit", sim.z_in);
+
+  double Omega_smg_spl = gsl_spline_eval(rho_smg_spline, a, acc)/gsl_spline_eval(rho_crit_spline, a, acc);
+  double Omega_rad_spl = gsl_spline_eval(rho_rad_spline, a, acc)/gsl_spline_eval(rho_crit_spline, a, acc);
+  double Omega_m_spl = (gsl_spline_eval(rho_cdm_spline, a, acc)+gsl_spline_eval(rho_b_spline, a, acc))/gsl_spline_eval(rho_crit_spline, a, acc);
+  double w_smg_spl = gsl_spline_eval(p_smg_spline, a, acc)/gsl_spline_eval(rho_smg_spline, a, acc);
+  double HconfClass = gsl_spline_eval(H_spline, a, acc) * a; // H_hiclass * a (in hiclass unit)
+  #else
+  double HconfClass = Hconf_class( a, cosmo);
+  #endif
+
+double Hc = Hconf(a, fourpiG,
+	#ifdef HAVE_CLASS_BG
+		H_spline, acc
+	#else
+		cosmo
+	#endif
+	);
+
 	if (a < 1. / (sim.z_switch_deltarad + 1.) && cosmo.Omega_g > 0 && sim.radiation_flag == 1)
 	{
     loadTransferFunctions(class_background, class_perturbs, tk1, tk2, "g", sim.boxsize, (1. / a) - 1., cosmo.h
-    #ifdef HAVE_HICLASS
-    , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
     #endif
     );
 		Omega_radi += cosmo.Omega_g;
@@ -82,8 +122,10 @@ void projection_T00_project(background & class_background, perturbs & class_pert
 	if (a < 1. / (sim.z_switch_deltarad + 1.) && cosmo.Omega_ur > 0 && sim.radiation_flag == 1)
 	{
 		loadTransferFunctions(class_background, class_perturbs, tk1, tk2, "ur", sim.boxsize, (1. / a) - 1., cosmo.h
-    #ifdef HAVE_HICLASS
-    , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
     #endif
     );
 		Omega_radi += cosmo.Omega_ur;
@@ -117,7 +159,7 @@ void projection_T00_project(background & class_background, perturbs & class_pert
     parallel.abortForce();
 		// loadTransferFunctions(class_background, class_perturbs, class_spectra, tk1, tk2, "fld", sim.boxsize, (1. / a) - 1., cosmo.h
     // #ifdef HAVE_HICLASS
-    // , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    // , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
     // #endif
     // );
 		// Omega_fld = cosmo.Omega_fld / pow(a, 3. * cosmo.w0_fld);
@@ -150,8 +192,10 @@ void projection_T00_project(background & class_background, perturbs & class_pert
 		{
 			sprintf(ncdm_name, "ncdm[%d]", p);
 			loadTransferFunctions(class_background, class_perturbs, tk1, tk2, ncdm_name, sim.boxsize, (1. / a) - 1., cosmo.h
-      #ifdef HAVE_HICLASS
-      , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+      #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+      , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+      #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+      , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
       #endif
       );
 			rescale = bg_ncdm(a, cosmo, p);
@@ -187,11 +231,19 @@ void projection_T00_project(background & class_background, perturbs & class_pert
       if(parallel.isRoot())  cout << "ERROR: You cannot have GR=0 in k-evolution!"<<endl;
       parallel.abortForce();
 			loadTransferFunctions(class_background, class_perturbs, tk1, tk2, "tot", sim.boxsize, (1. / a) - 1., cosmo.h
-      #ifdef HAVE_HICLASS
-      , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+      #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+      , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+      #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+      , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
       #endif
       );
-			rescale = Hconf(a, fourpiG, cosmo);
+      rescale = Hconf(a, fourpiG,
+				#ifdef HAVE_CLASS_BG
+					H_spline, acc
+				#else
+					cosmo
+				#endif
+				);
 
 			for (i = 0; i < n; i++)
 				delta[i] -= coeff * (4. * Omega_radi / a + 3. * Omega_ncdm + 3. * (1. + cosmo.w_kessence) * Omega_fld) * rescale * M_PI * tk2->y[i] * sqrt(Pk_primordial(tk2->x[i] * cosmo.h / sim.boxsize, ic) / tk2->x[i]) / tk2->x[i] / tk2->x[i] / tk2->x[i];
@@ -248,9 +300,49 @@ void prepareFTchiLinear(background & class_background, perturbs & class_perturbs
 	int i;
 	rKSite k(scalarFT.lattice());
 
+  #ifdef HAVE_CLASS_BG
+  gsl_interp_accel * acc = gsl_interp_accel_alloc();
+  //Background variables EFTevolution add as many as necessary
+  gsl_spline * H_spline = NULL;
+  gsl_spline * rho_smg_spline = NULL;
+  gsl_spline * p_smg_spline = NULL;
+  gsl_spline * rho_rad_spline = NULL;
+  gsl_spline * rho_cdm_spline = NULL;
+  gsl_spline * rho_b_spline = NULL;
+  gsl_spline * rho_crit_spline = NULL;
+
+
+  //add BG functions here
+  loadBGFunctions(class_background, H_spline, "H [1/Mpc]", sim.z_in);
+  loadBGFunctions(class_background, rho_smg_spline, "(.)rho_smg", sim.z_in);
+  loadBGFunctions(class_background, p_smg_spline, "(.)p_smg", sim.z_in);
+  loadBGFunctions(class_background, rho_rad_spline, "(.)rho_g", sim.z_in);
+  loadBGFunctions(class_background, rho_cdm_spline, "(.)rho_cdm", sim.z_in);
+  loadBGFunctions(class_background, rho_b_spline, "(.)rho_b", sim.z_in);
+  loadBGFunctions(class_background, rho_crit_spline, "(.)rho_crit", sim.z_in);
+
+  double Omega_smg_spl = gsl_spline_eval(rho_smg_spline, a, acc)/gsl_spline_eval(rho_crit_spline, a, acc);
+  double Omega_rad_spl = gsl_spline_eval(rho_rad_spline, a, acc)/gsl_spline_eval(rho_crit_spline, a, acc);
+  double Omega_m_spl = (gsl_spline_eval(rho_cdm_spline, a, acc)+gsl_spline_eval(rho_b_spline, a, acc))/gsl_spline_eval(rho_crit_spline, a, acc);
+  double w_smg_spl = gsl_spline_eval(p_smg_spline, a, acc)/gsl_spline_eval(rho_smg_spline, a, acc);
+  double HconfClass = gsl_spline_eval(H_spline, a, acc) * a; // H_hiclass * a (in hiclass unit)
+  #else
+  double HconfClass = Hconf_class( a, cosmo);
+  #endif
+  double Hc = Hconf(a, fourpiG,
+  #ifdef HAVE_CLASS_BG
+    H_spline, acc
+  #else
+    cosmo
+  #endif
+  );
+
+
 	loadTransferFunctions(class_background, class_perturbs, tk1, tk2, NULL, sim.boxsize, (1. / a) - 1., cosmo.h
-  #ifdef HAVE_HICLASS
-  , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+  #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+  , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+  #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+  , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
   #endif
   );
 
@@ -266,11 +358,43 @@ void prepareFTchiLinear(background & class_background, perturbs & class_perturbs
 		double * l3 = (double *) malloc(tk1->size * sizeof(double));
 		double * l4 = (double *) malloc(tk1->size * sizeof(double));
 		double * l5 = (double *) malloc(tk1->size * sizeof(double));
-		double Hconf1 = Hconf(0.99 * a, fourpiG, cosmo);
-		double Hconf2 = Hconf(0.995 * a, fourpiG, cosmo);
-		double Hconf3 = Hconf(a, fourpiG, cosmo);
-		double Hconf4 = Hconf(1.005 * a, fourpiG, cosmo);
-		double Hconf5 = Hconf(1.01 * a, fourpiG, cosmo);
+
+    double Hconf1 = Hconf(0.99 * a, fourpiG,
+			#ifdef HAVE_CLASS_BG
+				H_spline, acc
+			#else
+				cosmo
+			#endif
+			);
+		double Hconf2 = Hconf(0.995 * a, fourpiG,
+			#ifdef HAVE_CLASS_BG
+				H_spline, acc
+			#else
+				cosmo
+			#endif
+			);
+		double Hconf3 = Hconf(a, fourpiG,
+			#ifdef HAVE_CLASS_BG
+				H_spline, acc
+			#else
+				cosmo
+			#endif
+			);
+		double Hconf4 = Hconf(1.005 * a, fourpiG,
+			#ifdef HAVE_CLASS_BG
+				H_spline, acc
+			#else
+				cosmo
+			#endif
+			);
+		double Hconf5 = Hconf(1.01 * a, fourpiG,
+			#ifdef HAVE_CLASS_BG
+				H_spline, acc
+			#else
+				cosmo
+			#endif
+			);
+
 
 		for (i = 0; i < tk1->size; i++)
 			l3[i] = -tk1->y[i];
@@ -279,8 +403,10 @@ void prepareFTchiLinear(background & class_background, perturbs & class_perturbs
 		gsl_spline_free(tk2);
 
 		loadTransferFunctions(class_background, class_perturbs, tk1, tk2, NULL, sim.boxsize, (1. / (1.005 * a)) - 1., cosmo.h
-    #ifdef HAVE_HICLASS
-    , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
     #endif
     );
 
@@ -291,8 +417,10 @@ void prepareFTchiLinear(background & class_background, perturbs & class_perturbs
 		gsl_spline_free(tk2);
 
 		loadTransferFunctions(class_background, class_perturbs, tk1, tk2, "tot", sim.boxsize, (1. / (1.005 * a)) - 1., cosmo.h
-    #ifdef HAVE_HICLASS
-    , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
     #endif
     );
 
@@ -303,8 +431,10 @@ void prepareFTchiLinear(background & class_background, perturbs & class_perturbs
 		gsl_spline_free(tk2);
 
 		loadTransferFunctions(class_background, class_perturbs, tk1, tk2, NULL, sim.boxsize, (1. / (1.01 * a)) - 1., cosmo.h
-    #ifdef HAVE_HICLASS
-    , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
     #endif
     );
 
@@ -315,8 +445,10 @@ void prepareFTchiLinear(background & class_background, perturbs & class_perturbs
 		gsl_spline_free(tk2);
 
 		loadTransferFunctions(class_background, class_perturbs, tk1, tk2, "tot", sim.boxsize, (1. / (1.01 * a)) - 1., cosmo.h
-    #ifdef HAVE_HICLASS
-    , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
     #endif
     );
 
@@ -328,8 +460,10 @@ void prepareFTchiLinear(background & class_background, perturbs & class_perturbs
 		gsl_spline_free(tk2);
 
 		loadTransferFunctions(class_background, class_perturbs, tk1, tk2, NULL, sim.boxsize, (1. / (0.995 * a)) - 1., cosmo.h
-    #ifdef HAVE_HICLASS
-    , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
     #endif
     );
 
@@ -340,8 +474,10 @@ void prepareFTchiLinear(background & class_background, perturbs & class_perturbs
 		gsl_spline_free(tk2);
 
 		loadTransferFunctions(class_background, class_perturbs, tk1, tk2, "tot", sim.boxsize, (1. / (0.995 * a)) - 1., cosmo.h
-    #ifdef HAVE_HICLASS
-    , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
     #endif
     );
 
@@ -352,8 +488,10 @@ void prepareFTchiLinear(background & class_background, perturbs & class_perturbs
 		gsl_spline_free(tk2);
 
 		loadTransferFunctions(class_background, class_perturbs, tk1, tk2, NULL, sim.boxsize, (1. / (0.99 * a)) - 1., cosmo.h
-    #ifdef HAVE_HICLASS
-    , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
     #endif
     );
 
@@ -364,8 +502,10 @@ void prepareFTchiLinear(background & class_background, perturbs & class_perturbs
 		gsl_spline_free(tk2);
 
 		loadTransferFunctions(class_background, class_perturbs, tk1, tk2, "tot", sim.boxsize, (1. / (0.99 * a)) - 1., cosmo.h
-    #ifdef HAVE_HICLASS
-    , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
     #endif
     );
 
@@ -376,8 +516,10 @@ void prepareFTchiLinear(background & class_background, perturbs & class_perturbs
 		gsl_spline_free(tk2);
 
 		loadTransferFunctions(class_background, class_perturbs, tk1, tk2, "tot", sim.boxsize, (1. / a) - 1., cosmo.h
-    #ifdef HAVE_HICLASS
-    , Hconf_class(a, cosmo), Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
+    #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+    , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
     #endif
     );
 

@@ -253,6 +253,7 @@ struct metadata
 	int nKe_numsteps;
 	int Kess_source_gravity;
   int NL_kessence;
+  int bg_hiclass;// Using hiclass to evaluate time dependence of quantities!
 	//kessence end
 };
 

@@ -12,7 +12,6 @@
 
 #ifndef PARSER_HEADER
 #define PARSER_HEADER
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -896,6 +895,17 @@ if (ic.IC_kess == 1)
       parallel.abortForce();
 #endif
   }
+  #if defined(HAVE_CLASS) || defined(HAVE_HICLASS) || defined(HAVE_CLASS_BG)
+  if(parallel.isRoot())  cout << " \033[1;31merror:\033[0m"  << "\033[1;35m The code is compiled with the CLASS/hiclass interface while in the settings it is requested to run the code using IC generator = file!\033[0m" <<endl;
+  parallel.abortForce();
+  #endif
+}
+if (ic.IC_kess == 1 || ic.tkfile[0] != '\0' || ic.pkfile[0] != '\0')
+{
+  #if defined(HAVE_CLASS) || defined(HAVE_HICLASS) || defined(HAVE_CLASS_BG)
+  if(parallel.isRoot())  cout << " \033[1;31merror:\033[0m"  << "\033[1;35m The code is compiled with the CLASS/hiclass interface while in the settings it is requested to run the code using IC generator (kessence) = file!\033[0m" <<endl;
+  parallel.abortForce();
+  #endif
 }
 
   if (ic.IC_kess == 0)
@@ -1724,6 +1734,31 @@ parallel.abortForce();
   {
     sim.NL_kessence = 0; //Default is linear kessence.
   }
+  if (!parseParameter(params, numparam, "background hiclass", sim.bg_hiclass))
+  {
+    sim.bg_hiclass = 0; //Default is constant parameters and using the default k-evolution version!
+  }
+
+  #if defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+      if (sim.bg_hiclass==1)
+      {
+        if(parallel.isRoot())  cout << "\033[1;32m The background quantitie are being provided by hiclass (H, w, c_s^2, c_a^2)! \033[0m"<< endl;
+      }
+    else
+    {
+      if(parallel.isRoot())  cout << " \033[1;31m ERROR: The code is compiled with HAVE_CLASS_BG while background hiclass is set to 0 in the settings!  \033[0m"<< endl;
+      parallel.abortForce();
+    }
+  #endif
+
+  #if !defined(HAVE_HICLASS) || !defined(HAVE_CLASS_BG)
+  if (sim.bg_hiclass==1)
+  {
+    if(parallel.isRoot())  cout << " \033[1;31m ERROR: The background params are requested while the code is not compiled with hiclass properly! You might need to add DGEVOLUTION  += -DHAVE_HICLASS or DHAVE_CLASS_BG \033[0m"<< endl;
+    parallel.abortForce();
+  }
+  #endif
+
   //kessence end
 
 	cosmo.num_ncdm = MAX_PCL_SPECIES-2;

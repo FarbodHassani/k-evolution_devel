@@ -290,7 +290,6 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 
 #ifdef BACKREACTION_TEST
   //Checking field
-  //Credit: David  and Lorenzo!
     template <class FieldType>
     void check_field(Field<FieldType> & field, double constant , string field_name, long n3, string message = "")
     {
@@ -478,7 +477,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
           //*********************************************
 					psi = phi(x) - chi(x);
 
-          //Coefficient one, H( at n)
+          //Coefficient one, H(at n)
           //***************************
           C1 = 1./(1. -  3. * Hcon * w  * dtau/2. -  non_linearity * (1. - cs2) *  Laplacian_pi * dtau/2.);
           //**********************************************

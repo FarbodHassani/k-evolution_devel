@@ -561,108 +561,105 @@ void loadTransferFunctions(background & class_background, perturbs & class_pertu
 	free(tk_t);
 }
 
+#ifdef HAVE_CLASS_BG
+//////////////////////////
+// Load background functions
+//////////////////////////
+// Description:
+//   loads a set of tabulated background parameters from some precomputed CLASS structures
 //
-// #ifdef HAVE_CLASS_BG
-// //////////////////////////
-// // Load background functions
-// //////////////////////////
-// // Description:
-// //   loads a set of tabulated background parameters from some precomputed CLASS structures
-// //
-// // Arguments:
-// //   class_background  CLASS structure that contains the background
-// //   bg_data           .......
-// //   qname             string containing the name of the component (e.g. "H [1/Mpc]"); if no string is
-// //   boxsize           comoving box size (in the same units as used in the CLASS output)
-// //   z                 redshift at which the transfer functions are to be obtained
-// //   h                 conversion factor between 1/Mpc and h/Mpc (theta is in units of 1/Mpc)
-// //
-// // Returns:
-// //
-// //////////////////////////
+// Arguments:
+//   class_background  CLASS structure that contains the background
+//   bg_data           .......
+//   qname             string containing the name of the component (e.g. "H [1/Mpc]"); if no string is
+//   boxsize           comoving box size (in the same units as used in the CLASS output)
+//   z                 redshift at which the transfer functions are to be obtained
+//   h                 conversion factor between 1/Mpc and h/Mpc (theta is in units of 1/Mpc)
 //
-// void loadBGFunctions(background & class_background, gsl_spline * & bg_data, const char * qname, double z_in)
-// {
-// 	int cols = 0, bgcol = -1, bgcol2 = -1, zcol = -1;
-// 	char coltitles[_MAXTITLESTRINGLENGTH_] = {0};
-// 	char zname[16];
-// 	double * a;
-// 	double * bg;
-// 	double * data;
-// 	char * ptr;
-//   int num_points=30;
-// 	int bg_size=0;
-//   double dz=0.005/num_points;
-//   double z1,z2;
+// Returns:
 //
-// 	// Get the names of the background variables as a single string
-// 	background_output_titles(&class_background, coltitles);
-//
-// 	// Get the redshift variable
-// 	sprintf(zname, "z");
-// 	ptr = strtok(coltitles, _DELIMITER_);
-// 	while (ptr != NULL)
-// 	{
-//   		if ((strncmp(ptr, qname, strlen(qname)) == 0) && (strlen(qname)== strlen(ptr))) bgcol = cols;
-//   		if (strncmp(ptr, zname, strlen(zname)) == 0) zcol = cols;
-//       cols++;
-//       ptr = strtok(NULL, _DELIMITER_);
-// 	}
-//
-// 	if (bgcol < 0 || zcol < 0)
-// 	{
-// 		COUT << " error in loadBGFunctions (HAVE_CLASS)! Unable to identify requested columns!" << endl;
-// 		parallel.abortForce();
-// 	}
-//
-// 	data = (double *) malloc(sizeof(double) * cols * class_background.bt_size);
-// 	if(!data)
-//   {
-//     COUT << " error in loadBGFunctions (HAVE_CLASS_BG)! Unable to allocate memory!" << endl;
-//     parallel.abortForce();
-//   }
-//
-// 	background_output_data(&class_background, cols, data);
-//
-//   a = (double *) malloc(sizeof(double) * (class_background.bt_size-bg_size+num_points));
-//   bg = (double *) malloc(sizeof(double) * (class_background.bt_size-bg_size+num_points));
-// 	if(!a || !bg)
-//   {
-//     COUT << " error in loadBGFunctions (HAVE_CLASS_BG)! Unable to allocate memory!" << endl;
-//     parallel.abortForce();
-//   }
-//
-//   for (int i = bg_size; i < class_background.bt_size; i++)
-// 	{
-// 		a[i-bg_size] = 1. / (1. + data[i*cols + zcol]);
-// 		bg[i-bg_size] = data[i*cols + bgcol];
-// 		if (i > bg_size)
-// 		{
-// 			if (a[i-bg_size] < a[i-bg_size-1])
-// 			{
-// 				COUT << " error in loadBGFunctions (HAVE_CLASS)! a-values are not strictly ordered." << endl;
-// 				parallel.abortForce();
-// 			}
-// 		}
-// 	}
-//   for (int i=0;i<num_points;i++)
-//   {
-//     z1 = 1./a[class_background.bt_size-bg_size+i-1] -1.;
-//     z2 = 1./a[class_background.bt_size-bg_size+i-2] -1.;
-//     a[class_background.bt_size-bg_size+i] =  a[class_background.bt_size-bg_size+i-1] + 1./(1.+dz);
-//     bg[class_background.bt_size-bg_size+i] = bg[class_background.bt_size-bg_size+i-1] - dz *(bg[class_background.bt_size-bg_size+i-1] -  bg[class_background.bt_size-bg_size+i-2])/(z1 - z2);
-//   }
-// 	free(data);
-//
-//   bg_data = gsl_spline_alloc(gsl_interp_cspline, class_background.bt_size-bg_size+num_points);
-//
-// 	gsl_spline_init(bg_data, a, bg, class_background.bt_size-bg_size+num_points);
-//
-// 	free(a);
-// 	free(bg);
-// }
-//
-// #endif
+//////////////////////////
+
+void loadBGFunctions(background & class_background, gsl_spline * & bg_data, const char * qname, double z_in)
+{
+	int cols = 0, bgcol = -1, bgcol2 = -1, zcol = -1;
+	char coltitles[_MAXTITLESTRINGLENGTH_] = {0};
+	char zname[16];
+	double * a;
+	double * bg;
+	double * data;
+	char * ptr;
+  int num_points=30;
+	int bg_size=0;
+  double dz=0.005/num_points;
+  double z1,z2;
+	// Get the names of the background variables as a single string
+	background_output_titles(&class_background, coltitles);
+
+	// Get the redshift variable
+	sprintf(zname, "z");
+	ptr = strtok(coltitles, _DELIMITER_);
+	while (ptr != NULL)
+	{
+  		if ((strncmp(ptr, qname, strlen(qname)) == 0) && (strlen(qname)== strlen(ptr))) bgcol = cols;
+  		if (strncmp(ptr, zname, strlen(zname)) == 0) zcol = cols;
+      cols++;
+      ptr = strtok(NULL, _DELIMITER_);
+	}
+
+	if (bgcol < 0 || zcol < 0)
+	{
+		COUT << " error in loadBGFunctions (HAVE_CLASS)! Unable to identify requested columns!" << endl;
+		parallel.abortForce();
+	}
+
+	data = (double *) malloc(sizeof(double) * cols * class_background.bt_size);
+	if(!data)
+  {
+    COUT << " error in loadBGFunctions (HAVE_CLASS_BG)! Unable to allocate memory!" << endl;
+    parallel.abortForce();
+  }
+
+	background_output_data(&class_background, cols, data);
+
+  a = (double *) malloc(sizeof(double) * (class_background.bt_size-bg_size+num_points));
+  bg = (double *) malloc(sizeof(double) * (class_background.bt_size-bg_size+num_points));
+	if(!a || !bg)
+  {
+    COUT << " error in loadBGFunctions (HAVE_CLASS_BG)! Unable to allocate memory!" << endl;
+    parallel.abortForce();
+  }
+
+  for (int i = bg_size; i < class_background.bt_size; i++)
+	{
+		a[i-bg_size] = 1. / (1. + data[i*cols + zcol]);
+		bg[i-bg_size] = data[i*cols + bgcol];
+		if (i > bg_size)
+		{
+			if (a[i-bg_size] < a[i-bg_size-1])
+			{
+				COUT << " error in loadBGFunctions (HAVE_CLASS)! a-values are not strictly ordered." << endl;
+				parallel.abortForce();
+			}
+		}
+	}
+  for (int i=0;i<num_points;i++)
+  {
+    z1 = 1./a[class_background.bt_size-bg_size+i-1] -1.;
+    z2 = 1./a[class_background.bt_size-bg_size+i-2] -1.;
+    a[class_background.bt_size-bg_size+i] =  a[class_background.bt_size-bg_size+i-1] + 1./(1.+dz);
+    bg[class_background.bt_size-bg_size+i] = bg[class_background.bt_size-bg_size+i-1] - dz *(bg[class_background.bt_size-bg_size+i-1] -  bg[class_background.bt_size-bg_size+i-2])/(z1 - z2);
+  }
+	free(data);
+
+  bg_data = gsl_spline_alloc(gsl_interp_cspline, class_background.bt_size-bg_size+num_points);
+
+	gsl_spline_init(bg_data, a, bg, class_background.bt_size-bg_size+num_points);
+
+	free(a);
+	free(bg);
+}
+#endif
 
 #endif
 
