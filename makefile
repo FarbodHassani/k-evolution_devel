@@ -23,11 +23,14 @@ DGEVOLUTION  += -DBENCHMARK
 #DGEVOLUTION  += -DBACKREACTION_TEST
 DGEVOLUTION  += -DEXACT_OUTPUT_REDSHIFTS
 #DGEVOLUTION  += -DVELOCITY      # enables velocity field utilities
-#DGEVOLUTION  += -DCOLORTERMINAL
+DGEVOLUTION  += -DCOLORTERMINAL
 #DGEVOLUTION  += -DCHECK_B
 DGEVOLUTION  += -DHAVE_HICLASS    # -DHAVE_HICLASS  or -DHAVE_CLASS requires LIB -lclass. The initial conditions are provided by hiclass!
-DGEVOLUTION  += -DHAVE_CLASS_BG    # -DHAVE_HICLASS requires LIB -lclass. The BG quantities are provided by hiclass and also parameters like c_s^2,w ...
+DGEVOLUTION  += -DHAVE_HICLASS_BG    # -DHAVE_HICLASS requires LIB -lclass. The BG quantities are provided by hiclass and also parameters like c_s^2,w ...
 #DGEVOLUTION  += -DHAVE_HEALPIX  # requires LIB -lchealpix
+
+CDBG +=
+CFLAGS += $(CDBG)
 
 # further compiler options
 OPT          := -O3 -std=c++11

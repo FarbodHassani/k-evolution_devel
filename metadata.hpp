@@ -137,7 +137,9 @@
 #define COLORTEXT_GREEN     "\033[32;1m"
 #define COLORTEXT_RED       "\033[31;1m"
 #define COLORTEXT_YELLOW    "\033[33;1m"
+#define COLORTEXT_BLUE     "\033[1;34m"
 #define COLORTEXT_RESET     "\033[0m"
+#define COLORTEXT_BLUE     "\033[1;34m"
 #else
 #define COLORTEXT_WHITE     '\0'
 #define COLORTEXT_CYAN      '\0'
@@ -290,10 +292,26 @@ struct cosmology
 	double Omega_b;
 	double Omega_m;
 	double Omega_Lambda;
+  // #ifdef HAVE_HICLASS_BG
 	// Kessence part
+  double gravity_model; //0 is the propto_omega and 1 is k_essence_power
 	double Omega_kessence;
   double w_kessence;
 	double cs2_kessence;
+  // k_essence_power # Xt, g0, g2, g4, phi_i, X_i
+  // parameters_smg =  8., 0.0, 1.0, 1.e-1, 1., 1.e20
+  double Xt;
+  double g0;
+  double g2;
+  double g4;
+  double phi_i;
+  double X_i;
+  // #else
+  // double Omega_kessence;
+  // double w_kessence;
+  // double cs2_kessence;
+  // #endif
+
   int params_time_depend;
   // fld CLASS
   // double Omega_fld=0.0;

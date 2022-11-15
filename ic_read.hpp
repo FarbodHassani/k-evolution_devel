@@ -85,7 +85,7 @@ void readIC(metadata & sim, icsettings & ic, cosmology & cosmo, const double fou
 	void * buf2;
 	set<long> IDlookup;
 
-  #ifdef HAVE_CLASS_BG
+  #ifdef HAVE_HICLASS_BG
 	background class_background;
   thermo class_thermo;
   perturbs class_perturbs;
@@ -97,7 +97,7 @@ void readIC(metadata & sim, icsettings & ic, cosmology & cosmo, const double fou
 	loadBGFunctions(class_background, H_spline, "H [1/Mpc]", sim.z_in);
 	#endif
 	double Hc = Hconf(a, fourpiG,
-		#ifdef HAVE_CLASS_BG
+		#ifdef HAVE_HICLASS_BG
 			H_spline, acc
 		#else
 			cosmo
@@ -310,7 +310,7 @@ void readIC(metadata & sim, icsettings & ic, cosmology & cosmo, const double fou
 		tau = ic.restart_tau;
 	else
   tau = particleHorizon(a, fourpiG,
-    #ifdef HAVE_CLASS_BG
+    #ifdef HAVE_HICLASS_BG
     gsl_spline_eval(H_spline, 1., acc), class_background
     #else
     cosmo
@@ -566,7 +566,7 @@ void readIC(metadata & sim, icsettings & ic, cosmology & cosmo, const double fou
 			}
 
       d = particleHorizon(1. / (1. + sim.lightcone[i].z), fourpiG,
-				#ifdef HAVE_CLASS_BG
+				#ifdef HAVE_HICLASS_BG
 				gsl_spline_eval(H_spline, 1., acc), class_background
 				#else
 				cosmo

@@ -1920,7 +1920,7 @@ void generateIC_basic(metadata & sim, icsettings & ic, cosmology & cosmo, const 
   initializeCLASSstructures(sim, ic, cosmo, class_background, class_thermo, class_perturbs, params, numparam);
 #endif
 
-#ifdef HAVE_CLASS_BG
+#ifdef HAVE_HICLASS_BG
 gsl_interp_accel * acc = gsl_interp_accel_alloc();
 //Background variables EFTevolution : add as many as necessary
 gsl_spline * H_spline = NULL;
@@ -1952,49 +1952,49 @@ double HconfClass = Hconf_class( a, cosmo);
 
 
 	double H0 = Hconf(1., fourpiG,
-		#ifdef HAVE_CLASS_BG
+		#ifdef HAVE_HICLASS_BG
 			H_spline, acc
 		#else
 			cosmo
 		#endif
 		);
 	double Hc = Hconf(a, fourpiG,
-		#ifdef HAVE_CLASS_BG
+		#ifdef HAVE_HICLASS_BG
 			H_spline, acc
 		#else
 			cosmo
 		#endif
 		);
 	double Hc098 = Hconf(0.98 * a, fourpiG,
-		#ifdef HAVE_CLASS_BG
+		#ifdef HAVE_HICLASS_BG
 			H_spline, acc
 		#else
 			cosmo
 		#endif
 		);
 	double Hc099 = Hconf(0.99 * a, fourpiG,
-		#ifdef HAVE_CLASS_BG
+		#ifdef HAVE_HICLASS_BG
 			H_spline, acc
 		#else
 			cosmo
 		#endif
 		);
 	double Hc0995 = Hconf(0.995 * a, fourpiG,
-		#ifdef HAVE_CLASS_BG
+		#ifdef HAVE_HICLASS_BG
 			H_spline, acc
 		#else
 			cosmo
 		#endif
 		);
 	double Hc101 = Hconf(1.01 * a, fourpiG,
-		#ifdef HAVE_CLASS_BG
+		#ifdef HAVE_HICLASS_BG
 			H_spline, acc
 		#else
 			cosmo
 		#endif
 		);
 	double Hc102 = Hconf(1.02 * a, fourpiG,
-		#ifdef HAVE_CLASS_BG
+		#ifdef HAVE_HICLASS_BG
 			H_spline, acc
 		#else
 			cosmo
@@ -2047,9 +2047,9 @@ double HconfClass = Hconf_class( a, cosmo);
 		if (ic.tkfile[0] == '\0')
 		{
       loadTransferFunctions(class_background, class_perturbs, tk_d1, tk_t1, "tot", sim.boxsize, sim.z_in, cosmo.h
-      #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+      #if defined(HAVE_HICLASS) && !defined(HAVE_HICLASS_BG)
       , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
-      #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+      #elif  defined(HAVE_HICLASS) && defined(HAVE_HICLASS_BG)
       , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
       #endif
         );
@@ -2110,9 +2110,9 @@ double HconfClass = Hconf_class( a, cosmo);
       // Note that in the below we read delta_fld and theta_fld so we have to convert to pi_k and zeta!
       // initializeCLASSstructures(sim, ic, cosmo, class_background, class_perturbs, class_spectra, params, numparam);
       loadTransferFunctions(class_background, class_perturbs, tk_d_kess, tk_t_kess, "fld", sim.boxsize, sim.z_in, cosmo.h
-      // #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+      // #if defined(HAVE_HICLASS) && !defined(HAVE_HICLASS_BG)
       // , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
-      // #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+      // #elif  defined(HAVE_HICLASS) && defined(HAVE_HICLASS_BG)
       // , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
       // #endif
       );
@@ -2184,9 +2184,9 @@ double HconfClass = Hconf_class( a, cosmo);
         // Note that in the below we read delta_fld and theta_fld so we have to convert to pi_k and zeta!
         // initializeCLASSstructures(sim, ic, cosmo, class_background, class_perturbs, class_spectra, params, numparam);
         loadTransferFunctions(class_background, class_perturbs, tk_d_kess, tk_t_kess, "vx", sim.boxsize, sim.z_in, cosmo.h
-        #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+        #if defined(HAVE_HICLASS) && !defined(HAVE_HICLASS_BG)
         , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
-        #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+        #elif  defined(HAVE_HICLASS) && defined(HAVE_HICLASS_BG)
         , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
         #endif
         );
@@ -2293,7 +2293,7 @@ double HconfClass = Hconf_class( a, cosmo);
 #ifdef HAVE_HICLASS
 if (sim.gr_flag == 0)
 {
-  if(parallel.isRoot())  cout << " \033[1;31merror:\033[0m"<< " \033[1;31merror: Newtonian case is not implemented while using hiclass!!\033[0m" << endl;
+  if(parallel.isRoot())  cout <<COLORTEXT_RED<<"error:"<<COLORTEXT_RESET<< " \033[1;31merror: Newtonian case is not implemented while using hiclass!!\033[0m" << endl;
   parallel.abortForce();
 }
 #endif
@@ -2302,18 +2302,18 @@ if (sim.gr_flag == 0)
 		if (ic.tkfile[0] == '\0')
 		{
       #if defined(HAVE_CLASS)
-      if(parallel.isRoot()) COUT << "\033[1;34m The initial conditions are provided using CLASS\033[0m\n";
+      if(parallel.isRoot())  COUT <<COLORTEXT_CYAN<<"The initial conditions are provided using CLASS"<<COLORTEXT_RESET;
       #endif
       #if defined(HAVE_HICLASS)
-      if(parallel.isRoot()) COUT << "\033[1;34m The initial conditions are provided using hi-CLASS\033[0m\n";
+      if(parallel.isRoot()) COUT <<COLORTEXT_CYAN<<"The initial conditions are provided using hi-CLASS \n"<<COLORTEXT_RESET;
       #endif
 
 			if (sim.gr_flag == 0)
 			{
 				loadTransferFunctions(class_background, class_perturbs, tk_d1, tk_t1, NULL, sim.boxsize, sim.z_in, cosmo.h
-          #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+          #if defined(HAVE_HICLASS) && !defined(HAVE_HICLASS_BG)
           , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
-          #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+          #elif  defined(HAVE_HICLASS) && defined(HAVE_HICLASS_BG)
           , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
           #endif
           );
@@ -2325,9 +2325,9 @@ if (sim.gr_flag == 0)
 				gsl_spline_free(tk_t1);
 
 				loadTransferFunctions(class_background, class_perturbs, tk_d1, tk_t1, NULL, sim.boxsize, (sim.z_in + 0.01) / 0.99, cosmo.h
-        #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+        #if defined(HAVE_HICLASS) && !defined(HAVE_HICLASS_BG)
         , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
-        #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+        #elif  defined(HAVE_HICLASS) && defined(HAVE_HICLASS_BG)
         , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
         #endif
         );
@@ -2339,9 +2339,9 @@ if (sim.gr_flag == 0)
 				gsl_spline_free(tk_t1);
 
 				loadTransferFunctions(class_background, class_perturbs, tk_d1, tk_t1, "tot", sim.boxsize, (sim.z_in + 0.01) / 0.99, cosmo.h
-        #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+        #if defined(HAVE_HICLASS) && !defined(HAVE_HICLASS_BG)
         , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
-        #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+        #elif  defined(HAVE_HICLASS) && defined(HAVE_HICLASS_BG)
         , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
         #endif
         );
@@ -2357,9 +2357,9 @@ if (sim.gr_flag == 0)
 			}
 
 			loadTransferFunctions(class_background, class_perturbs, tk_d1, tk_t1, "cdm", sim.boxsize, sim.z_in, cosmo.h
-      #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+      #if defined(HAVE_HICLASS) && !defined(HAVE_HICLASS_BG)
       , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
-      #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+      #elif  defined(HAVE_HICLASS) && defined(HAVE_HICLASS_BG)
       , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
       #endif
       );
@@ -2380,9 +2380,9 @@ if (sim.gr_flag == 0)
 #if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
 			if (ic.tkfile[0] == '\0')
 				loadTransferFunctions(class_background, class_perturbs, tk_d2, tk_t2, "b", sim.boxsize, sim.z_in, cosmo.h
-        #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+        #if defined(HAVE_HICLASS) && !defined(HAVE_HICLASS_BG)
         , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
-        #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+        #elif  defined(HAVE_HICLASS) && defined(HAVE_HICLASS_BG)
         , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
         #endif
         );
@@ -2687,9 +2687,9 @@ if (sim.gr_flag == 0)
 #if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
 			if (ic.tkfile[0] == '\0')
 				loadTransferFunctions(class_background, class_perturbs, tk_d1, tk_t1, ncdm_name, sim.boxsize, sim.z_in, cosmo.h
-        #if defined(HAVE_HICLASS) && !defined(HAVE_CLASS_BG)
+        #if defined(HAVE_HICLASS) && !defined(HAVE_HICLASS_BG)
         , HconfClass, Omega_m(a, cosmo), Omega_rad(a, cosmo), Omega_mg(a, cosmo), cosmo.w_kessence
-        #elif  defined(HAVE_HICLASS) && defined(HAVE_CLASS_BG)
+        #elif  defined(HAVE_HICLASS) && defined(HAVE_HICLASS_BG)
         , HconfClass, Omega_m_spl, Omega_smg_spl, Omega_rad_spl, w_smg_spl
         #endif
         );
@@ -2801,6 +2801,8 @@ if (sim.gr_flag == 0)
 	plan_phi->execute(FFT_BACKWARD);
 	phi->updateHalo();	// phi now finally contains phi
 
+  #ifndef HAVE_HICLASS_BG
+
 	if (ic.pkfile[0] != '\0')	// if power spectrum is used instead of transfer functions, set velocities using linear approximation
 	{
     rescale = a / Hc / (1.5 * Omega_m(a, cosmo) + 2. * Omega_rad(a, cosmo));
@@ -2832,7 +2834,7 @@ if (sim.gr_flag == 0)
 		}
 		maxvel[1+sim.baryon_flag+p] = pcls_ncdm[p].updateVel(update_q, 0., &phi, 1, &a);
 	}
-
+#endif
 	projection_init(Bi);
 	projection_T0i_project(pcls_cdm, Bi, phi);
 	if (sim.baryon_flag)

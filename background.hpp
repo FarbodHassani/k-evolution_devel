@@ -134,14 +134,14 @@ double bg_ncdm(const double a, const cosmology cosmo)
 //
 //////////////////////////
 double Hconf(const double a, const double fourpiG,
-	#ifdef HAVE_CLASS_BG
+	#ifdef HAVE_HICLASS_BG
 	gsl_spline * H_spline, gsl_interp_accel * acc
 	#else
 	const cosmology cosmo
 	#endif
 )
 {
-	#ifdef HAVE_CLASS_BG
+	#ifdef HAVE_HICLASS_BG
 	double norm = sqrt(2./3.*fourpiG)/gsl_spline_eval(H_spline, 1., acc);
 	double Ha = gsl_spline_eval(H_spline, a, acc);
 	// The extra scale factor comes from converting physical to conformal H
@@ -155,6 +155,8 @@ double Hconf(const double a, const double fourpiG,
 // Here the normalization factor is not \rho_crit=1, it is what it should be in the normal unit.
 // So Omega_m is the matter density at arbitrary redshift and is not normalized, since we did not use Hconf in the fomrula
 // While Hconf is normalized to critical density 1 so H^2/H_0^2= H^2/(8piG/3) which is used in the last formula.
+#ifndef HAVE_HICLASS_BG
+
 double Omega_m(const double a, const cosmology cosmo) { return cosmo.Omega_m / (cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo) + cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence)* a * a * a + cosmo.Omega_Lambda * a * a * a + cosmo.Omega_rad / a); }
 //
 double Omega_rad(const double a, const cosmology cosmo) { return (cosmo.Omega_rad + (bg_ncdm(a, cosmo) + cosmo.Omega_cdm + cosmo.Omega_b - cosmo.Omega_m) * a) / ((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) * a + cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence)* a * a * a * a + cosmo.Omega_Lambda * a * a * a * a + cosmo.Omega_rad); }
@@ -164,8 +166,9 @@ double Omega_Lambda(const double a, const cosmology cosmo) { return cosmo.Omega_
 
 double Omega_mg(const double a, const cosmology cosmo) { return (cosmo.Omega_Lambda+ cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence)) / ((cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) / a / a / a + cosmo.Omega_Lambda + cosmo.Omega_kessence * pow(a,-3.-3. * cosmo.w_kessence) + cosmo.Omega_rad / a / a / a / a);}
 // Omega_mg = (rho_kess + rho_Lambda)/rho_tot, however in k-evolution Omega_lambda is so tiny and is there because of making sure that Omega_k=0 (the Universe is flat).
+#endif
 
-#ifndef HAVE_CLASS_BG
+#ifndef HAVE_HICLASS_BG
 double Hconf_class(const double a, const cosmology cosmo)
 {
   double H0_class=100*cosmo.h/(C_SPEED_OF_LIGHT*100.);
@@ -194,21 +197,16 @@ double Hconf_class(const double a, const cosmology cosmo)
 //////////////////////////
 // Hconf normalized to critial density so we have H0^2= 8piG/3
 double Hconf_prime(const double a, const double fourpiG,
-	#ifdef HAVE_CLASS_BG
+	#ifdef HAVE_HICLASS_BG
 	gsl_spline * H_spline, gsl_interp_accel * acc
 	#else
 	const cosmology cosmo
 	#endif
 )
 {
-	#ifdef HAVE_CLASS_BG
+	#ifdef HAVE_HICLASS_BG
 	double norm = sqrt(2./3.*fourpiG)/gsl_spline_eval(H_spline, 1., acc);
-	double Hc = Hconf(a, fourpiG,
-		#ifdef HAVE_CLASS_BG
-		H_spline, acc
-		#else
-		cosmo
-		#endif
+	double Hc = Hconf(a, fourpiG, H_spline, acc
 		);
 	// dHc/da = H + a*d(H)/da
 	double dHcda = Hc/a + a*norm*gsl_spline_eval_deriv(H_spline, a, acc);
@@ -237,7 +235,7 @@ double Hconf_prime(const double a, const double fourpiG,
 //////////////////////////
 
 void rungekutta4bg(double &a, const double fourpiG,
-	#ifdef HAVE_CLASS_BG
+	#ifdef HAVE_HICLASS_BG
 	gsl_spline * H_spline, gsl_interp_accel * acc,
 	#else
 	const cosmology cosmo,
@@ -247,28 +245,28 @@ void rungekutta4bg(double &a, const double fourpiG,
 	double k1a, k2a, k3a, k4a;
 
 	k1a = a * Hconf(a, fourpiG,
-		#ifdef HAVE_CLASS_BG
+		#ifdef HAVE_HICLASS_BG
 			H_spline, acc
 		#else
 			cosmo
 		#endif
 		);
 	k2a = (a + k1a * dtau / 2.) * Hconf(a + k1a * dtau / 2., fourpiG,
-		#ifdef HAVE_CLASS_BG
+		#ifdef HAVE_HICLASS_BG
 			H_spline, acc
 		#else
 			cosmo
 		#endif
 		);
 	k3a = (a + k2a * dtau / 2.) * Hconf(a + k2a * dtau / 2., fourpiG,
-		#ifdef HAVE_CLASS_BG
+		#ifdef HAVE_HICLASS_BG
 			H_spline, acc
 		#else
 			cosmo
 		#endif
 		);
 	k4a = (a + k3a * dtau) * Hconf(a + k3a * dtau, fourpiG,
-		#ifdef HAVE_CLASS_BG
+		#ifdef HAVE_HICLASS_BG
 			H_spline, acc
 		#else
 			cosmo
@@ -279,7 +277,7 @@ void rungekutta4bg(double &a, const double fourpiG,
 }
 
 
-#ifndef HAVE_CLASS_BG
+#ifndef HAVE_HICLASS_BG
 double particleHorizonIntegrand(double sqrta, void * cosmo)
 {
 	double Hc = Hconf(sqrta*sqrta, 1., *(cosmology *)cosmo);
@@ -304,14 +302,14 @@ double particleHorizonIntegrand(double sqrta, void * cosmo)
 //////////////////////////
 
 double particleHorizon(const double a, const double fourpiG,
-	#ifdef HAVE_CLASS_BG
+	#ifdef HAVE_HICLASS_BG
 	const double H_spline_0, background & class_background
 	#else
 	cosmology & cosmo
 	#endif
 )
 {
-	#ifdef HAVE_CLASS_BG
+	#ifdef HAVE_HICLASS_BG
 	double tau;
 	background_tau_of_z(&class_background, 1./a - 1., &tau);
 	return tau*H_spline_0/sqrt(2./3.*fourpiG);

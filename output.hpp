@@ -65,7 +65,7 @@ using namespace std;
 //////////////////////////
 
 void writeSnapshots(metadata & sim, cosmology & cosmo, const double fourpiG, const double a, const double dtau_old, const int done_hij, const int snapcount, string h5filename,
-  #ifdef HAVE_CLASS_BG
+  #ifdef HAVE_HICLASS_BG
   gsl_spline * H_spline, gsl_interp_accel * acc,
   #endif
  Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, Field<Real> * phi, Field<Real> * pi_k, Field<Real> * zeta, Field<Real> * chi, Field<Real> * Bi, Field<Real> * T00_Kess, Field<Real> * T0i_Kess, Field<Real> * Tij_Kess, Field<Real> * source, Field<Real> * Sij, Field<Cplx> * scalarFT, Field<Cplx> * BiFT, Field<Cplx> * SijFT, PlanFFT<Cplx> * plan_phi, PlanFFT<Cplx> * plan_chi, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_source, PlanFFT<Cplx> * plan_Sij
@@ -437,7 +437,7 @@ if (sim.out_snapshot & MASK_T_KESS)
 		hdr.time = 1. / (sim.z_snapshot[snapcount] + 1.);
 		hdr.redshift = sim.z_snapshot[snapcount];
     dtau_pos = (hdr.time - a) / a / Hconf(a, fourpiG,
-    #ifdef HAVE_CLASS_BG
+    #ifdef HAVE_HICLASS_BG
       H_spline, acc
     #else
       cosmo
@@ -564,7 +564,7 @@ if (sim.out_snapshot & MASK_T_KESS)
 //////////////////////////
 
 void writeLightcones(metadata & sim, cosmology & cosmo, const double fourpiG, const double a, const double tau, const double dtau, const double dtau_old, const double maxvel, const int cycle, string h5filename,
-#ifdef HAVE_CLASS_BG
+#ifdef HAVE_HICLASS_BG
 background & class_background, gsl_spline * H_spline, gsl_interp_accel * acc,
 #endif
 Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, Field<Real> * phi, Field<Real> * chi, Field<Real> * Bi, Field<Real> * Sij, Field<Cplx> * BiFT, Field<Cplx> * SijFT, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_Sij, int & done_hij, set<long> * IDbacklog)
@@ -654,7 +654,7 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 		}
 
     d = particleHorizon(1. / (1. + sim.lightcone[i].z), fourpiG,
-      #ifdef HAVE_CLASS_BG
+      #ifdef HAVE_HICLASS_BG
       gsl_spline_eval(H_spline, 1., acc), class_background
       #else
       cosmo
@@ -1636,7 +1636,7 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 
         if (sim.tracer_factor[0] > 0)
   				pcls_cdm->saveGadget2(h5filename + filename + "_cdm", hdr, sim.lightcone[i], d - tau, dtau, dtau_old, a * Hconf(a, fourpiG,
-  				#ifdef HAVE_CLASS_BG
+  				#ifdef HAVE_HICLASS_BG
   					H_spline, acc
   				#else
   					cosmo
@@ -1647,7 +1647,7 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 			{
 				hdr.mass[1] = (double) sim.tracer_factor[1] * C_RHO_CRIT * cosmo.Omega_b * sim.boxsize * sim.boxsize * sim.boxsize / sim.numpcl[1] / GADGET_MASS_CONVERSION;
         pcls_b->saveGadget2(h5filename + filename + "_b", hdr, sim.lightcone[i], d - tau, dtau, dtau_old, a * Hconf(a, fourpiG,
-        #ifdef HAVE_CLASS_BG
+        #ifdef HAVE_HICLASS_BG
           H_spline, acc
         #else
           cosmo
@@ -1661,7 +1661,7 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 				sprintf(buffer, "_ncdm%d", p);
 				hdr.mass[1] = (double) sim.tracer_factor[p+1+sim.baryon_flag] * C_RHO_CRIT * cosmo.Omega_ncdm[p] * sim.boxsize * sim.boxsize * sim.boxsize / sim.numpcl[p+1+sim.baryon_flag] / GADGET_MASS_CONVERSION;
         pcls_ncdm[p].saveGadget2(h5filename + filename + buffer, hdr, sim.lightcone[i], d - tau, dtau, dtau_old, a * Hconf(a, fourpiG,
-				#ifdef HAVE_CLASS_BG
+				#ifdef HAVE_HICLASS_BG
 					H_spline, acc
 				#else
 					cosmo
@@ -1848,7 +1848,7 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 void writeSpectra(metadata & sim, cosmology & cosmo, const double fourpiG, const double a, const int pkcount,
 #if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
 background & class_background, perturbs & class_perturbs, icsettings & ic,
-#ifdef HAVE_CLASS_BG
+#ifdef HAVE_HICLASS_BG
 gsl_spline * H_spline, gsl_interp_accel * acc,
 #endif
 #endif
@@ -1883,7 +1883,7 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 	occupation = (int *) malloc(sim.numbins * sizeof(int));
 
   double Hc = Hconf(a, fourpiG,
-  	#ifdef HAVE_CLASS_BG
+  	#ifdef HAVE_HICLASS_BG
   		H_spline, acc
   	#else
   		cosmo
@@ -2351,7 +2351,7 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 
 
 void writeSpectra_phi_prime(metadata & sim, cosmology & cosmo, const double fourpiG, const double a, const int pkcount,
-	#ifdef HAVE_CLASS_BG
+	#ifdef HAVE_HICLASS_BG
 	gsl_spline * H_spline, gsl_interp_accel * acc,
 	#endif
 	Field<Real> * phi_prime ,Field<Cplx> * phi_prime_scalarFT , PlanFFT<Cplx> * phi_prime_plan)
@@ -2377,7 +2377,7 @@ pscatter = (Real *) malloc(sim.numbins * sizeof(Real));
 occupation = (int *) malloc(sim.numbins * sizeof(int));
 
 double Hc = Hconf(a, fourpiG,
-	#ifdef HAVE_CLASS_BG
+	#ifdef HAVE_HICLASS_BG
 		H_spline, acc
 	#else
 		cosmo
@@ -2403,7 +2403,7 @@ free(occupation);
 
 // Modified Poisson equation terms- TESTS
 void writeSpectra_PoissonTerms(metadata & sim, cosmology & cosmo, const double fourpiG, const double a, const int pkcount,
-	#ifdef HAVE_CLASS_BG
+	#ifdef HAVE_HICLASS_BG
 	gsl_spline * H_spline, gsl_interp_accel * acc,
 	#endif
 	Field<Real> * short_wave ,Field<Cplx> * short_wave_scalarFT , PlanFFT<Cplx> * short_wave_plan)
@@ -2429,7 +2429,7 @@ pscatter = (Real *) malloc(sim.numbins * sizeof(Real));
 occupation = (int *) malloc(sim.numbins * sizeof(int));
 
 double Hc = Hconf(a, fourpiG,
-	#ifdef HAVE_CLASS_BG
+	#ifdef HAVE_HICLASS_BG
 		H_spline, acc
 	#else
 		cosmo

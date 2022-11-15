@@ -288,6 +288,146 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
     }
 
 
+    //////////////////////////
+    //Kessence Stress tensor
+    //////////////////////////
+    // Description:
+    //   Kessence field projection for Tmunu
+    //
+    // Arguments:
+    //   T00        pointer to target field
+    //   T0i        pointer to target field
+    //   Tij        pointer to target field
+    //   dtau				time step which should be the new one not the old one!
+    //   dx         lattice unit (unused)
+    //   phi        phi field
+    //   phi_old    The value of phi in the last step
+    //   a          scale factor at projection (needed in order to convert
+    //              canonical momenta to energies)
+    //   phi        pointer to Bardeen potential which characterizes the
+    //              geometric corrections (volume distortion); can be set to
+    //              NULL which will result in no corrections applied
+    //   pi_k       scala field in units 1/H
+    //  zeta_integer combination of \pi', \Psi and H \pi = \pi'+\mathcal{H} \pi -\Psi at integer steps!
+    //   Omega_fld  The scalar field density
+    //   w          scalar field equation of state,
+    //   cs2        scalar field sound speed squared
+    //   Hcon       conformal Hubble factor in Gevolution's units
+    //   fourpig
+    //   method     refers to the method for solving the equations, method=1 Turn on vector elliptic, method=0
+    //               the default
+    //
+    // Returns:
+    //
+    //////////////////////////
+    template <class FieldType>
+    void projection_Tmunu_kessence_eq( Field<FieldType> & T00, Field<FieldType> & T0i, Field<FieldType> & Tij,
+       double dx, double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi, Field<FieldType> & pi_k, Field<FieldType> & zeta_half, double rho_smg, double p_smg, double rho_crit, double ca2, double cs2, double Hcon, int non_linearity ,int method )
+    {
+        Site xField(phi.lattice());
+        double coeff1, coeff2, coeff3, Hdot, psi;
+        double gradientpi_squared, Dx_pi_Dx_pi, Dx_pi_Dy_pi, Dx_pi_Dz_pi, Dy_pi_Dy_pi, Dy_pi_Dz_pi, Dz_pi_Dz_pi;
+        Site x(phi.lattice());
+        double gradient_pi2;
+        coeff1= pow(a , 3) * (p_smg + rho_smg)/rho_crit/cs2; //Omega_fld * pow(a , -3. * w) * (1. + w) / (cs2);
+        coeff2= pow(a , 3) * (p_smg + rho_smg)/rho_crit; // a^3 is because of definition in gevolution!  //Omega_fld * pow(a , -3. * w) * (1. + w);
+        //*************************************************************
+        //All non-linear terms are zero, except we have non-linearities
+        //*************************************************************
+        gradientpi_squared=0;
+        Dx_pi_Dx_pi=0;
+        Dx_pi_Dy_pi=0;
+        Dx_pi_Dz_pi=0;
+        Dy_pi_Dy_pi=0;
+        Dy_pi_Dz_pi=0;
+        Dz_pi_Dz_pi=0;
+        for (xField.first(); xField.test(); xField.next())
+          {
+            if (non_linearity ==1)
+              {
+              //***************
+              //(D_i pi)^2
+              //***************
+              gradientpi_squared =0.25*(pi_k(xField+0) - pi_k(xField - 0))* (pi_k(xField + 0) - pi_k(xField-0))/(dx*dx);
+              gradientpi_squared+=0.25*(pi_k(xField+1) - pi_k(xField - 1))* (pi_k(xField + 1) - pi_k(xField-1))/(dx*dx);
+              gradientpi_squared+=0.25*(pi_k(xField+2) - pi_k(xField - 2))* (pi_k(xField + 2) - pi_k(xField-2))/(dx*dx);
+              //***************
+              //(X,X):::::::> Dx_pi_Dx_pi = GradX(pi).GradX(pi)
+              //***************
+              Dx_pi_Dx_pi =0.25*(pi_k(xField+0) - pi_k(xField-0))* (pi_k(xField+0) - pi_k(xField-0))/(dx*dx);
+              //***************
+              //(X,Y):::::::> Dx_pi_Dy_pi = GradX(pi).GradY(pi) = GradY(pi).GradX(pi)
+              //***************
+              Dx_pi_Dy_pi =0.25*(pi_k(xField+0) - pi_k(xField-0))* (pi_k(xField+1) - pi_k(xField-1))/(dx*dx);
+              //***************
+              //(X,Z):::::::> Dx_pi_Dz_pi = GradX(pi).GradZ(pi)
+              //***************
+              Dx_pi_Dz_pi =0.25*(pi_k(xField+0) - pi_k(xField-0))* (pi_k(xField+2) - pi_k(xField-2))/(dx*dx);
+              //***************
+              //(Y,Y):::::::> Dy_pi_Dy_pi = GradY(pi).GradY(pi)
+              //***************
+              Dy_pi_Dy_pi =0.25*(pi_k(xField+1) - pi_k(xField-1))* (pi_k(xField+1) - pi_k(xField-1))/(dx*dx);
+              //***************
+              //(Y,Z):::::::> Dy_pi_Dz_pi = Grady(pi).Gradz(pi)
+              //***************
+              Dy_pi_Dz_pi =0.25*(pi_k(xField+1) - pi_k(xField-1))* (pi_k(xField+2) - pi_k(xField-2))/(dx*dx);
+              //***************
+              //(Z,Z):::::::> Dz_pi_Dz_pi = Gradz(pi).Gradz(pi)
+              //***************
+              Dz_pi_Dz_pi =0.25*(pi_k(xField+2) - pi_k(xField-2))* (pi_k(xField+2) - pi_k(xField-2))/(dx*dx);
+              }
+            //***************
+            psi= phi(xField) - chi(xField);
+            //************************
+            //STRESS TENSOR COMPONENTS
+            //************************
+            // 0-0-component: (Time,Time)
+            T00(xField)       =  + coeff1 * ( -3. * cs2 * Hcon * pi_k(xField) + zeta_half(xField)
+                              /*Non-linear*/ +  non_linearity * (1. - 2. * cs2) * gradientpi_squared / 2.  );
+            //*************************************************************************************
+            // 1-1-component: (X,X)
+            Tij(xField, 0, 0) = + coeff2 * (-3.* ca2 * Hcon* pi_k(xField) + zeta_half(xField)
+                              /*Non-linear*/ - non_linearity * (gradientpi_squared / 2.  + Dx_pi_Dx_pi) );
+            //*************************************************************************************
+            // 2-2-component: (Y,Y)
+            Tij(xField, 1, 1) = + coeff2 * (-3.* ca2 * Hcon* pi_k(xField) +   zeta_half(xField)
+                              /*Non-linear*/ -  non_linearity * (gradientpi_squared / 2.  + Dy_pi_Dy_pi) );
+            //*************************************************************************************
+            // 3-3-component: (Z,Z)
+            Tij(xField, 2, 2) = + coeff2 * (-3.* ca2 * Hcon* pi_k(xField) +   zeta_half(xField)
+                              /*Non-linear*/ -  non_linearity * (gradientpi_squared / 2.  + Dz_pi_Dz_pi) );
+            //*************************************************************************************
+            // 1-2-component: (X,Y)
+            Tij(xField, 0, 1) = + non_linearity *  coeff2 * (/*Non-linear*/ Dx_pi_Dy_pi);
+            //*************************************************************************************
+            // 1-3-component: (X,Z)
+            Tij(xField, 0, 2) = + non_linearity *  coeff2 * (/*Non-linear*/ Dx_pi_Dz_pi);
+            //*************************************************************************************
+            // 2-3-component: (Y,Z)
+            Tij(xField, 1, 2) = + non_linearity *  coeff2 * (/*Non-linear*/ Dy_pi_Dz_pi);
+            //*************************************************************************************
+
+            //*******************************
+            //In the case of Vector parabolic
+            //*******************************
+            if(method==1) // method=1 Turn on vector elliptic
+            {
+              if (non_linearity ==1)
+                {
+    					// T01:(Time,X)
+                T0i(xField, 0)  =  -coeff2 * (1. - /*Non-linear*/  non_linearity * (1./cs2 -1.) * gradientpi_squared / 2.) *       (pi_k(xField + 0) - pi_k(xField - 0)) / (2. * dx);
+                //*************************************************************************************
+      					// T02:(Time,Y)
+                T0i(xField, 1)  =  -coeff2 *  (1. - /*Non-linear*/  non_linearity * (1./cs2 -1.) * gradientpi_squared / 2.) *       (pi_k(xField + 1) - pi_k(xField - 1)) / (2. * dx);
+                //*************************************************************************************
+                // T03:(Time,Z)
+                T0i(xField, 2)  =  -coeff2 *  (1. - /*Non-linear*/  non_linearity * (1./cs2 -1.) * gradientpi_squared / 2.) *       (pi_k(xField + 2) - pi_k(xField - 2)) / (2. * dx);
+                //*************************************************************************************
+              }
+            }
+          }
+        }
+
 #ifdef BACKREACTION_TEST
   //Checking field
     template <class FieldType>
@@ -689,6 +829,224 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
 
              }
       }
+
+      //////////////////////////
+      // Update K-essence field (pi)
+      //////////////////////////
+      // Description:
+      //   Updating K-essence pi_k field based on equation obtained by energy momentum conservation
+      //
+      // Arguments:
+      //   phi        reference to field configuration
+      //   pi_k       reference to k-essence field
+      //   zeta_half      reference to zeta of kessence at (n+1/2)
+      //   zeta_integer      reference to zeta of kessence at (n+1)
+      // Returns:
+      //
+      //////////////////////////
+      template <class FieldType>
+      void update_pi_eq( double dtau, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi,Field<FieldType> & chi_old, Field<FieldType> & pi_k , Field<FieldType> & zeta_half, double Hcon)
+      {
+        double psi, psi_prime, psi_half;
+        double Coeff1 = 1./(1. + Hcon * dtau/2.);
+        Site x(phi.lattice());
+        for (x.first(); x.test(); x.next())
+          {
+            psi=phi(x) - chi(x); //psi(n)
+            psi_prime= ((phi(x) - chi(x)) - (phi_old(x) - chi_old(x))) / dtau; //psi'(n)
+            psi_half= psi + psi_prime * dtau/2.; //psi_half (n+1/2) = psi(n) + psi_prime'(n) dtau/2
+            //*****************************************
+            //pi Updating which is linear by definition
+            //*****************************************
+            pi_k(x) = Coeff1 * ( pi_k(x)  + dtau * ( zeta_half(x) - Hcon * pi_k(x)/2. + psi_half ) ); //  pi_k(n+1)
+            //*************************************************************************************
+          }
+      }
+
+      //////////////////////////
+      // Update K-essence velocity field (zeta)
+      //////////////////////////
+      // Description:
+      //   Updating K-essence zeta field based on equation obtained by energy momentum conservation
+      //
+      // Arguments:
+      //   phi        reference to field configuration
+      //   pi_k       reference to k-essence field
+      //   piv_k      reference to first derivative of the field
+      //   zeta_integer    reference to zeta at int steps which is useful for pi_k updating
+      //   zeta_half    reference to zeta at half steps which is useful for pi_k updating
+      //   n_correcor_steps Number of time which goes through predictor corrector method.
+      // Returns:
+      //
+      //////////////////////////
+      // We use predictor corrector method to calculate \zeta precisely for non-linear case. (for linear equation is does not make better)
+      // updating zeta from n-1/2 to n+1/2 by zeta'(n)
+      template <class FieldType>
+      void update_zeta_eq(double dtau, double dx,double a, Field<FieldType> & phi, Field<FieldType> & phi_old, Field<FieldType> & chi, Field<FieldType> & chi_old, Field<FieldType> & pi_k , Field<FieldType> & zeta_half, double cs2, double s, double ca2, double Hcon, double H_prime, int non_linearity )
+        {
+        double Gradphi_Gradpi, Gradpsi_Gradpi, Gradpi_Gradpi, GradZeta_Gradpi, Gradi_nablai_pi_Grad_pi_squared, Dx_psi, Dy_psi, Dz_psi;
+        double C1, C2, C3, psi, psi_old, psi_prime, phi_prime, Laplacian_pi, zeta_old_integer, zeta_old_half ;
+        //Since a_kess is at n so H_prime is at n which is needed to calculate zeta(n+1/2)
+        //**************************************************************
+        //Coefficient two, H(n), H_prime(n) since BG already updated
+        //**************************************************************
+        C2 = cs2 * (3. * Hcon * Hcon - 3. * H_prime );
+        //**************************************************************
+        //Coefficient three, H(n), H_prime(n)
+        //**************************************************************
+        C3 = (2. + 3. * ca2 + cs2 + s) *  Hcon/2.;
+
+        //**************************************************************
+        //When non-linearities are turned off we put non-linear temrs zero
+        //**************************************************************
+        Gradphi_Gradpi=0.;
+        Gradpsi_Gradpi=0.;
+        Gradpi_Gradpi=0.;
+        GradZeta_Gradpi=0.;
+        Gradi_nablai_pi_Grad_pi_squared=0;
+        Site x(phi.lattice());
+        for (x.first(); x.test(); x.next())
+          {
+          //****************************************************************
+          //Laplace pi, pi(n) since pi is not updated yet
+          //****************************************************************
+          Laplacian_pi= pi_k(x-0) + pi_k(x+0) - 2. * pi_k(x);
+          Laplacian_pi+=pi_k(x+1) + pi_k(x-1) - 2. * pi_k(x);
+          Laplacian_pi+=pi_k(x+2) + pi_k(x-2) - 2. * pi_k(x);
+          Laplacian_pi= Laplacian_pi/(dx*dx);
+          //********************************************
+          //psi(n)
+          //*********************************************
+          psi = phi(x) - chi(x);
+          //Coefficient one, H(at n)
+          //***************************
+          C1 = 1./(1. -  (3. * ca2 + s) * Hcon  * dtau/2. -  non_linearity * (1. - cs2) *  Laplacian_pi * dtau/2.);
+          //**********************************************
+          //phi'(n)
+          //**********************************************
+          phi_prime= (phi(x) - phi_old(x))/dtau; //phi_prime(n) since we want to use it to compute zeta (n+1/2)
+          //********************************
+          //psi'(n)
+          //psi(n)
+          //********************************
+          psi_prime= ((phi(x) - chi(x)) - (phi_old(x) - chi_old(x)))/dtau;
+          if (non_linearity ==1)
+            {
+            //**********
+            //Grad_i Psi
+            //**********
+            Dx_psi = ((phi(x + 0) - chi(x + 0)) - (phi(x - 0) - chi(x - 0)));
+            Dy_psi = ((phi(x + 1) - chi(x + 1)) - (phi(x - 1) - chi(x - 1)));
+            Dz_psi = ((phi(x + 2) - chi(x + 2)) - (phi(x - 2) - chi(x - 2)));
+            //*******************
+            //Grad_phi . Grad_pi
+            //******************
+            Gradphi_Gradpi= 0.25 * (phi(x + 0)  - phi(x - 0)) * (pi_k(x + 0) - pi_k(x - 0)) / (dx * dx);
+            Gradphi_Gradpi+=0.25 * (phi(x + 1)  - phi(x - 1)) * (pi_k(x + 1) - pi_k(x - 1)) / (dx * dx);
+            Gradphi_Gradpi+=0.25 * (phi(x + 2)  - phi(x - 2)) * (pi_k(x + 2) - pi_k(x - 2)) / (dx * dx);
+            //*******************
+            //Grad_psi . Grad_pi
+            //******************
+            Gradpsi_Gradpi= 0.25 * (Dx_psi) * (pi_k(x+0) - pi_k(x-0)) / (dx * dx);
+            Gradpsi_Gradpi+=0.25 * (Dy_psi) * (pi_k(x+1) - pi_k(x-1)) / (dx * dx);
+            Gradpsi_Gradpi+=0.25 * (Dz_psi) * (pi_k(x+2) - pi_k(x-2)) / (dx * dx);
+            //*************
+            //Gradpi_Gradpi
+            //*************
+            Gradpi_Gradpi= 0.25 * (pi_k(x + 0)  - pi_k(x - 0)) * (pi_k(x + 0) - pi_k(x - 0)) / (dx * dx);
+            Gradpi_Gradpi+=0.25 * (pi_k(x + 1)  - pi_k(x - 1)) * (pi_k(x + 1) - pi_k(x - 1)) / (dx * dx);
+            Gradpi_Gradpi+=0.25 * (pi_k(x + 2)  - pi_k(x - 2)) * (pi_k(x + 2) - pi_k(x - 2)) / (dx * dx);
+            //*************************************************************
+            //GradZeta_Gradpi = Grad_pi . Grad_ (zeta )
+            //zeta_integer from previous step is at n
+            //*************************************************************
+            GradZeta_Gradpi= 0.25* (zeta_half(x+0) - zeta_half(x-0) ) * (pi_k(x+0) - pi_k(x-0)) / (dx * dx);
+            GradZeta_Gradpi+=0.25* (zeta_half(x+1) - zeta_half(x-1) ) * (pi_k(x+1) - pi_k(x-1)) / (dx * dx);
+            GradZeta_Gradpi+=0.25* (zeta_half(x+2) - zeta_half(x-2) ) * (pi_k(x+2) - pi_k(x-2)) / (dx * dx);
+
+            //**********************************************************
+            //New term whcih comes from 3 fields and 4 spatial derivative
+            //1:  + 3 pi^{(0,0,2}(x,y,z) pi^{(0,0,1)}(x,y,z)^2
+            //2:  + pi^{(0,0,2)}(x,y,z) {pi}^{(0,1,0)}(x,y,z)^2
+            //3:  + 4 pi^{(0,0,1)}(x,y,z) pi^{(0,1,0)}(x,y,z) pi^{(0,1,1)}(x,y,z)
+            //4:  + pi^{(0,2,0)}(x,y,z) pi^{(0,0,1)}(x,y,z)^2
+            //5:  + 3 pi^{(0,1,0)}(x,y,z)^2 pi^{(0,2,0)}(x,y,z)
+            //6:  + pi^{(0,0,2)}(x,y,z) pi^{(1,0,0)}(x,y,z)^2
+            //7:  + pi^{(0,2,0)}(x,y,z) pi^{(1,0,0)}(x,y,z)^2
+            //8:  + 4 pi^{(0,0,1)}(x,y,z) pi^{(1,0,0)}(x,y,z) pi^{(1,0,1)}(x,y,z)
+            //9:  +  4 pi^{(0,1,0)}(x,y,z) pi^{(1,0,0)}(x,y,z) pi^{(1,1,0)}(x,y,z)
+            //10: + pi^{(2,0,0,0)}(x,y,z) pi^{(0,0,1,0)}(x,y,z)^2
+            //11: + pi^{(0,1,0)}(x,y,z)^2 pi^{(2,0,0)}(x,y,z)
+            //12: + 3 pi^{(1,0,0)}(x,y,z)^2 pi^{(2,0,0)}(x,y,z)
+            //*********************************************************
+            Gradi_nablai_pi_Grad_pi_squared =
+            //1:  + 3 pi^{(0,0,2}(x,y,z) pi^{(0,0,1)}(x,y,z)^2
+            + 3. * (pi_k(x - 2) + pi_k(x + 2) - 2. * pi_k(x))/(dx*dx)
+            * 0.25 * (pi_k(x + 2)  - pi_k(x - 2)) * (pi_k(x + 2) - pi_k(x - 2)) / (dx * dx)
+            //2:  + pi^{(0,0,2)}(x,y,z) {pi}^{(0,1,0)}(x,y,z)^2
+            + (pi_k(x - 2) + pi_k(x + 2) - 2. * pi_k(x))/(dx*dx)
+            * 0.25 * (pi_k(x + 1)  - pi_k(x - 1)) * (pi_k(x + 1) - pi_k(x - 1)) / (dx * dx)
+            //3:  + 4 pi^{(0,0,1)}(x,y,z) pi^{(0,1,0)}(x,y,z) pi^{(0,1,1)}(x,y,z)
+            //Definition of f^{(1,1)}(x,y) = (f_{x+1,y+1} - f_{x+1,y-1} - f_{x-1,y+1} + f_{x-1,y-1})/(4*dx^2)
+            //In LATfield f_{x+1,y+1} = f(x + 0 + 1)
+            + 4. *  0.25 * (pi_k(x + 2)  - pi_k(x - 2)) * (pi_k(x + 1) - pi_k(x - 1)) / (dx * dx) *
+            0.25 *(pi_k(x + 1 + 2) - pi_k(x + 1 - 2) - pi_k(x - 1 + 2) + pi_k(x - 1 - 2) )/(dx*dx)
+            //4:  + pi^{(0,2,0)}(x,y,z) pi^{(0,0,1)}(x,y,z)^2
+            + (pi_k(x - 1) + pi_k(x + 1) - 2. * pi_k(x))/(dx*dx)
+            * 0.25 * (pi_k(x + 2)  - pi_k(x - 2)) * (pi_k(x + 2) - pi_k(x - 2)) / (dx * dx)
+            //5:  + 3 pi^{(0,1,0)}(x,y,z)^2 pi^{(0,2,0)}(x,y,z)
+            + 3. * (pi_k(x - 1) + pi_k(x + 1) - 2. * pi_k(x))/(dx*dx)
+            * 0.25 * (pi_k(x + 1)  - pi_k(x - 1)) * (pi_k(x + 1) - pi_k(x - 1)) / (dx * dx)
+            //6:  + pi^{(0,0,2)}(x,y,z) pi^{(1,0,0)}(x,y,z)^2
+            + (pi_k(x - 2) + pi_k(x + 2) - 2. * pi_k(x))/(dx*dx)
+            * 0.25 * (pi_k(x + 0)  - pi_k(x - 0)) * (pi_k(x + 0) - pi_k(x - 0)) / (dx * dx)
+            //7:  + pi^{(0,2,0)}(x,y,z) pi^{(1,0,0)}(x,y,z)^2
+            + (pi_k(x - 1) + pi_k(x + 1) - 2. * pi_k(x))/(dx*dx)
+            * 0.25 * (pi_k(x + 0)  - pi_k(x - 0)) * (pi_k(x + 0) - pi_k(x - 0)) / (dx * dx)
+            //8:  + 4 pi^{(0,0,1)}(x,y,z) pi^{(1,0,0)}(x,y,z) pi^{(1,0,1)}(x,y,z)
+            //Definition of f^{(1,1)}(x,z) = (f_{x+1,z+1} - f_{x+1,z-1} - f_{x-1,z+1} + f_{x-1,z-1})/(4*dx^2)
+            //In LATfield f_{x+1,z+1} = f(x + 0 + 2)
+            + 4. *  0.25 * (pi_k(x + 2)  - pi_k(x - 2)) * (pi_k(x + 0) - pi_k(x - 0)) / (dx * dx) *
+            0.25 *(pi_k(x + 0 + 2) - pi_k(x + 0 - 2) - pi_k(x - 0 + 2) + pi_k(x - 0 - 2) )/(dx*dx)
+            //9:  +  4 pi^{(0,1,0)}(x,y,z) pi^{(1,0,0)}(x,y,z) pi^{(1,1,0)}(x,y,z)
+            + 4. *  0.25 * (pi_k(x + 1)  - pi_k(x - 1)) * (pi_k(x + 0) - pi_k(x - 0)) / (dx * dx) *
+            0.25 * (pi_k(x + 0 + 1) - pi_k(x + 0 - 1) - pi_k(x - 0 + 1) + pi_k(x - 0 - 1) )/(dx*dx)
+            //10: + pi^{(2,0,0)}(x,y,z) pi^{(0,0,1)}(x,y,z)^2
+            + (pi_k(x - 0) + pi_k(x + 0) - 2. * pi_k(x))/(dx*dx)
+            * 0.25 * (pi_k(x + 2)  - pi_k(x - 2)) * (pi_k(x + 2) - pi_k(x - 2)) / (dx * dx)
+            //11: + pi^{(0,1,0)}(x,y,z)^2 pi^{(2,0,0)}(x,y,z)
+            + (pi_k(x - 0) + pi_k(x + 1) - 2. * pi_k(x))/(dx*dx)
+            * 0.25 * (pi_k(x + 1)  - pi_k(x - 1)) * (pi_k(x + 1) - pi_k(x - 1)) / (dx * dx)
+            //12: + 3 pi^{(1,0,0)}(x,y,z)^2 pi^{(2,0,0)}(x,y,z)
+            + 3. * (pi_k(x - 0) + pi_k(x + 0) - 2. * pi_k(x))/(dx*dx)
+            * 0.25 * (pi_k(x + 0)  - pi_k(x - 0)) * (pi_k(x + 0) - pi_k(x - 0)) / (dx * dx);
+          }
+          //***********************************
+          // Having the values at previous steps
+          //***********************************
+          // zeta_old_integer = zeta_integer(x); //zeta(n)
+          //***********************
+          // FULL Updating equation
+          //***********************
+          //***************************************
+          // zeta(n+1/2) = zeta(n-1/2) + zeta'(n)
+          //***************************************
+          zeta_half(x) =       C1 * ( zeta_half(x) + dtau * (
+            /*Linear(1,2)*/ + (3. * ca2 + s) * Hcon * zeta_half(x)/2. + 3. * cs2 * Hcon * psi
+             /*Linear(3,4,5)*/  - C2 * pi_k(x)+ 3. * cs2 * phi_prime + cs2 * Laplacian_pi
+         /*Non-linear terms*/   + non_linearity * (
+         /*Non-linear(1,2)*/    - cs2 * (phi(x) - psi) * Laplacian_pi
+         /*Non-linear(3)  */    - 3. * cs2 * Hcon * (1. + ca2) * pi_k(x) * Laplacian_pi
+         /*Non-linear(3)  */    + (1. - cs2) * (zeta_half(x)) * Laplacian_pi
+          /*Non-linear(5,6,7)*/  - cs2 * Gradphi_Gradpi + Gradpsi_Gradpi - C3 * Gradpi_Gradpi
+         /*Non-linear(8)  */    + 2. * (1. - cs2) * GradZeta_Gradpi
+  /*Non-linear Higher order 9:*/   - (1. -cs2)/2. * Gradi_nablai_pi_Grad_pi_squared
+                                       )
+                                         )
+                                  );
+             }
+      }
+
 
 //////////////////////////
 // prepareFTsource (2)

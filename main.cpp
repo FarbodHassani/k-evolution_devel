@@ -121,7 +121,7 @@ int main(int argc, char **argv)
 	cosmology cosmo;
 	icsettings ic;
 	double T00hom;
-  #ifdef HAVE_CLASS_BG
+  #ifdef HAVE_HICLASS_BG
   gsl_interp_accel * acc = gsl_interp_accel_alloc();
   //Background variables EFTevolution //TODO_EB: add as many as necessary
   gsl_spline * H_spline = NULL;
@@ -132,7 +132,7 @@ int main(int argc, char **argv)
   gsl_spline * p_smg_spline = NULL;
   gsl_spline * rho_smg_prime_spline = NULL;
   gsl_spline * p_smg_prime_spline = NULL;
-  // gsl_spline * rho_crit_spline = NULL;
+  gsl_spline * rho_crit_spline = NULL;
   #endif
 
 #ifndef H5_DEBUG
@@ -229,7 +229,7 @@ int main(int argc, char **argv)
       if(parallel.isRoot())  COUT << " Precision parameters are found and being read!" <<" The number of precision parameters are:"<<numparam << endl;
     }
 	else numparam = 0;
-  #ifdef HAVE_CLASS_BG
+  #ifdef HAVE_HICLASS_BG
     //TODO_EB:add BG functions here
     initializeCLASSstructures(sim, ic, cosmo, class_background, class_thermo, class_perturbs, params, numparam);
     loadBGFunctions(class_background, H_spline, "H [1/Mpc]", sim.z_in);
@@ -241,7 +241,7 @@ int main(int argc, char **argv)
     loadBGFunctions(class_background, p_smg_prime_spline, "(.)p_smg_prime", sim.z_in);
     // loadBGFunctions(class_background, H_prime_spline, "H_prime", sim.z_in);
     loadBGFunctions(class_background, alpha_K_spline, "kineticity_smg", sim.z_in);
-    // loadBGFunctions(class_background, rho_crit_spline, "(.)rho_crit", sim.z_in);
+    loadBGFunctions(class_background, rho_crit_spline, "(.)rho_crit", sim.z_in);
   #endif
 #endif
 
@@ -429,7 +429,7 @@ int main(int argc, char **argv)
   // cout<<"Box: "<<sim.boxsize<<endl;
 	a = 1. / (1. + sim.z_in);
   tau = particleHorizon(a, fourpiG,
-    #ifdef HAVE_CLASS_BG
+    #ifdef HAVE_HICLASS_BG
     gsl_spline_eval(H_spline, 1., acc), class_background
     #else
     cosmo
@@ -437,7 +437,7 @@ int main(int argc, char **argv)
   );
 
   if (sim.Cf * dx < sim.steplimit / Hconf(a, fourpiG,
-    #ifdef HAVE_CLASS_BG
+    #ifdef HAVE_HICLASS_BG
       H_spline, acc
     #else
       cosmo
@@ -447,7 +447,7 @@ int main(int argc, char **argv)
     dtau = sim.Cf * dx;
   else
     dtau = sim.steplimit / 	Hconf(a, fourpiG,
-      #ifdef HAVE_CLASS_BG
+      #ifdef HAVE_HICLASS_BG
         H_spline, acc
       #else
         cosmo
@@ -675,7 +675,7 @@ string str_filename3 ;
 
       max_pi =maximum(  pi_k,
         Hconf(a, fourpiG,
-        #ifdef HAVE_CLASS_BG
+        #ifdef HAVE_HICLASS_BG
           H_spline, acc
         #else
           cosmo
@@ -773,7 +773,7 @@ string str_filename3 ;
             projection_Ti0_project(&pcls_cdm, &Bi, &phi, &chi);
             vertexProjectionCIC_comm(&Bi);
             compute_vi_rescaled(cosmo, &vi, &source, &Bi, a, a_old
-              #ifdef HAVE_CLASS_BG
+              #ifdef HAVE_HICLASS_BG
               , H_spline, acc
               #endif
             );
@@ -817,7 +817,7 @@ string str_filename3 ;
 if (sim.Kess_source_gravity==1)
 {
   Hc = Hconf(a, fourpiG,
-  #ifdef HAVE_CLASS_BG
+  #ifdef HAVE_HICLASS_BG
     H_spline, acc
   #else
     cosmo
@@ -826,6 +826,18 @@ if (sim.Kess_source_gravity==1)
 // Kessence projection Tmunu
 // In the projection zeta_integer comes, since synched with particles..
 
+
+#ifdef HAVE_HICLASS_BG // hiclass used to provide quantities!
+
+if (sim.vector_flag == VECTOR_ELLIPTIC)
+  {
+    projection_Tmunu_kessence_eq(T00_Kess, T0i_Kess, Tij_Kess, dx, a, phi, phi_old, chi, pi_k, zeta_half, gsl_spline_eval(rho_smg_spline, a, acc), gsl_spline_eval(p_smg_spline, a, acc), gsl_spline_eval(rho_crit_spline, a, acc), gsl_spline_eval(p_smg_prime_spline, a, acc)/gsl_spline_eval(rho_smg_prime_spline, a, acc), gsl_spline_eval(cs2_spline, a, acc), Hc, sim.NL_kessence ,1 );
+  }
+else
+  {
+    projection_Tmunu_kessence_eq(T00_Kess, T0i_Kess, Tij_Kess, dx, a, phi, phi_old, chi, pi_k, zeta_half, gsl_spline_eval(rho_smg_spline, a, acc), gsl_spline_eval(p_smg_spline, a, acc), gsl_spline_eval(rho_crit_spline, a, acc), gsl_spline_eval(p_smg_prime_spline, a, acc)/gsl_spline_eval(rho_smg_prime_spline, a, acc), gsl_spline_eval(cs2_spline, a, acc), Hc, sim.NL_kessence ,0 );
+  }
+#else // default kevolution // No hiclass BG used
  	if (sim.vector_flag == VECTOR_ELLIPTIC)
 		{
 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hc, fourpiG, sim.NL_kessence ,1 );
@@ -834,6 +846,7 @@ if (sim.Kess_source_gravity==1)
 		{
 			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hc, fourpiG, sim.NL_kessence, 0 );
 		}
+#endif
 
 		for (x.first(); x.test(); x.next())
 		{
@@ -873,7 +886,7 @@ if (sim.Kess_source_gravity==1)
 			if (dtau_old > 0.)
 			{
         Hc = Hconf(a, fourpiG,
-        #ifdef HAVE_CLASS_BG
+        #ifdef HAVE_HICLASS_BG
           H_spline, acc
         #else
           cosmo
@@ -944,19 +957,21 @@ if (sim.Kess_source_gravity==1)
 			}
 			else
 			{
-  #ifdef HAVE_CLASS_BG
+  #ifdef HAVE_HICLASS_BG
         if (cycle == 0)
-          fprintf(outfile, "# background statistics\n# 0:cycle      1:tau/boxsize      2:a      3:conf H/H0      4:conf H'/H0^2      5:alpha_K     6:c_s^2      7:c_s^2'/H0      8:rho_smg      9:p_smg      10:rho_smg_prime      10:p_smg_prime      11:phi(k=0)      12:T00(k=0)\n");
-        fprintf(outfile, " %6d   %e   %e   %e   %e    %e   %e   %e   %e   %e   %e   %e   %e\n", cycle, tau, a, Hconf(a, fourpiG,H_spline, acc) /
+          fprintf(outfile, "# background statistics\n# 0:cycle      1:tau/boxsize      2:a      3:conf H/H0      4:conf H'/H0^2      5:alpha_K     6:c_s^2      7:s=(c_s^2)'/(H_conf c_s^2)      8:c_a^2=p_smg'/rho_smg'      9:rho_smg      10:p_smg      11:rho_smg_prime      12:p_smg_prime      13:Omega_smg(rho_smg/rho_crit)      14:phi(k=0)      15:T00(k=0)\n");
+        fprintf(outfile, " %6d   %e   %e   %e   %e    %e   %e   %e   %e   %e   %e   %e   %e   %e   %e\n", cycle, tau, a, Hconf(a, fourpiG,H_spline, acc) /
         Hconf(1., fourpiG, H_spline, acc)
       , Hconf_prime(a, fourpiG, H_spline, acc)/Hconf(1., fourpiG, H_spline, acc)/Hconf(1., fourpiG, H_spline, acc)
       , gsl_spline_eval(alpha_K_spline, a, acc)
       , gsl_spline_eval(cs2_spline, a, acc)
-      , gsl_spline_eval(cs2_prime_spline, a, acc)/gsl_spline_eval(H_spline, 1, acc)
+      , gsl_spline_eval(cs2_prime_spline, a, acc)/gsl_spline_eval(cs2_spline, a, acc)/(a* gsl_spline_eval(H_spline, a, acc)) // s = (c_s^2)' [hiclass]/c_s^2/aH(hiclass) -- aH =ℋ, also prime means time derivative wrt conformal time.
+      , gsl_spline_eval(p_smg_prime_spline, a, acc)/gsl_spline_eval(rho_smg_prime_spline, a, acc) //ca2=p_smg'/rho_smg'
       , gsl_spline_eval(rho_smg_spline, a, acc)
       , gsl_spline_eval(p_smg_spline, a, acc)
       , gsl_spline_eval(rho_smg_prime_spline, a, acc)
       , gsl_spline_eval(p_smg_prime_spline, a, acc)
+      , gsl_spline_eval(rho_smg_spline, a, acc)/gsl_spline_eval(rho_crit_spline, a, acc)
       , scalarFT(kFT).real(), T00hom);
         fclose(outfile);
   #else
@@ -1040,7 +1055,7 @@ if (sim.Kess_source_gravity==1)
 // lightcone output
 if (sim.num_lightcone > 0)
   writeLightcones(sim, cosmo, fourpiG, a, tau, dtau, dtau_old, maxvel[0], cycle, h5filename + sim.basename_lightcone,
-  #ifdef HAVE_CLASS_BG
+  #ifdef HAVE_HICLASS_BG
 	class_background, H_spline, acc,
 	#endif
   &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &chi, &Bi, &Sij, &BiFT, &SijFT, &plan_Bi, &plan_Sij, done_hij, IDbacklog);
@@ -1062,7 +1077,7 @@ for (x.first(); x.test(); x.next())
 			COUT << COLORTEXT_CYAN << " writing snapshot" << COLORTEXT_RESET << " at z = " << ((1./a) - 1.) <<  " (cycle " << cycle << "), tau/boxsize = " << tau << endl;
 
 			writeSnapshots(sim, cosmo, fourpiG, a, dtau_old, done_hij, snapcount, h5filename + sim.basename_snapshot,
-       #ifdef HAVE_CLASS_BG
+       #ifdef HAVE_HICLASS_BG
        H_spline, acc,
        #endif
        &pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k,&zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT, &BiFT, &SijFT, &plan_phi, &plan_chi, &plan_Bi, &plan_source, &plan_Sij
@@ -1089,12 +1104,12 @@ for (x.first(); x.test(); x.next())
 
 #ifdef BACKREACTION_TEST
       writeSpectra_PoissonTerms(sim,  cosmo,  fourpiG,  a, pkcount,
-      #ifdef HAVE_CLASS_BG
+      #ifdef HAVE_HICLASS_BG
       H_spline, acc,
       #endif
       &short_wave, &short_wave_scalarFT , &short_wave_plan);
       writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount,
-      #ifdef HAVE_CLASS_BG
+      #ifdef HAVE_HICLASS_BG
       H_spline, acc,
       #endif
       &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
@@ -1104,7 +1119,7 @@ for (x.first(); x.test(); x.next())
 #if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
 
 				class_background, class_perturbs, ic,
-  #ifdef HAVE_CLASS_BG
+  #ifdef HAVE_HICLASS_BG
         H_spline, acc,
   #endif
 #endif
@@ -1123,14 +1138,14 @@ for (x.first(); x.test(); x.next())
     #ifdef EXACT_OUTPUT_REDSHIFTS
     		tmp = a;
         rungekutta4bg(tmp, fourpiG,
-          #ifdef HAVE_CLASS_BG
+          #ifdef HAVE_HICLASS_BG
             H_spline, acc,
           #else
             cosmo,
           #endif
           0.5 * dtau);
         rungekutta4bg(tmp, fourpiG,
-          #ifdef HAVE_CLASS_BG
+          #ifdef HAVE_HICLASS_BG
             H_spline, acc,
           #else
             cosmo,
@@ -1142,7 +1157,7 @@ for (x.first(); x.test(); x.next())
     		 writeSpectra(sim, cosmo, fourpiG, a, pkcount,
 #if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
     					class_background, class_perturbs, ic,
-      #ifdef HAVE_CLASS_BG
+      #ifdef HAVE_HICLASS_BG
             H_spline, acc,
       #endif
 #endif
@@ -1156,12 +1171,12 @@ for (x.first(); x.test(); x.next())
 		    );
     #ifdef BACKREACTION_TEST
     writeSpectra_PoissonTerms(sim,  cosmo,  fourpiG,  a, pkcount,
-    #ifdef HAVE_CLASS_BG
+    #ifdef HAVE_HICLASS_BG
     H_spline, acc,
     #endif
     &short_wave, &short_wave_scalarFT , &short_wave_plan);
     writeSpectra_phi_prime(sim, cosmo, fourpiG, a, pkcount,
-    #ifdef HAVE_CLASS_BG
+    #ifdef HAVE_HICLASS_BG
     H_spline, acc,
     #endif
     &phi_prime, &phi_prime_scalarFT, &phi_prime_plan);
@@ -1201,7 +1216,7 @@ for (x.first(); x.test(); x.next())
 			}
 
       COUT << "), time step / Hubble time = " << Hconf(a, fourpiG,
-      #ifdef HAVE_CLASS_BG
+      #ifdef HAVE_HICLASS_BG
         H_spline, acc
       #else
         cosmo
@@ -1231,7 +1246,7 @@ for (x.first(); x.test(); x.next())
 
         // We just need to update halo when we want to calculate spatial derivative or use some neibours at the same time! So here wo do not nee to update halo for phi_prime!
 
-#ifdef HAVE_CLASS_BG // If we have BG vlaues from hicalss/CLASS!
+#ifdef HAVE_HICLASS_BG // If we have BG vlaues from hicalss/CLASS!
 //**********************
 //Kessence - LeapFrog:START
 //**********************
@@ -1240,13 +1255,13 @@ for (x.first(); x.test(); x.next())
   {
     for (i=0;i<sim.nKe_numsteps;i++)
     {
-      update_zeta(-dtau/ (2. * sim.nKe_numsteps) , dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, H_spline, acc), Hconf_prime(a_kess, fourpiG, H_spline, acc), sim.NL_kessence);
+      update_zeta_eq(-dtau/ (2. * sim.nKe_numsteps), dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half,  gsl_spline_eval(cs2_spline, a_kess, acc), gsl_spline_eval(cs2_prime_spline, a_kess, acc)/gsl_spline_eval(cs2_spline, a_kess, acc)/(a_kess* gsl_spline_eval(H_spline, a_kess, acc)),  gsl_spline_eval(p_smg_prime_spline, a_kess, acc)/gsl_spline_eval(rho_smg_prime_spline, a_kess, acc), Hconf(a_kess, fourpiG, H_spline, acc), Hconf_prime(a_kess, fourpiG, H_spline, acc), sim.NL_kessence);
       zeta_half.updateHalo();
     }
   }
 	for (i=0;i<sim.nKe_numsteps;i++)
 	{
-    update_zeta(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, H_spline, acc), Hconf_prime(a_kess, fourpiG, H_spline, acc), sim.NL_kessence);
+    update_zeta_eq(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half,  gsl_spline_eval(cs2_spline, a_kess, acc), gsl_spline_eval(cs2_prime_spline, a_kess, acc)/gsl_spline_eval(cs2_spline, a_kess, acc)/(a_kess* gsl_spline_eval(H_spline, a_kess, acc)),  gsl_spline_eval(p_smg_prime_spline, a_kess, acc)/gsl_spline_eval(rho_smg_prime_spline, a_kess, acc), Hconf(a_kess, fourpiG, H_spline, acc), Hconf_prime(a_kess, fourpiG, H_spline, acc), sim.NL_kessence);
     zeta_half.updateHalo();
     rungekutta4bg(a_kess, fourpiG, H_spline, acc, dtau  / sim.nKe_numsteps / 2.0);
     //********************************************************************************
@@ -1254,26 +1269,27 @@ for (x.first(); x.test(); x.next())
     //In the pi update we also update zeta_int because we need the values of a_kess and H_kess at step n+1/2
     //By the below update we get pi(n+1) and zeta(n+1)
     //********************************************************************************
-    update_pi_k(dtau/ sim.nKe_numsteps, dx, a_kess, phi, phi_old, chi, chi_old, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hconf(a_kess, fourpiG, H_spline, acc), Hconf_prime(a_kess, fourpiG, H_spline, acc), sim.NL_kessence); // H_old is updated here in the function
+    update_pi_eq(dtau/ sim.nKe_numsteps, phi, phi_old, chi, chi_old, pi_k, zeta_half, Hconf(a_kess, fourpiG, H_spline, acc)); // H_old is updated here in the function
 		pi_k.updateHalo();
 
     //********************************************************************************
     // Now we have pi(n+1) and a_kess(n+1/2) so we update background by halfstep to have a_kess(n+1)
     //********************************************************************************
     rungekutta4bg(a_kess, fourpiG,
-      #ifdef HAVE_CLASS_BG
+      #ifdef HAVE_HICLASS_BG
         H_spline, acc,
       #else
         cosmo,
       #endif
       dtau  / sim.nKe_numsteps / 2.0 );
+
+      // NL TESTS
       #ifdef BACKREACTION_TEST
       //   //Make snapshots and power arround blowup TIME
       avg_zeta =average(  zeta_half,1., numpts3d ) ;
       avg_zeta_old =average(  zeta_half_old,1., numpts3d ) ;
       avg_pi =average(  pi_k,1., numpts3d ) ;
       avg_phi =average(  phi , 1., numpts3d ) ;
-
       // avg_pi_old =average(  pi_k_old, 1., numpts3d ) ;
 
       if ( avg_zeta > 1.e-7 && abs(avg_zeta/avg_zeta_old)>1.02 && snapcount_b< sim.num_snapshot_kess )
@@ -1303,7 +1319,6 @@ for (x.first(); x.test(); x.next())
 
           out_snapshots<<setw(9) << tau + dtau/sim.nKe_numsteps <<"\t"<< setw(9) << 1./(a_kess) -1.0 <<"\t"<< setw(9) << a_kess <<"\t"<< setw(9) << avg_zeta <<"\t"<< setw(9) << avg_pi <<"\t"<< setw(9) << avg_phi <<"\t"<< setw(9) <<tau <<"\t"<< setw(9) <<Hconf(a_kess, fourpiG, cosmo) / Hconf(1., fourpiG, cosmo)<<"\t"<< setw(9) <<snapcount_b  <<endl;
         }
-
     #endif
     }
 
@@ -1313,7 +1328,7 @@ for (x.first(); x.test(); x.next())
     ref_time = MPI_Wtime();
 #endif
 
-#else // If not HAVE_CLASS_BG
+#else // If not HAVE_HICLASS_BG We use  kevolution with w, c_s^2 constants.
 //**********************
 //Kessence - LeapFrog:START
 //**********************
@@ -1414,7 +1429,7 @@ for (x.first(); x.test(); x.next())
 #endif
 
 				rungekutta4bg(tmp, fourpiG,
-        #ifdef HAVE_CLASS_BG
+        #ifdef HAVE_HICLASS_BG
           H_spline, acc,
         #else
           cosmo,
@@ -1433,7 +1448,7 @@ for (x.first(); x.test(); x.next())
 				ref2_time = MPI_Wtime();
 #endif
 				rungekutta4bg(tmp, fourpiG,
-          #ifdef HAVE_CLASS_BG
+          #ifdef HAVE_HICLASS_BG
             H_spline, acc,
           #else
             cosmo,
@@ -1465,7 +1480,7 @@ for (x.first(); x.test(); x.next())
 #endif
 
       rungekutta4bg(a, fourpiG,
-      #ifdef HAVE_CLASS_BG
+      #ifdef HAVE_HICLASS_BG
         H_spline, acc,
       #else
         cosmo,
@@ -1493,7 +1508,7 @@ for (x.first(); x.test(); x.next())
 #endif
 
     rungekutta4bg(a, fourpiG,
-      #ifdef HAVE_CLASS_BG
+      #ifdef HAVE_HICLASS_BG
         H_spline, acc,
       #else
         cosmo,
@@ -1554,7 +1569,7 @@ for (x.first(); x.test(); x.next())
 		dtau_old = dtau;
 
     if (sim.Cf * dx < sim.steplimit / Hconf(a, fourpiG,
-    #ifdef HAVE_CLASS_BG
+    #ifdef HAVE_HICLASS_BG
       H_spline, acc
     #else
       cosmo
@@ -1563,7 +1578,7 @@ for (x.first(); x.test(); x.next())
 			dtau = sim.Cf * dx;
 		else
       dtau = sim.steplimit / Hconf(a, fourpiG,
-      #ifdef HAVE_CLASS_BG
+      #ifdef HAVE_HICLASS_BG
         H_spline, acc
       #else
         cosmo

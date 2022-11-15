@@ -58,8 +58,16 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
 	int recfast_Nz0;
 	int i;
   int num_entries;
-  num_entries = 31; // If we have EFT theory we have to read 30 class params
-
+  #ifdef HAVE_HICLASS_BG
+  if (cosmo.gravity_model==0)
+    num_entries = 31; // If we have EFT theory - propto_omega we have to read 30 class params
+  else if (cosmo.gravity_model==1)
+  {
+    num_entries = 29;
+  }
+  #else
+    num_entries = 31;
+  #endif
 #ifdef CLASS_K_PER_DECADE_FOR_PK
 	int k_per_decade_for_pk;
 	if (numparam == 0 || !parseParameter(params, numparam, "k_per_decade_for_pk", k_per_decade_for_pk))
@@ -190,23 +198,49 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
   sprintf(class_filecontent.name[i], "Omega_smg");
   sprintf(class_filecontent.value[i++], "%d", -1);
 
+  #ifdef HAVE_HICLASS_BG
+  if (cosmo.gravity_model==0)
+  {
+    sprintf(class_filecontent.name[i], "gravity_model");
+    sprintf(class_filecontent.value[i++], "propto_omega");
+
+    sprintf(class_filecontent.name[i], "expansion_model");
+    sprintf(class_filecontent.value[i++], "wowa");
+
+    sprintf(class_filecontent.name[i], "expansion_smg");
+    sprintf(class_filecontent.value[i++],"%e, %e, %e",cosmo.Omega_kessence, cosmo.w_kessence, 0.0);
+
+    sprintf(class_filecontent.name[i], "parameters_smg");
+    sprintf(class_filecontent.value[i++],"%e, %e, %e, %e, %e", 3.0 * (1+cosmo.w_kessence)/cosmo.cs2_kessence, 0.0, 0.0, 0.0, 1.0);
+  }
+  else if (cosmo.gravity_model==1)
+  {
+    sprintf(class_filecontent.name[i], "gravity_model");
+    sprintf(class_filecontent.value[i++], "k_essence_power");
+
+    sprintf(class_filecontent.name[i], "parameters_smg");
+    sprintf(class_filecontent.value[i++],"%e, %e, %e, %e, %e, %e",cosmo.Xt, cosmo.g0, cosmo.g2, cosmo.g4, cosmo.phi_i, cosmo.X_i);
+  }
+  #else
+  sprintf(class_filecontent.name[i], "gravity_model");
+  sprintf(class_filecontent.value[i++], "propto_omega");
+
   sprintf(class_filecontent.name[i], "expansion_model");
   sprintf(class_filecontent.value[i++], "wowa");
 
   sprintf(class_filecontent.name[i], "expansion_smg");
   sprintf(class_filecontent.value[i++],"%e, %e, %e",cosmo.Omega_kessence, cosmo.w_kessence, 0.0);
 
-  sprintf(class_filecontent.name[i], "gravity_model");
-  sprintf(class_filecontent.value[i++], "propto_omega");
-  //
   sprintf(class_filecontent.name[i], "parameters_smg");
   sprintf(class_filecontent.value[i++],"%e, %e, %e, %e, %e", 3.0 * (1+cosmo.w_kessence)/cosmo.cs2_kessence, 0.0, 0.0, 0.0, 1.0);
+  #endif
+  //
 
   sprintf(class_filecontent.name[i], "tuning_dxdy_guess_smg");
-  sprintf(class_filecontent.value[i++], "%d", 1);
+  sprintf(class_filecontent.value[i++], "%e", 1.e-7);
 
   sprintf(class_filecontent.name[i], "tuning_index_smg");
-  sprintf(class_filecontent.value[i++], "%f", 1.e-7);
+  sprintf(class_filecontent.value[i++], "%f", 1.);
 
 #ifdef CLASS_K_PER_DECADE_FOR_PK
 	sprintf(class_filecontent.name[i], "k_per_decade_for_pk");
@@ -561,7 +595,7 @@ void loadTransferFunctions(background & class_background, perturbs & class_pertu
 	free(tk_t);
 }
 
-#ifdef HAVE_CLASS_BG
+#ifdef HAVE_HICLASS_BG
 //////////////////////////
 // Load background functions
 //////////////////////////
@@ -616,7 +650,7 @@ void loadBGFunctions(background & class_background, gsl_spline * & bg_data, cons
 	data = (double *) malloc(sizeof(double) * cols * class_background.bt_size);
 	if(!data)
   {
-    COUT << " error in loadBGFunctions (HAVE_CLASS_BG)! Unable to allocate memory!" << endl;
+    COUT << " error in loadBGFunctions (HAVE_HICLASS_BG)! Unable to allocate memory!" << endl;
     parallel.abortForce();
   }
 
@@ -626,7 +660,7 @@ void loadBGFunctions(background & class_background, gsl_spline * & bg_data, cons
   bg = (double *) malloc(sizeof(double) * (class_background.bt_size-bg_size+num_points));
 	if(!a || !bg)
   {
-    COUT << " error in loadBGFunctions (HAVE_CLASS_BG)! Unable to allocate memory!" << endl;
+    COUT << " error in loadBGFunctions (HAVE_HICLASS_BG)! Unable to allocate memory!" << endl;
     parallel.abortForce();
   }
 
