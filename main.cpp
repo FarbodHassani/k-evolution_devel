@@ -831,20 +831,20 @@ if (sim.Kess_source_gravity==1)
 
 if (sim.vector_flag == VECTOR_ELLIPTIC)
   {
-    projection_Tmunu_kessence_eq(T00_Kess, T0i_Kess, Tij_Kess, dx, a, phi, phi_old, chi, pi_k, zeta_half, gsl_spline_eval(rho_smg_spline, a, acc), gsl_spline_eval(p_smg_spline, a, acc), gsl_spline_eval(rho_crit_spline, a, acc), gsl_spline_eval(p_smg_prime_spline, a, acc)/gsl_spline_eval(rho_smg_prime_spline, a, acc), gsl_spline_eval(cs2_spline, a, acc), Hc, sim.NL_kessence ,1 );
+    projection_Tmunu_kessence_eq(T00_Kess, T0i_Kess, Tij_Kess, dx, a, phi, phi_old, chi, pi_k, zeta_half, gsl_spline_eval(rho_smg_spline, a, acc), gsl_spline_eval(p_smg_spline, a, acc), gsl_spline_eval(rho_crit_spline, 1., acc), gsl_spline_eval(p_smg_prime_spline, a, acc)/gsl_spline_eval(rho_smg_prime_spline, a, acc), gsl_spline_eval(cs2_spline, a, acc), Hc, sim.NL_kessence, 1);
   }
 else
   {
-    projection_Tmunu_kessence_eq(T00_Kess, T0i_Kess, Tij_Kess, dx, a, phi, phi_old, chi, pi_k, zeta_half, gsl_spline_eval(rho_smg_spline, a, acc), gsl_spline_eval(p_smg_spline, a, acc), gsl_spline_eval(rho_crit_spline, a, acc), gsl_spline_eval(p_smg_prime_spline, a, acc)/gsl_spline_eval(rho_smg_prime_spline, a, acc), gsl_spline_eval(cs2_spline, a, acc), Hc, sim.NL_kessence ,0 );
+    projection_Tmunu_kessence_eq(T00_Kess, T0i_Kess, Tij_Kess, dx, a, phi, phi_old, chi, pi_k, zeta_half, gsl_spline_eval(rho_smg_spline, a, acc), gsl_spline_eval(p_smg_spline, a, acc), gsl_spline_eval(rho_crit_spline, 1., acc), gsl_spline_eval(p_smg_prime_spline, a, acc)/gsl_spline_eval(rho_smg_prime_spline, a, acc), gsl_spline_eval(cs2_spline, a, acc), Hc, sim.NL_kessence, 0);
   }
 #else // default kevolution // No hiclass BG used
  	if (sim.vector_flag == VECTOR_ELLIPTIC)
 		{
-			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hc, fourpiG, sim.NL_kessence ,1 );
+			projection_Tmunu_kessence(T00_Kess, T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hc, fourpiG, sim.NL_kessence, 1);
 		}
  	else
 		{
-			projection_Tmunu_kessence( T00_Kess,T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hc, fourpiG, sim.NL_kessence, 0 );
+			projection_Tmunu_kessence(T00_Kess, T0i_Kess,Tij_Kess, dx, a, phi, phi_old, 	chi, pi_k, zeta_half, cosmo.Omega_kessence, cosmo.w_kessence, cosmo.cs2_kessence, Hc, fourpiG, sim.NL_kessence, 0);
 		}
 #endif
 
@@ -1117,10 +1117,9 @@ for (x.first(); x.test(); x.next())
 
 			writeSpectra(sim, cosmo, fourpiG, a, pkcount,
 #if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
-
 				class_background, class_perturbs, ic,
   #ifdef HAVE_HICLASS_BG
-        H_spline, acc,
+        H_spline, acc, gsl_spline_eval(rho_smg_spline, a, acc), gsl_spline_eval(rho_crit_spline, 1., acc),
   #endif
 #endif
 				&pcls_cdm, &pcls_b, pcls_ncdm, &phi, &pi_k,&zeta_half, &chi, &Bi, &T00_Kess, &T0i_Kess, &Tij_Kess ,&source, &Sij, &scalarFT, &scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k , &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij
@@ -1158,7 +1157,7 @@ for (x.first(); x.test(); x.next())
 #if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
     					class_background, class_perturbs, ic,
       #ifdef HAVE_HICLASS_BG
-            H_spline, acc,
+         H_spline, acc, gsl_spline_eval(rho_smg_spline, a, acc), gsl_spline_eval(rho_crit_spline, 1., acc),
       #endif
 #endif
     					&pcls_cdm, &pcls_b, pcls_ncdm, &phi,&pi_k, &zeta_half, &chi, &Bi,&T00_Kess, &T0i_Kess, &Tij_Kess, &source, &Sij, &scalarFT ,&scalarFT_pi, &scalarFT_zeta_half, &BiFT, &T00_KessFT, &T0i_KessFT, &Tij_KessFT, &SijFT, &plan_phi, &plan_pi_k, &plan_zeta_half, &plan_chi, &plan_Bi, &plan_T00_Kess, &plan_T0i_Kess, &plan_Tij_Kess, &plan_source, &plan_Sij

@@ -60,13 +60,18 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
   int num_entries;
   #ifdef HAVE_HICLASS_BG
   if (cosmo.gravity_model==0)
-    num_entries = 31; // If we have EFT theory - propto_omega we have to read 30 class params
+    num_entries = 29; // If we have EFT theory - propto_omega we have to read 30 class params
   else if (cosmo.gravity_model==1)
   {
-    num_entries = 29;
+    num_entries = 27;
+  }
+  else
+  {
+    if(parallel.isRoot())  cout << " \033[1;31m ERROR: The k-essence gravity is not specified correctly!  \033[0m"<< endl;
+    parallel.abortForce();
   }
   #else
-    num_entries = 31;
+    num_entries = 29;
   #endif
 #ifdef CLASS_K_PER_DECADE_FOR_PK
 	int k_per_decade_for_pk;
@@ -236,11 +241,11 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
   #endif
   //
 
-  sprintf(class_filecontent.name[i], "tuning_dxdy_guess_smg");
-  sprintf(class_filecontent.value[i++], "%e", 1.e-7);
-
-  sprintf(class_filecontent.name[i], "tuning_index_smg");
-  sprintf(class_filecontent.value[i++], "%f", 1.);
+  // sprintf(class_filecontent.name[i], "tuning_dxdy_guess_smg");
+  // sprintf(class_filecontent.value[i++], "%e", 1.e-7);
+  //
+  // sprintf(class_filecontent.name[i], "tuning_index_smg");
+  // sprintf(class_filecontent.value[i++], "%f", 1.);
 
 #ifdef CLASS_K_PER_DECADE_FOR_PK
 	sprintf(class_filecontent.name[i], "k_per_decade_for_pk");

@@ -1849,7 +1849,7 @@ void writeSpectra(metadata & sim, cosmology & cosmo, const double fourpiG, const
 #if defined(HAVE_CLASS) || defined(HAVE_HICLASS)
 background & class_background, perturbs & class_perturbs, icsettings & ic,
 #ifdef HAVE_HICLASS_BG
-gsl_spline * H_spline, gsl_interp_accel * acc,
+gsl_spline * H_spline, gsl_interp_accel * acc, const double rho_s, const double rho_crit_0,
 #endif
 #endif
 Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_cdm, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_b, Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_ncdm, Field<Real> * phi, Field<Real> * pi_k ,Field<Real> * zeta, Field<Real> * chi, Field<Real> * Bi,  Field<Real> * T00_Kess, Field<Real> * T0i_Kess, Field<Real> * Tij_Kess, Field<Real> * source, Field<Real> * Sij, Field<Cplx> * scalarFT, Field<Cplx> * scalarFT_pi, Field<Cplx> * scalarFT_zeta, Field<Cplx> * BiFT, Field<Cplx> * T00_KessFT, Field<Cplx> * T0i_KessFT, Field<Cplx> * Tij_KessFT, Field<Cplx> * SijFT, PlanFFT<Cplx> * plan_phi, PlanFFT<Cplx> * plan_pi_k , PlanFFT<Cplx> * plan_zeta, PlanFFT<Cplx> * plan_chi, PlanFFT<Cplx> * plan_Bi, PlanFFT<Cplx> * plan_T00_Kess, PlanFFT<Cplx> * plan_T0i_Kess, PlanFFT<Cplx> * plan_Tij_Kess, PlanFFT<Cplx> * plan_source, PlanFFT<Cplx> * plan_Sij
@@ -2071,14 +2071,17 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 
 	   if (sim.out_pk & MASK_DELTA_KESS)
 		{
+      plan_T00_Kess->execute(FFT_FORWARD);
+      extractPowerSpectrum(*T00_KessFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
+      sprintf(filename, "%s%s%03d_delta_kess.dat", sim.output_path, sim.basename_pk, pkcount);
+      #ifdef HAVE_HICLASS_BG
+        writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * pow(a,3) * (rho_s/rho_crit_0) * pow(a,3) * (rho_s/rho_crit_0), filename, "power spectrum of delta_kessence", a, sim.z_pk[pkcount]);
+      #else
 			// P (\delta)= deltarho_kess^2/ Omega_kess *a^(-3(1+w)) ) Omega_kess *a^(-3(1+w)) ) since in the defnition we have a^3 T00
 			// We already included a^(-3) in the denominator, so we only need take the rest into account.
-			plan_T00_Kess->execute(FFT_FORWARD);
-			extractPowerSpectrum(*T00_KessFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
-			sprintf(filename, "%s%s%03d_delta_kess.dat", sim.output_path, sim.basename_pk, pkcount);
-			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI* cosmo.Omega_kessence * cosmo.Omega_kessence * pow(a, -3.* cosmo.w_kessence) * pow(a, -3.* cosmo.w_kessence), filename, "power spectrum of delta_kessence", a, sim.z_pk[pkcount]);
+        writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI* cosmo.Omega_kessence * cosmo.Omega_kessence * pow(a, -3.* cosmo.w_kessence) * pow(a, -3.* cosmo.w_kessence), filename, "power spectrum of delta_kessence", a, sim.z_pk[pkcount]);
+      #endif
     }
-
 	   //KESSENCE END
 
 	if (sim.out_pk & MASK_CHI)
@@ -2166,7 +2169,11 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
        // Which are just a^{-3w} and Omega_kess and Omega_m
       extractCrossSpectrum(*scalarFT, *T00_KessFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
       sprintf(filename, "%s%s%03d_deltakess_deltam.dat", sim.output_path, sim.basename_pk, pkcount);
+      #ifdef HAVE_HICLASS_BG
+      writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * (cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) * pow(a,3) * rho_s/rho_crit_0 , filename, "cross power spectrum of delta_m and  delta_kess", a, sim.z_pk[pkcount]);
+      #else
       writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * (cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) * cosmo.Omega_kessence *  pow(a, -3.* cosmo.w_kessence)  , filename, "cross power spectrum of delta_m and  delta_kess", a, sim.z_pk[pkcount]);
+      #endif
     }
 
 		if (cosmo.num_ncdm > 0 || sim.baryon_flag)

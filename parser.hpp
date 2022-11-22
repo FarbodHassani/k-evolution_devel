@@ -1710,14 +1710,6 @@ parallel.abortForce();
 		cosmo.h = P_HUBBLE;
 	}
 	// K-essence  paramteres
-
-  #if !defined(HAVE_HICLASS) || !defined(HAVE_HICLASS_BG)
-    if (sim.bg_hiclass==1)
-    {
-      if(parallel.isRoot())  cout << " \033[1;31m ERROR: The background params are requested while the code is not compiled with hiclass properly! You might need to add DGEVOLUTION  += -DHAVE_HICLASS or DHAVE_HICLASS_BG \033[0m"<< endl;
-      parallel.abortForce();
-    }
-    #endif
     #if defined(HAVE_HICLASS) || defined(HAVE_HICLASS_BG)
     if (parseParameter(params, numparam, "gravity_model", par_string))
     {
@@ -1869,7 +1861,7 @@ parallel.abortForce();
     }
   #endif
 
-  #if !defined(HAVE_HICLASS) || !defined(HAVE_HICLASS_BG)
+  #if !defined(HAVE_HICLASS_BG)
   if (sim.bg_hiclass==1)
   {
     if(parallel.isRoot())  cout << " \033[1;31m ERROR: The background params are requested while the code is not compiled with hiclass properly! You might need to add DGEVOLUTION  += -DHAVE_HICLASS or DHAVE_HICLASS_BG \033[0m"<< endl;
