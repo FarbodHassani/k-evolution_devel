@@ -4,9 +4,11 @@
 //
 // code components related to background evolution
 //
-// Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
+// Author (k-evolution): Farbod Hassani (Université de Genève & Universitetet i Oslo)
+// Author (gevolution): Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
+// Some changes are done by Emilio Bellini (Université de Genève)
 //
-// Last modified: September 2018
+// Last modified: September 2021
 //
 //////////////////////////
 

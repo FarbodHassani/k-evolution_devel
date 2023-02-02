@@ -18,9 +18,14 @@
 // 4. Fourier-space projection methods for the computation of the
 //    curl and divergence of the velocity field
 //
+// 5. k-eseence field solver and stress energytensor construction
+//      [see arXiv:1910.01104, arXiv:1910.01105] for the non-linear phenomona
+//      [see arXiv:2107.14215, arXiv:2204.13098, arXiv:2205.01055 ]
+//
+// Author (k-evolution): Farbod Hassani (Université de Genève & Universitetet i Oslo)
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
-// Last modified: April 2019
+// Last modified: Jan 2022 by FH
 //
 //////////////////////////
 
@@ -428,7 +433,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
           }
         }
 
-#ifdef BACKREACTION_TEST
+#ifdef NONLINEAR_TEST
   //Checking field
     template <class FieldType>
     void check_field(Field<FieldType> & field, double constant , string field_name, long n3, string message = "")

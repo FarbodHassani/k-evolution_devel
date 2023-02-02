@@ -4,6 +4,7 @@
 //
 // Collection of analysis tools for gevolution
 //
+// Author (k-evolution): Farbod Hassani (Université de Genève & Universitetet i Oslo)
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
 // Last modified: April 2019

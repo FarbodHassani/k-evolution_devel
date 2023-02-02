@@ -4,9 +4,10 @@
 //
 // interface to linear Boltzmann code CLASS
 //
+// Author (k-evolution): Farbod Hassani (Université de Genève & Universitetet i Oslo)
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
-// Last modified: November 2019
+// Last modified: Jan 2023
 //
 //////////////////////////
 
@@ -631,7 +632,7 @@ void loadBGFunctions(background & class_background, gsl_spline * & bg_data, cons
   int num_points=30;
 	int bg_size=0;
   double dz=0.005/num_points;
-  double z1,z2;
+  double z1, z2;
 	// Get the names of the background variables as a single string
 	background_output_titles(&class_background, coltitles);
 

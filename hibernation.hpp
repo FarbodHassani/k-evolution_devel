@@ -3,10 +3,10 @@
 //////////////////////////
 //
 // Auxiliary functions for hibernation
-//
+// Author (k-evolution): Farbod Hassani (Université de Genève & Universitetet i Oslo)
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
-// Last modified: February 2019
+// Last modified: February 2020 by FH
 //
 //////////////////////////
 

@@ -4,6 +4,7 @@
 //
 // read initial conditions from disk
 //
+// Author (k-evolution): Farbod Hassani (Université de Genève & Universitetet i Oslo)
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
 // Last modified: August 2019

@@ -20,13 +20,13 @@ DLATFIELD2   := -DFFT3D -DHDF5
 # optional compiler settings (gevolution)
 DGEVOLUTION  := -DPHINONLINEAR
 DGEVOLUTION  += -DBENCHMARK
-#DGEVOLUTION  += -DBACKREACTION_TEST
+#DGEVOLUTION  += -NONLINEAR_TEST # for the non-linear instability tests
 DGEVOLUTION  += -DEXACT_OUTPUT_REDSHIFTS
 #DGEVOLUTION  += -DVELOCITY      # enables velocity field utilities
 DGEVOLUTION  += -DCOLORTERMINAL
 #DGEVOLUTION  += -DCHECK_B
-DGEVOLUTION  += -DHAVE_CLASS    # -DHAVE_HICLASS  or -DHAVE_CLASS requires LIB -lclass. The initial conditions are provided by hiclass!
-#DGEVOLUTION  += -DHAVE_HICLASS_BG    # -DHAVE_HICLASS requires LIB -lclass. The BG quantities are provided by hiclass and also parameters like c_s^2,w ...
+DGEVOLUTION  += -DHAVE_HICLASS    # -DHAVE_HICLASS  or -DHAVE_CLASS requires LIB -lclass. The initial conditions are provided by hiclass!
+DGEVOLUTION  += -DHAVE_HICLASS_BG    # -DHAVE_HICLASS requires LIB -lclass. The BG quantities are provided by hiclass and also parameters like c_s^2,w ...
 #DGEVOLUTION  += -DHAVE_HEALPIX  # requires LIB -lchealpix
 
 CDBG +=

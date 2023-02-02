@@ -4,6 +4,7 @@
 //
 // Output of snapshots, light cones and spectra
 //
+// Author (k-evolution): Farbod Hassani (Université de Genève & Universitetet i Oslo)
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris)
 //
 // Last modified: April 2019

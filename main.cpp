@@ -1,5 +1,5 @@
 //////////////////////////
-// Copyright (c) 2015-2019 Julian Adamek
+// Copyright (c) 2015-2019 Julian Adamek/ 2019 -2023 Farbod Hassani
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -24,18 +24,17 @@
 // main.cpp
 //////////////////////////
 //
-// main control sequence of Geneva N-body code with evolution of metric perturbations (gevolution)
+// main control sequence of k-evolution N-body code based on gevolution.
+// Author (k-evolution): Farbod Hassani (Université de Genève & Universitetet i Oslo)
+// Author (gevolution): Julian Adamek  (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
-// Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
-//
-// Last modified: May 2019
-
+// Last modified: Feb 2 2023  by Farbod Hassani
 //
 //////////////////////////
 #include <stdlib.h>
 #include <set>
 #include <vector>
-#ifdef BACKREACTION_TEST
+#ifdef NONLINEAR_TEST
 #include <iomanip>
 #include<fstream>
 #include<sstream>
@@ -104,7 +103,6 @@ int main(int argc, char **argv)
 	int n = 0, m = 0;
 	int io_size = 0;
 	int io_group_size = 0;
-
 	int i, j, cycle = 0, snapcount = 0, snapcount_b=1, pkcount = 0, restartcount = 0, usedparams, numparam = 0, numsteps, numspecies, done_hij;
 	int numsteps_ncdm[MAX_PCL_SPECIES-2];
 	long numpts3d;
@@ -123,12 +121,14 @@ int main(int argc, char **argv)
 	double T00hom;
   #ifdef HAVE_HICLASS_BG
   gsl_interp_accel * acc = gsl_interp_accel_alloc();
-  //Background variables EFTevolution //TODO_EB: add as many as necessary
   gsl_spline * H_spline = NULL;
   gsl_spline * cs2_spline = NULL;
   gsl_spline * alpha_K_spline = NULL;
   gsl_spline * cs2_prime_spline = NULL;
   gsl_spline * rho_smg_spline = NULL;
+  gsl_spline * rho_cdm_spline = NULL;
+  gsl_spline * rho_b_spline = NULL;
+  gsl_spline * rho_g_spline = NULL;
   gsl_spline * p_smg_spline = NULL;
   gsl_spline * rho_smg_prime_spline = NULL;
   gsl_spline * p_smg_prime_spline = NULL;
@@ -236,10 +236,12 @@ int main(int argc, char **argv)
     loadBGFunctions(class_background, cs2_spline, "c_s^2", sim.z_in);
     loadBGFunctions(class_background, cs2_prime_spline, "c_s^2_prime", sim.z_in);
     loadBGFunctions(class_background, rho_smg_spline, "(.)rho_smg", sim.z_in);
+    loadBGFunctions(class_background, rho_cdm_spline, "(.)rho_cdm", sim.z_in);
+    loadBGFunctions(class_background, rho_b_spline, "(.)rho_b", sim.z_in);
+    loadBGFunctions(class_background, rho_g_spline, "(.)rho_g", sim.z_in);
     loadBGFunctions(class_background, p_smg_spline, "(.)p_smg", sim.z_in);
     loadBGFunctions(class_background, rho_smg_prime_spline, "(.)rho_smg_prime", sim.z_in);
     loadBGFunctions(class_background, p_smg_prime_spline, "(.)p_smg_prime", sim.z_in);
-    // loadBGFunctions(class_background, H_prime_spline, "H_prime", sim.z_in);
     loadBGFunctions(class_background, alpha_K_spline, "kineticity_smg", sim.z_in);
     loadBGFunctions(class_background, rho_crit_spline, "(.)rho_crit", sim.z_in);
   #endif
@@ -281,7 +283,7 @@ int main(int argc, char **argv)
 	Field<Real> phi_old;
   //phi at two step before to compute phi'(n+1/2)
 	Field<Real> phi_prime;
-  #ifdef BACKREACTION_TEST
+  #ifdef NONLINEAR_TEST
   Field<Real> short_wave;
   Field<Real> relativistic_term;
   Field<Real> stress_tensor;
@@ -298,7 +300,7 @@ int main(int argc, char **argv)
 	Field<Real> Tij_Kess;
 	Field<Cplx> scalarFT_phi_old;
 	Field<Cplx> phi_prime_scalarFT;
-  #ifdef BACKREACTION_TEST
+  #ifdef NONLINEAR_TEST
   Field<Cplx> short_wave_scalarFT;
   Field<Cplx> relativistic_term_scalarFT;
   Field<Cplx> stress_tensor_scalarFT;
@@ -337,7 +339,7 @@ int main(int argc, char **argv)
   	PlanFFT<Cplx> plan_vi(&vi, &viFT);
   	double a_old;
   #endif
-  #ifdef BACKREACTION_TEST
+  #ifdef NONLINEAR_TEST
   if(parallel.isRoot()) cout << "\033[1;32m The blowup tests are requested\033[0m\n";
     pi_k_old.initialize(lat,1);
   	scalarFT_pi_old.initialize(latFT,1);
@@ -357,7 +359,7 @@ int main(int argc, char **argv)
 	phi_prime_scalarFT.initialize(latFT,1);
 	PlanFFT<Cplx> phi_prime_plan(&phi_prime, &phi_prime_scalarFT);
   //Relativistic corrections
-  #ifdef BACKREACTION_TEST
+  #ifdef NONLINEAR_TEST
   short_wave.initialize(lat,1);
   short_wave_scalarFT.initialize(latFT,1);
   PlanFFT<Cplx> short_wave_plan(&short_wave, &short_wave_scalarFT);
@@ -536,7 +538,7 @@ int main(int argc, char **argv)
 #endif
 
 
-#ifdef BACKREACTION_TEST
+#ifdef NONLINEAR_TEST
 
 // In case we want to initialize the IC ourselves
 for (x.first(); x.test(); x.next())
@@ -664,7 +666,7 @@ string str_filename3 ;
   			chi_old(x) =chi(x);
          // if(x.coord(0)==32 && x.coord(1)==12 && x.coord(2)==32) cout<<"zeta_half: "<<zeta_half(x)<<endl;
   		}
-#ifdef BACKREACTION_TEST
+#ifdef NONLINEAR_TEST
       //****************************
       //****PRINTING AVERAGE OVER TIME
       //****************************
@@ -826,7 +828,6 @@ if (sim.Kess_source_gravity==1)
 // Kessence projection Tmunu
 // In the projection zeta_integer comes, since synched with particles..
 
-
 #ifdef HAVE_HICLASS_BG // hiclass used to provide quantities!
 
 if (sim.vector_flag == VECTOR_ELLIPTIC)
@@ -892,7 +893,7 @@ else
           cosmo
         #endif
           );
-        #ifdef BACKREACTION_TEST
+        #ifdef NONLINEAR_TEST
 				prepareFTsource_BackReactionTest<Real>(short_wave, dx, phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hc * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hc * Hc * dx * dx, sim.boxsize);  // prepare nonlinear source for phi update
         #else
         prepareFTsource<Real>(phi, chi, source, cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo), source, 3. * Hc * dx * dx / dtau_old, fourpiG * dx * dx / a, 3. * Hc * Hc * dx * dx);  // prepare nonlinear source for phi update
@@ -959,8 +960,8 @@ else
 			{
   #ifdef HAVE_HICLASS_BG
         if (cycle == 0)
-          fprintf(outfile, "# background statistics\n# 0:cycle      1:tau/boxsize      2:a      3:conf H/H0      4:conf H'/H0^2      5:alpha_K     6:c_s^2      7:s=(c_s^2)'/(H_conf c_s^2)      8:c_a^2=p_smg'/rho_smg'      9:rho_smg      10:p_smg      11:rho_smg_prime      12:p_smg_prime      13:Omega_smg(rho_smg/rho_crit)      14:phi(k=0)      15:T00(k=0)\n");
-        fprintf(outfile, " %6d   %e   %e   %e   %e    %e   %e   %e   %e   %e   %e   %e   %e   %e   %e\n", cycle, tau, a, Hconf(a, fourpiG,H_spline, acc) /
+          fprintf(outfile, "# background statistics \n#All the values except 'a' and 'T00' are computed in the hiclass. the quantities rho_x, rho_x_prime are in unit of hiclass, T00 is in the k-evolution code's unit\n# 0:cycle             1:tau/boxsize             2:a             3:conf H/H0      4:conf H'/H0^2             5:alpha_K             6:c_s^2             7:s=(c_s^2)'/(H_conf c_s^2)             8:c_a^2=p_smg'/rho_smg'             9:rho_smg             10:rho_cdm      11:rho_b             12:rho_g             13:p_smg             14:rho_smg_prime             15:p_smg_prime             16:Omega_smg(rho_smg/rho_crit)             17:phi(k=0)             18:T00(k=0)\n");
+        fprintf(outfile, " %6d   %e   %e   %e   %e   %e   %e   %e   %e   %e   %e   %e   %e   %e   %e   %e   %e   %e   %e\n", cycle, tau, a, Hconf(a, fourpiG,H_spline, acc) /
         Hconf(1., fourpiG, H_spline, acc)
       , Hconf_prime(a, fourpiG, H_spline, acc)/Hconf(1., fourpiG, H_spline, acc)/Hconf(1., fourpiG, H_spline, acc)
       , gsl_spline_eval(alpha_K_spline, a, acc)
@@ -968,6 +969,9 @@ else
       , gsl_spline_eval(cs2_prime_spline, a, acc)/gsl_spline_eval(cs2_spline, a, acc)/(a* gsl_spline_eval(H_spline, a, acc)) // s = (c_s^2)' [hiclass]/c_s^2/aH(hiclass) -- aH =ℋ, also prime means time derivative wrt conformal time.
       , gsl_spline_eval(p_smg_prime_spline, a, acc)/gsl_spline_eval(rho_smg_prime_spline, a, acc) //ca2=p_smg'/rho_smg'
       , gsl_spline_eval(rho_smg_spline, a, acc)
+      , gsl_spline_eval(rho_cdm_spline, a, acc)
+      , gsl_spline_eval(rho_b_spline, a, acc)
+      , gsl_spline_eval(rho_g_spline, a, acc)
       , gsl_spline_eval(p_smg_spline, a, acc)
       , gsl_spline_eval(rho_smg_prime_spline, a, acc)
       , gsl_spline_eval(p_smg_prime_spline, a, acc)
@@ -1102,7 +1106,7 @@ for (x.first(); x.test(); x.next())
 		{
 			COUT << COLORTEXT_CYAN << " writing power spectra" << COLORTEXT_RESET << " at z = " << ((1./a) - 1.) <<  " (cycle " << cycle << "), tau/boxsize = " << tau << endl;
 
-#ifdef BACKREACTION_TEST
+#ifdef NONLINEAR_TEST
       writeSpectra_PoissonTerms(sim,  cosmo,  fourpiG,  a, pkcount,
       #ifdef HAVE_HICLASS_BG
       H_spline, acc,
@@ -1168,7 +1172,7 @@ for (x.first(); x.test(); x.next())
     				, &vi, &viFT, &plan_vi
     #endif
 		    );
-    #ifdef BACKREACTION_TEST
+    #ifdef NONLINEAR_TEST
     writeSpectra_PoissonTerms(sim,  cosmo,  fourpiG,  a, pkcount,
     #ifdef HAVE_HICLASS_BG
     H_spline, acc,
@@ -1283,7 +1287,7 @@ for (x.first(); x.test(); x.next())
       dtau  / sim.nKe_numsteps / 2.0 );
 
       // NL TESTS
-      #ifdef BACKREACTION_TEST
+      #ifdef NONLINEAR_TEST
       //   //Make snapshots and power arround blowup TIME
       avg_zeta =average(  zeta_half,1., numpts3d ) ;
       avg_zeta_old =average(  zeta_half_old,1., numpts3d ) ;
@@ -1373,7 +1377,7 @@ for (x.first(); x.test(); x.next())
     // Now we have pi(n+1) and a_kess(n+1/2) so we update background by halfstep to have a_kess(n+1)
     //********************************************************************************
     rungekutta4bg(a_kess, fourpiG, cosmo, dtau  / sim.nKe_numsteps / 2.0 );
-      #ifdef BACKREACTION_TEST
+      #ifdef NONLINEAR_TEST
       avg_zeta =average(  zeta_half,1., numpts3d ) ;
       avg_zeta_old =average(  zeta_half_old,1., numpts3d ) ;
       avg_pi =average(  pi_k,1., numpts3d ) ;

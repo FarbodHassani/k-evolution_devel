@@ -2,6 +2,7 @@
 // Particles_gevolution.hpp
 //////////////////////////
 //
+// Author (k-evolution): Farbod Hassani (Université de Genève & Universitetet i Oslo)
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London & Universität Zürich)
 //
 // Last modified: September 2021
@@ -46,19 +47,19 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 	double ref_dist[3];
 	LATfield2::Site xField;
 #endif
-	
+
 	filename.copy(fname, filename.length());
 	fname[filename.length()] = '\0';
-	
+
 	LATfield2::Site xPart(this->lat_part_);
 	typename std::list<part>::iterator it;
-	
+
 	if (hdr.num_files != 1 && hdr.num_files != parallel.grid_size()[1])
 	{
 		COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": number of Gadget2 files does not match the number of processes in dim-1!" << endl;
 		return;
 	}
-	
+
 	posdata = (float *) malloc(3 * sizeof(float) * PCLBUFFER);
 	veldata = (float *) malloc(3 * sizeof(float) * PCLBUFFER);
 
@@ -67,7 +68,7 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 #else
 	IDs = malloc(sizeof(int32_t) * PCLBUFFER);
 #endif
-	
+
 	npart = 0;
 	for(xPart.first(); xPart.test(); xPart.next())
 	{
@@ -82,7 +83,7 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 	}
 
 	if (hdr.num_files == 1)
-	{	
+	{
 		if (parallel.rank() == 0)
 		{
 			parallel.send<long>(npart, 1);
@@ -96,7 +97,7 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 			npart += count;
 			parallel.send<long>(npart, (parallel.rank()+1)%parallel.size());
 		}
-	
+
 		MPI_File_open(parallel.lat_world_comm(), fname, MPI_MODE_WRONLY | MPI_MODE_CREATE,  MPI_INFO_NULL, &outfile);
 	}
 	else
@@ -116,24 +117,24 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 		}
 
 		parallel.broadcast_dim0<uint32_t>(hdr.npart[1], 0);
-		
+
 		sprintf(fname+filename.length(), ".%d", parallel.grid_rank()[1]);
 
 		MPI_File_open(parallel.dim0_comm()[parallel.grid_rank()[1]], fname, MPI_MODE_WRONLY | MPI_MODE_CREATE,  MPI_INFO_NULL, &outfile);
 	}
-	
+
 	offset_pos = (MPI_Offset) hdr.npart[1];
 	offset_pos *= (MPI_Offset) (6 * sizeof(float) + ((GADGET_ID_BYTES == 8) ? sizeof(int64_t) : sizeof(int32_t)));
 	offset_pos += (MPI_Offset) (8 * sizeof(uint32_t) + sizeof(hdr));
 	MPI_File_set_size(outfile, offset_pos);
-	
+
 	offset_pos = (MPI_Offset) (3 * sizeof(uint32_t) + sizeof(hdr)) + ((MPI_Offset) count) * ((MPI_Offset) (3 * sizeof(float)));
 	offset_vel = offset_pos + (MPI_Offset) (2 * sizeof(uint32_t)) + ((MPI_Offset) hdr.npart[1]) * ((MPI_Offset) (3 * sizeof(float)));
 	offset_ID = offset_vel + (MPI_Offset) (2 * sizeof(uint32_t)) + ((MPI_Offset) hdr.npart[1] - (MPI_Offset) count) * ((MPI_Offset) (3 * sizeof(float))) + ((MPI_Offset) count) * ((MPI_Offset) ((GADGET_ID_BYTES == 8) ? sizeof(int64_t) : sizeof(int32_t)));
-	
+
 	if ((hdr.num_files == 1 && parallel.rank() == 0) || (hdr.num_files > 1 && parallel.grid_rank()[0] == 0))
 	{
-		blocksize = sizeof(hdr);		
+		blocksize = sizeof(hdr);
 		MPI_File_write_at(outfile, 0, &blocksize, 1, MPI_UNSIGNED, &status);
 		MPI_File_write_at(outfile, sizeof(uint32_t), &hdr, sizeof(hdr), MPI_BYTE, &status);
 		MPI_File_write_at(outfile, sizeof(hdr) + sizeof(uint32_t), &blocksize, 1, MPI_UNSIGNED, &status);
@@ -146,7 +147,7 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 		MPI_File_write_at(outfile, offset_ID - sizeof(uint32_t), &blocksize, 1, MPI_UNSIGNED, &status);
 		MPI_File_write_at(outfile, offset_ID + blocksize, &blocksize, 1, MPI_UNSIGNED, &status);
 	}
-	
+
 	count = 0;
 #ifdef EXACT_OUTPUT_REDSHIFTS
 	if (phi != NULL)
@@ -168,7 +169,7 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 					{
 						for (i = 0; i < 3; i++)
 							ref_dist[i] = modf((*it).pos[i] / this->lat_resolution_, &phip);
-							
+
 						phip = (*phi)(xField) * (1.-ref_dist[0]) * (1.-ref_dist[1]) * (1.-ref_dist[2]);
 						phip += (*phi)(xField+0) * ref_dist[0] * (1.-ref_dist[1]) * (1.-ref_dist[2]);
 						phip += (*phi)(xField+1) * (1.-ref_dist[0]) * ref_dist[1] * (1.-ref_dist[2]);
@@ -177,7 +178,7 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 						phip += (*phi)(xField+0+2) * ref_dist[0] * (1.-ref_dist[1]) * ref_dist[2];
 						phip += (*phi)(xField+1+2) * (1.-ref_dist[0]) * ref_dist[1] * ref_dist[2];
 						phip += (*phi)(xField+0+1+2) * ref_dist[0] * ref_dist[1] * ref_dist[2];
-						
+
 						gradphi[0] = (1.-ref_dist[1]) * (1.-ref_dist[2]) * ((*phi)(xField+0) - (*phi)(xField));
 						gradphi[1] = (1.-ref_dist[0]) * (1.-ref_dist[2]) * ((*phi)(xField+1) - (*phi)(xField));
 						gradphi[2] = (1.-ref_dist[0]) * (1.-ref_dist[1]) * ((*phi)(xField+2) - (*phi)(xField));
@@ -191,34 +192,34 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 						gradphi[1] += ref_dist[0] * ref_dist[2] * ((*phi)(xField+2+1+0) - (*phi)(xField+2+0));
 						gradphi[2] += ref_dist[0] * ref_dist[1] * ((*phi)(xField+2+1+0) - (*phi)(xField+1+0));
 					}
-					
+
 					ref_dist[0] = (*it).vel[0]*(*it).vel[0] + (*it).vel[1]*(*it).vel[1] + (*it).vel[2]*(*it).vel[2];
 					ref_dist[1] = ref_dist[0] + hdr.time * hdr.time;
 					ref_dist[2] = sqrt(ref_dist[1]);
 					ref_dist[0] += ref_dist[1];
 					ref_dist[1] = 1. + (4. - (ref_dist[0] / ref_dist[1])) * phip;
-					
+
 					for (i = 0; i < 3; i++)
 						posdata[3*count+i] = modf(1. + (*it).pos[i] + dtau_pos * (*it).vel[i] * ref_dist[1] / ref_dist[2], &phip) * hdr.BoxSize;
-					
+
 					for (i = 0; i < 3; i++)
 						veldata[3*count+i] = ((*it).vel[i] - dtau_vel * ref_dist[0] * gradphi[i] / this->lat_resolution_ / ref_dist[2]) * rescale_vel / hdr.time;
-#else						
+#else
 					for (i = 0; i < 3; i++)
 						posdata[3*count+i] = (*it).pos[i] * hdr.BoxSize;
-					
+
 					for (i = 0; i < 3; i++)
 						veldata[3*count+i] = (*it).vel[i] * rescale_vel / hdr.time;
 #endif
-					
+
 #if GADGET_ID_BYTES == 8
 					*((int64_t *) IDs + count) = (int64_t) (*it).ID;
-#else	
+#else
 					*((int32_t *) IDs + count) = (int32_t) (*it).ID;
 #endif
-					
+
 					count++;
-						
+
 					if (count == PCLBUFFER)
 					{
 						MPI_File_write_at(outfile, offset_pos, posdata, 3 * count, MPI_FLOAT, &status);
@@ -237,14 +238,14 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 		xField.next();
 #endif
 	}
-	
+
 	MPI_File_write_at_all(outfile, offset_pos, posdata, 3 * count, MPI_FLOAT, &status);
 	MPI_File_write_at_all(outfile, offset_vel, veldata, 3 * count, MPI_FLOAT, &status);
 	count *= (GADGET_ID_BYTES == 8) ? sizeof(int64_t) : sizeof(int32_t);
 	MPI_File_write_at_all(outfile, offset_ID, IDs, count, MPI_BYTE, &status);
-	
+
 	MPI_File_close(&outfile);
-	
+
 	free(posdata);
 	free(veldata);
 	free(IDs);
@@ -270,20 +271,20 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 	double d, v2, e2, vlos;
 	double ref_dist[3];
 	Real gradphi[3];
-	
+
 	filename.copy(fname, filename.length());
 	fname[filename.length()] = '\0';
-	
+
 	LATfield2::Site xPart(this->lat_part_);
 	LATfield2::Site xField(phi->lattice());
 	typename std::list<part>::iterator it;
-	
+
 	if (hdr.num_files != 1)
 	{
 		COUT << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": writing multiple Gadget2 files not currently supported!" << endl;
 		return;
 	}
-	
+
 	posdata = (float *) malloc(3 * sizeof(float) * PCLBUFFER);
 	veldata = (float *) malloc(3 * sizeof(float) * PCLBUFFER);
 
@@ -292,7 +293,7 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 #else
 	IDs = malloc(sizeof(int32_t) * PCLBUFFER);
 #endif
-	
+
 	npart = 0;
 	if (vertexcount > 0)
 	{
@@ -319,11 +320,11 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 
 									for (int j = 0; j < 3; j++)
 										ref_dist[j] = modf((*it).pos[j] / this->lat_resolution_, &v2);
-									
+
 									v2 = (*it).vel[0] * (*it).vel[0] + (*it).vel[1] * (*it).vel[1] + (*it).vel[2] * (*it).vel[2];
 									e2 = v2 + hdr.time * (hdr.time + (dist - d - 0.5 * dtau_old) * dadtau);
 									vlos = ((*it).vel[0]*((*it).pos[0]-vertex[i][0]) + (*it).vel[1]*((*it).pos[1]-vertex[i][1]) + (*it).vel[2]*((*it).pos[2]-vertex[i][2])) / d;
-	
+
 									gradphi[0] = (1.-ref_dist[1]) * (1.-ref_dist[2]) * ((*phi)(xField+0) - (*phi)(xField));
 									gradphi[1] = (1.-ref_dist[0]) * (1.-ref_dist[2]) * ((*phi)(xField+1) - (*phi)(xField));
 									gradphi[2] = (1.-ref_dist[0]) * (1.-ref_dist[1]) * ((*phi)(xField+2) - (*phi)(xField));
@@ -340,9 +341,9 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 									gradphi[0] *= (v2 + e2) / e2 / this->lat_resolution_;
 									gradphi[1] *= (v2 + e2) / e2 / this->lat_resolution_;
 									gradphi[2] *= (v2 + e2) / e2 / this->lat_resolution_;
-						
+
 									e2 = sqrt(e2);
-									
+
 									if (d < dist)
 									{
 										vlos -= dtau * sqrt(v2 + hdr.time * hdr.time) * (gradphi[0]*((*it).pos[0]-vertex[i][0]) + gradphi[1]*((*it).pos[1]-vertex[i][1]) + gradphi[2]*((*it).pos[2]-vertex[i][2])) / d;
@@ -353,11 +354,11 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 
 									for (uint32_t j = 0; j < 3; j++)
 										veldata[3*(npart%PCLBUFFER)+j] = ((*it).vel[j] - (((dist - d) / (1. + vlos)) + 0.5 * dtau_old) * e2 * gradphi[j]) * rescale_vel / (hdr.time + ((dist - d) / (1. + vlos)) * dadtau);
-										
+
 									if (d >= dist)
 									{
 										e2 = sqrt(v2 + hdr.time * (hdr.time - dtau_old * dadtau));
-										
+
 										for (uint32_t j = 0; j < 3; j++)
 											posdata[3*(npart%PCLBUFFER)+j] = ((*it).pos[j] - vertex[i][j] + lightcone.vertex[j] + ((dist - d) / (1. + vlos)) * (*it).vel[j] / e2) * hdr.BoxSize;
 									}
@@ -365,14 +366,14 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 									{
 										e2 = sqrt(v2 + hdr.time * (hdr.time + dtau * dadtau));
 										v2 = sqrt(v2 + hdr.time * hdr.time);
-										
+
 										for (uint32_t j = 0; j < 3; j++)
 											posdata[3*(npart%PCLBUFFER)+j] = ((*it).pos[j] - vertex[i][j] + lightcone.vertex[j] + ((dist - d) / (1. + vlos)) * ((*it).vel[j] - dtau * v2 * gradphi[j]) / e2) * hdr.BoxSize;
 									}
-					
+
 #if GADGET_ID_BYTES == 8
 									*((int64_t *) IDs + (npart%PCLBUFFER)) = (int64_t) (*it).ID;
-#else	
+#else
 									*((int32_t *) IDs + (npart%PCLBUFFER)) = (int32_t) (*it).ID;
 #endif
 
@@ -387,7 +388,7 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 			}
 		}
 	}
-	
+
 	if (parallel.rank() == 0)
 	{
 		parallel.send<long>(npart, 1);
@@ -411,19 +412,19 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 	if (hdr.npartTotal[1] + ((int64_t) hdr.npartTotalHW[1] << 32) > 0)
 	{
 		MPI_File_open(parallel.lat_world_comm(), fname, MPI_MODE_WRONLY | MPI_MODE_CREATE,  MPI_INFO_NULL, &outfile);
-	
+
 		offset_pos = (MPI_Offset) ((int64_t) hdr.npartTotal[1] + ((int64_t) hdr.npartTotalHW[1] << 32));
 		offset_pos *= (MPI_Offset) (6 * sizeof(float) + ((GADGET_ID_BYTES == 8) ? sizeof(int64_t) : sizeof(int32_t)));
 		offset_pos += (MPI_Offset) (8 * sizeof(uint32_t) + sizeof(hdr));
 		MPI_File_set_size(outfile, offset_pos);
-	
+
 		offset_pos = (MPI_Offset) (3 * sizeof(uint32_t) + sizeof(hdr)) + ((MPI_Offset) count) * ((MPI_Offset) (3 * sizeof(float)));
 		offset_vel = offset_pos + (MPI_Offset) (2 * sizeof(uint32_t)) + ((MPI_Offset) ((int64_t) hdr.npartTotal[1] + ((int64_t) hdr.npartTotalHW[1] << 32))) * ((MPI_Offset) (3 * sizeof(float)));
 		offset_ID = offset_vel + (MPI_Offset) (2 * sizeof(uint32_t)) + ((MPI_Offset) ((int64_t) hdr.npartTotal[1] + ((int64_t) hdr.npartTotalHW[1] << 32)) - (MPI_Offset) count) * ((MPI_Offset) (3 * sizeof(float))) + ((MPI_Offset) count) * ((MPI_Offset) ((GADGET_ID_BYTES == 8) ? sizeof(int64_t) : sizeof(int32_t)));
-	
+
 		if (parallel.rank() == 0)
 		{
-			blocksize = sizeof(hdr);		
+			blocksize = sizeof(hdr);
 			MPI_File_write_at(outfile, 0, &blocksize, 1, MPI_UNSIGNED, &status);
 			MPI_File_write_at(outfile, sizeof(uint32_t), &hdr, sizeof(hdr), MPI_BYTE, &status);
 			MPI_File_write_at(outfile, sizeof(hdr) + sizeof(uint32_t), &blocksize, 1, MPI_UNSIGNED, &status);
@@ -436,7 +437,7 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 			MPI_File_write_at(outfile, offset_ID - sizeof(uint32_t), &blocksize, 1, MPI_UNSIGNED, &status);
 			MPI_File_write_at(outfile, offset_ID + blocksize, &blocksize, 1, MPI_UNSIGNED, &status);
 		}
-		
+
 		count = (npart < PCLBUFFER) ? npart : PCLBUFFER;
 		npart -= count;
 		MPI_File_write_at_all(outfile, offset_pos, posdata, 3 * count, MPI_FLOAT, &status);
@@ -470,11 +471,11 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 									{
 										for (int j = 0; j < 3; j++)
 											ref_dist[j] = modf((*it).pos[j] / this->lat_resolution_, &v2);
-									
+
 										v2 = (*it).vel[0] * (*it).vel[0] + (*it).vel[1] * (*it).vel[1] + (*it).vel[2] * (*it).vel[2];
 										e2 = v2 + hdr.time * (hdr.time + (dist - d - 0.5 * dtau_old) * dadtau);
 										vlos = ((*it).vel[0]*((*it).pos[0]-vertex[i][0]) + (*it).vel[1]*((*it).pos[1]-vertex[i][1]) + (*it).vel[2]*((*it).pos[2]-vertex[i][2])) / d;
-	
+
 										gradphi[0] = (1.-ref_dist[1]) * (1.-ref_dist[2]) * ((*phi)(xField+0) - (*phi)(xField));
 										gradphi[1] = (1.-ref_dist[0]) * (1.-ref_dist[2]) * ((*phi)(xField+1) - (*phi)(xField));
 										gradphi[2] = (1.-ref_dist[0]) * (1.-ref_dist[1]) * ((*phi)(xField+2) - (*phi)(xField));
@@ -491,9 +492,9 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 										gradphi[0] *= (v2 + e2) / e2 / this->lat_resolution_;
 										gradphi[1] *= (v2 + e2) / e2 / this->lat_resolution_;
 										gradphi[2] *= (v2 + e2) / e2 / this->lat_resolution_;
-						
+
 										e2 = sqrt(e2);
-										
+
 										if (d < dist)
 										{
 											vlos -= dtau * sqrt(v2 + hdr.time * hdr.time) * (gradphi[0]*((*it).pos[0]-vertex[i][0]) + gradphi[1]*((*it).pos[1]-vertex[i][1]) + gradphi[2]*((*it).pos[2]-vertex[i][2])) / d;
@@ -504,11 +505,11 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 
 										for (uint32_t j = 0; j < 3; j++)
 											veldata[3*(npart%PCLBUFFER)+j] = ((*it).vel[j] - (((dist - d) / (1. + vlos)) + 0.5 * dtau_old) * e2 * gradphi[j]) * rescale_vel / (hdr.time + ((dist - d) / (1. + vlos)) * dadtau);
-											
+
 										if (d >= dist)
 										{
 											e2 = sqrt(v2 + hdr.time * (hdr.time - dtau_old * dadtau));
-										
+
 											for (uint32_t j = 0; j < 3; j++)
 												posdata[3*(npart%PCLBUFFER)+j] = ((*it).pos[j] - vertex[i][j] + lightcone.vertex[j] + ((dist - d) / (1. + vlos)) * (*it).vel[j] / e2) * hdr.BoxSize;
 										}
@@ -516,24 +517,24 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 										{
 											e2 = sqrt(v2 + hdr.time * (hdr.time + dtau * dadtau));
 											v2 = sqrt(v2 + hdr.time * hdr.time);
-										
+
 											for (uint32_t j = 0; j < 3; j++)
 												posdata[3*(npart%PCLBUFFER)+j] = ((*it).pos[j] - vertex[i][j] + lightcone.vertex[j] + ((dist - d) / (1. + vlos)) * ((*it).vel[j] - dtau * v2 * gradphi[j]) / e2) * hdr.BoxSize;
 										}
-						
+
 #if GADGET_ID_BYTES == 8
 										*((int64_t *) IDs + count) = (int64_t) (*it).ID;
-#else	
+#else
 										*((int32_t *) IDs + count) = (int32_t) (*it).ID;
 #endif
-	
+
 										npart--;
 										count++;
 									}
 									break;
 								}
 							}
-							
+
 							if (count == PCLBUFFER)
 							{
 								MPI_File_write_at(outfile, offset_pos, posdata, 3 * count, MPI_FLOAT, &status);
@@ -559,11 +560,11 @@ void Particles_gevolution<part,part_info,part_dataType>::saveGadget2(string file
 					count *= (GADGET_ID_BYTES == 8) ? sizeof(int64_t) : sizeof(int32_t);
 					MPI_File_write_at(outfile, offset_ID, IDs, count, MPI_BYTE, &status);
 			}
-		}	
-	
+		}
+
 		MPI_File_close(&outfile);
 	}
-	
+
 	free(posdata);
 	free(veldata);
 	free(IDs);
@@ -584,10 +585,10 @@ void Particles_gevolution<part,part_info,part_dataType>::loadGadget2(string file
 	uint32_t blocksize;
 	char fname[filename.length()+1];
 	double rescale_vel = 1. / GADGET_VELOCITY_CONVERSION;
-	
+
 	filename.copy(fname, filename.length());
 	fname[filename.length()] = '\0';
-	
+
 	posdata = (float *) malloc(3 * sizeof(float) * PCLBUFFER);
 	veldata = (float *) malloc(3 * sizeof(float) * PCLBUFFER);
 
@@ -656,12 +657,12 @@ void Particles_gevolution<part,part_info,part_dataType>::loadGadget2(string file
 			pcl.vel[2] = veldata[3*i+2];
 			this->addParticle_global(pcl);
 		}
-		
+
 		npart += count;
 	}
 
 	MPI_File_close(&infile);
-	
+
 	free(posdata);
 	free(veldata);
 	free(IDs);

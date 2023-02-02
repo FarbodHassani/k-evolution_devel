@@ -6,6 +6,7 @@
 // generating the full phase space for relativistic particles
 // [see C.-P. Ma and E. Bertschinger, Astrophys. J. 429, 22 (1994)]
 //
+// Author (k-evolution): Farbod Hassani (Université de Genève & Universitetet i Oslo)
 // Author: Julian Adamek (Université de Genève & Observatoire de Paris & Queen Mary University of London)
 //
 // Last modified: April 2019
