@@ -40,7 +40,7 @@ using namespace LATfield2;
 //
 //////////////////////////
 
-void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosmo, background & class_background,  thermo & class_thermo, perturbs & class_perturbs, parameter * params = NULL, int numparam = 0, const char * output_value = "dTk, vTk")
+void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosmo, background & class_background,  thermo & class_thermo, perturbs & class_perturbs, parameter * params = NULL, int numparam = 0, const char * output_value = "dTk, vTk, mPk")
 {
 	precision class_precision;
 	transfers class_transfers;
@@ -180,13 +180,13 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
   sprintf(class_filecontent.value[i++], "yeap");
 
   sprintf(class_filecontent.name[i], "write background");
-  sprintf(class_filecontent.value[i++], "yes");
+  sprintf(class_filecontent.value[i++], "yeap");
 
   sprintf(class_filecontent.name[i], "format");
   sprintf(class_filecontent.value[i++], "class");
 
   sprintf(class_filecontent.name[i], "headers");
-  sprintf(class_filecontent.value[i++], "yes");
+  sprintf(class_filecontent.value[i++], "yeap");
 
 	sprintf(class_filecontent.name[i], "perturb_sampling_stepsize");
 	sprintf(class_filecontent.value[i++], "%g", perturb_sampling_stepsize);
@@ -213,7 +213,7 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
     sprintf(class_filecontent.value[i++], "wowa");
 
     sprintf(class_filecontent.name[i], "expansion_smg");
-    sprintf(class_filecontent.value[i++],"%e, %e, %e",cosmo.Omega_kessence, cosmo.w_kessence, 0.0);
+    sprintf(class_filecontent.value[i++],"%e, %e, %e",cosmo.Omega_kessence, cosmo.w_kessence, cosmo.w_a_kessence);
 
     sprintf(class_filecontent.name[i], "parameters_smg");
     sprintf(class_filecontent.value[i++],"%e, %e, %e, %e, %e", 3.0 * (1+cosmo.w_kessence)/cosmo.cs2_kessence, 0.0, 0.0, 0.0, 1.0);

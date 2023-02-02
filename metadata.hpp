@@ -297,6 +297,7 @@ struct cosmology
   double gravity_model; //0 is the propto_omega and 1 is k_essence_power
 	double Omega_kessence;
   double w_kessence;
+  double w_a_kessence;
 	double cs2_kessence;
   // k_essence_power # Xt, g0, g2, g4, phi_i, X_i
   // parameters_smg =  8., 0.0, 1.0, 1.e-1, 1., 1.e20

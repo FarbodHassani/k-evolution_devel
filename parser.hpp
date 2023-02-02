@@ -1746,6 +1746,11 @@ parallel.abortForce();
         if(parallel.isRoot())  cout << " \033[1;31m ERROR: You need to specify w_kess!  \033[0m"<< endl;
         parallel.abortForce();
     	}
+      if (!parseParameter(params, numparam, "w_a_kessence",  cosmo.w_a_kessence))
+      {
+        if(parallel.isRoot())  cout << " \033[1;31m ERROR: You need to specify w_a_kessence parameter!  \033[0m"<< endl;
+        parallel.abortForce();
+      }
       // ERROR:
       if (parseParameter(params, numparam, "Xt",  cosmo.Xt))
       {
@@ -1830,6 +1835,11 @@ parallel.abortForce();
     if(parallel.isRoot())  cout << " \033[1;31m ERROR: You need to specify w_kess!  \033[0m"<< endl;
     parallel.abortForce();
   }
+  if (parseParameter(params, numparam, "w_a_kessence",  cosmo.w_a_kessence))
+  {
+    if(parallel.isRoot())  cout << " \033[1;31m ERROR: You requested w_a (time variation of w) which is not implemented properly! You need to use hiclass tools with background option for it.  \033[0m"<< endl;
+    parallel.abortForce();
+  }
   #endif
 
   if (!parseParameter(params, numparam, "nKe_numsteps",  sim.nKe_numsteps))
@@ -1862,6 +1872,13 @@ parallel.abortForce();
   #endif
 
   #if !defined(HAVE_HICLASS_BG)
+
+  if (parseParameter(params, numparam, "w_a_kessence",  cosmo.w_a_kessence))
+  {
+    if(parallel.isRoot())  cout << " \033[1;31m ERROR: You requested w_a (time variation of w) which is not implemented properly! You need to use hiclass tools with background option for it.  \033[0m"<< endl;
+    parallel.abortForce();
+  }
+
   if (sim.bg_hiclass==1)
   {
     if(parallel.isRoot())  cout << " \033[1;31m ERROR: The background params are requested while the code is not compiled with hiclass properly! You might need to add DGEVOLUTION  += -DHAVE_HICLASS or DHAVE_HICLASS_BG \033[0m"<< endl;
@@ -2022,7 +2039,7 @@ parallel.abortForce();
   if (cosmo.gravity_model == 0)
   {
     COUT << "Kessence source gravity = " << sim.Kess_source_gravity<< ", Non-linear kessence = " << sim.NL_kessence<< ", Number of kessence update = " <<sim.nKe_numsteps <<endl;
-    COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad<< ", Omega_g0 = " << cosmo.Omega_g<< ", Omega_ur0 = " << cosmo.Omega_ur << ", h = " << cosmo.h << ", Omega_kessence0= "<<cosmo.Omega_kessence<<", w0_kessence= "<<cosmo.w_kessence<<", cs^2 (kessence)= "<<cosmo.cs2_kessence<<", alpha_k (hiclass)= "<<3.0 * (1.0 + cosmo.w_kessence)/cosmo.cs2_kessence<< ", Omega_Lambda= "<<cosmo.Omega_Lambda<<" "<<endl;
+    COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad<< ", Omega_g0 = " << cosmo.Omega_g<< ", Omega_ur0 = " << cosmo.Omega_ur << ", h = " << cosmo.h << ", Omega_kessence0= "<<cosmo.Omega_kessence<<", w0_kessence= "<<cosmo.w_kessence<<", wa_kessence= "<<cosmo.w_a_kessence<<", cs^2 (kessence)= "<<cosmo.cs2_kessence<<", alpha_k (hiclass)= "<<3.0 * (1.0 + cosmo.w_kessence)/cosmo.cs2_kessence<< ", Omega_Lambda= "<<cosmo.Omega_Lambda<<" "<<endl;
   }
   else if (cosmo.gravity_model == 1)
   {
@@ -2031,7 +2048,7 @@ parallel.abortForce();
   }
   #else
   COUT << "Kessence source gravity = " << sim.Kess_source_gravity<< ", Non-linear kessence = " << sim.NL_kessence<< ", Number of kessence update = " <<sim.nKe_numsteps <<endl;
-  COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad<< ", Omega_g0 = " << cosmo.Omega_g<< ", Omega_ur0 = " << cosmo.Omega_ur << ", h = " << cosmo.h << ", Omega_kessence0= "<<cosmo.Omega_kessence<<", w0_kessence= "<<cosmo.w_kessence<<", cs^2 (kessence)= "<<cosmo.cs2_kessence<<", alpha_k (hiclass)= "<<3.0 * (1.0 + cosmo.w_kessence)/cosmo.cs2_kessence<< ", Omega_Lambda= "<<cosmo.Omega_Lambda<<" "<<endl;
+  COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad<< ", Omega_g0 = " << cosmo.Omega_g<< ", Omega_ur0 = " << cosmo.Omega_ur << ", h = " << cosmo.h << ", Omega_kessence0= "<<cosmo.Omega_kessence<<", w0_kessence= "<<cosmo.w_kessence<<", wa_kessence= "<<cosmo.w_a_kessence<<", cs^2 (kessence)= "<<cosmo.cs2_kessence<<", alpha_k (hiclass)= "<<3.0 * (1.0 + cosmo.w_kessence)/cosmo.cs2_kessence<< ", Omega_Lambda= "<<cosmo.Omega_Lambda<<" "<<endl;
   #endif
 
 	}
