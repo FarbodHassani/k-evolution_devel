@@ -119,12 +119,14 @@ void writeSnapshots(metadata & sim, cosmology & cosmo, const double fourpiG, con
 		phi->saveHDF5_server_open(h5filename + filename + "_phi");
 
 	if (sim.out_snapshot & MASK_PI_K)
-			pi_k->saveHDF5_server_open(h5filename + filename + "_pi_k");
+		pi_k->saveHDF5_server_open(h5filename + filename + "_pi_k");
+
+  if (sim.out_snapshot & MASK_T_KESS)
+		T00_Kess->saveHDF5_server_open(h5filename + filename + "_T00_kess");
 
 	if (sim.out_snapshot & MASK_ZETA)
-			zeta->saveHDF5_server_open(h5filename + filename + "_zeta");
+		zeta->saveHDF5_server_open(h5filename + filename + "_zeta");
 	//Kessence end
-
 
 	if (sim.out_snapshot & MASK_CHI)
 		chi->saveHDF5_server_open(h5filename + filename + "_chi");
@@ -273,6 +275,26 @@ void writeSnapshots(metadata & sim, cosmology & cosmo, const double fourpiG, con
 			pi_k->saveHDF5_coarseGrain3D(h5filename + filename + "_pi_k.h5", sim.downgrade_factor);
 		else
 			pi_k->saveHDF5(h5filename + filename + "_pi_k.h5");
+#endif
+
+if (sim.out_snapshot & MASK_ZETA)
+#ifdef EXTERNAL_IO
+  zeta->saveHDF5_server_write(NUMBER_OF_IO_FILES);
+#else
+  if (sim.downgrade_factor > 1)
+    zeta->saveHDF5_coarseGrain3D(h5filename + filename + "_zeta.h5", sim.downgrade_factor);
+  else
+    zeta->saveHDF5(h5filename + filename + "_zeta.h5");
+#endif
+
+if (sim.out_snapshot & MASK_T_KESS)
+#ifdef EXTERNAL_IO
+  T00_Kess->saveHDF5_server_write(NUMBER_OF_IO_FILES);
+#else
+  if (sim.downgrade_factor > 1)
+    T00_Kess->saveHDF5_coarseGrain3D(h5filename + filename + "_T00_kess.h5", sim.downgrade_factor);
+  else
+    T00_Kess->saveHDF5(h5filename + filename + "_T00_kess.h5");
 #endif
 
 	if (sim.out_snapshot & MASK_CHI)
@@ -1906,10 +1928,6 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 					if (a < 1. / (sim.z_switch_deltancdm[i] + 1.) && cosmo.Omega_ncdm[i] > 0)
 						Omega_ncdm += bg_ncdm(a, cosmo, i);
 				}
-				// plan_source->execute(FFT_FORWARD);
-				// extractPowerSpectrum(*scalarFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
-				// sprintf(filename, "%s%s%03d_deltaclass.dat", sim.output_path, sim.basename_pk, pkcount);
-				// writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * ((a < 1. / (sim.z_switch_deltarad + 1.) ? sim.radiation_flag : 0) * cosmo.Omega_rad / a + sim.fluid_flag * cosmo.Omega_fld / pow(a, 3. * cosmo.w0_fld) + Omega_ncdm) * ((a < 1. / (sim.z_switch_deltarad + 1.) ? sim.radiation_flag : 0) * cosmo.Omega_rad / a + sim.fluid_flag * cosmo.Omega_fld / pow(a, 3. * cosmo.w0_fld) + Omega_ncdm), filename, "power spectrum of delta for linear fields (CLASS)", a, sim.z_pk[pkcount]);
 			}
 		}
 #endif
@@ -2070,19 +2088,27 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 			writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI, filename, "power spectrum of zeta (dimensionless)", a, sim.z_pk[pkcount]);
 		}
 
-	   if (sim.out_pk & MASK_DELTA_KESS)
+	   if (sim.out_pk & MASK_T_KESS)
 		{
       plan_T00_Kess->execute(FFT_FORWARD);
       extractPowerSpectrum(*T00_KessFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
-      sprintf(filename, "%s%s%03d_delta_kess.dat", sim.output_path, sim.basename_pk, pkcount);
-      #ifdef HAVE_HICLASS_BG
-        writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * pow(a,3) * (rho_s/rho_crit_0) * pow(a,3) * (rho_s/rho_crit_0), filename, "power spectrum of delta_kessence", a, sim.z_pk[pkcount]);
-      #else
-			// P (\delta)= deltarho_kess^2/ Omega_kess *a^(-3(1+w)) ) Omega_kess *a^(-3(1+w)) ) since in the defnition we have a^3 T00
-			// We already included a^(-3) in the denominator, so we only need take the rest into account.
-        writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI* cosmo.Omega_kessence * cosmo.Omega_kessence * pow(a, -3.* cosmo.w_kessence) * pow(a, -3.* cosmo.w_kessence), filename, "power spectrum of delta_kessence", a, sim.z_pk[pkcount]);
-      #endif
+      sprintf(filename, "%s%s%03d_T00_kess.dat", sim.output_path, sim.basename_pk, pkcount);
+        writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * pow(a, 6.0), filename, "power spectrum of T00(kessence)", a, sim.z_pk[pkcount]);
     }
+
+    if (sim.out_pk & MASK_DELTA_KESS)
+   {
+     plan_T00_Kess->execute(FFT_FORWARD);
+     extractPowerSpectrum(*T00_KessFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
+     sprintf(filename, "%s%s%03d_delta_kess.dat", sim.output_path, sim.basename_pk, pkcount);
+     #ifdef HAVE_HICLASS_BG
+       writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * pow(a,3) * (rho_s/rho_crit_0) * pow(a,3) * (rho_s/rho_crit_0), filename, "power spectrum of delta_kessence", a, sim.z_pk[pkcount]);
+     #else
+     // P (\delta)= deltarho_kess^2/ Omega_kess *a^(-3(1+w)) ) Omega_kess *a^(-3(1+w)) ) since in the defnition we have a^3 T00
+     // We already included a^(-3) in the denominator, so we only need take the rest into account.
+       writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI* cosmo.Omega_kessence * cosmo.Omega_kessence * pow(a, -3.* cosmo.w_kessence) * pow(a, -3.* cosmo.w_kessence), filename, "power spectrum of delta_kessence", a, sim.z_pk[pkcount]);
+     #endif
+   }
 	   //KESSENCE END
 
 	if (sim.out_pk & MASK_CHI)
@@ -2163,19 +2189,28 @@ Particles_gevolution<part_simple,part_simple_info,part_simple_dataType> * pcls_c
 		}
 
     //Kessence Cross Power delta_kess * delta_m
-      if ( sim.gr_flag > 0 && sim.out_pk && MASK_DELTA_KESS && sim.out_pk & MASK_DELTAKESS_DELTA  && sim.out_pk && MASK_DELTA_KESS)
+    if (sim.out_pk & MASK_DELTAKESS_DELTA)
     {
-       // P (\deltam \delta_kess)= deltarho_kess * \delta_m / Omega_kess *a^(-3(1+w)) ) Omega_m *a^-3 since in the defnition we have a^3 T00
-       // We already included a^(-3) in the denominator, so we only need take the rest into account.
-       // Which are just a^{-3w} and Omega_kess and Omega_m
-      extractCrossSpectrum(*scalarFT, *T00_KessFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
-      sprintf(filename, "%s%s%03d_deltakess_deltam.dat", sim.output_path, sim.basename_pk, pkcount);
-      #ifdef HAVE_HICLASS_BG
-      writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * (cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) * pow(a,3) * rho_s/rho_crit_0 , filename, "cross power spectrum of delta_m and  delta_kess", a, sim.z_pk[pkcount]);
-      #else
-      writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * (cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) * cosmo.Omega_kessence *  pow(a, -3.* cosmo.w_kessence)  , filename, "cross power spectrum of delta_m and  delta_kess", a, sim.z_pk[pkcount]);
-      #endif
+      if ( (sim.out_pk & MASK_DELTA) && (sim.gr_flag > 0) && (sim.out_pk & MASK_DELTA_KESS))
+      {
+         // P (\deltam \delta_kess)= deltarho_kess * \delta_m / Omega_kess *a^(-3(1+w)) ) Omega_m *a^-3 since in the defnition we have a^3 T00
+         // We already included a^(-3) in the denominator, so we only need take the rest into account.
+         // Which are just a^{-3w} and Omega_kess and Omega_m
+        extractCrossSpectrum(*scalarFT, *T00_KessFT, kbin, power, kscatter, pscatter, occupation, sim.numbins, true, KTYPE_LINEAR);
+        sprintf(filename, "%s%s%03d_deltakess_deltam.dat", sim.output_path, sim.basename_pk, pkcount);
+        #ifdef HAVE_HICLASS_BG
+        writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * (cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) * pow(a,3) * rho_s/rho_crit_0 , filename, "cross power spectrum of delta_m and  delta_kess", a, sim.z_pk[pkcount]);
+        #else
+        writePowerSpectrum(kbin, power, kscatter, pscatter, occupation, sim.numbins, sim.boxsize, (Real) numpts3d * (Real) numpts3d * 2. * M_PI * M_PI * (cosmo.Omega_cdm + cosmo.Omega_b + bg_ncdm(a, cosmo)) * cosmo.Omega_kessence *  pow(a, -3.* cosmo.w_kessence)  , filename, "cross power spectrum of delta_m and  delta_kess", a, sim.z_pk[pkcount]);
+        #endif
+      }
+      else
+      {
+        if(parallel.isRoot()) COUT << COLORTEXT_YELLOW << " /!\\ warning: " << COLORTEXT_RESET << "cross_dkess_dm request is ignored, as either delta_kess or delta_m is not requested! So the cross power spectrum is not produced." << endl;
+      }
     }
+
+
 
 		if (cosmo.num_ncdm > 0 || sim.baryon_flag)
 		{

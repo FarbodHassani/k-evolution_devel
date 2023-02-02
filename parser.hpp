@@ -660,7 +660,7 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
           //Kessence part
 				else if (strcmp(item, "phi_prime") == 0 || strcmp(item, "Phi_prime") == 0)
 						pvalue |= MASK_PHI_PRIME;
-				else if (strcmp(item, "pi_k") == 0 || strcmp(item, "Pi_k") == 0)
+				else if (strcmp(item, "Pi_k") == 0 || strcmp(item, "pi_k") == 0)
 					pvalue |= MASK_PI_K;
 				else if (strcmp(item, "Zeta") == 0 || strcmp(item, "zeta") == 0)
 					pvalue |= MASK_ZETA;
@@ -696,14 +696,12 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 				else if (strcmp(item, "v") == 0 || strcmp(item, "velocity") == 0)
 					pvalue |= MASK_VEL;
           //kessence part
-				else if (strcmp(item, "T_Kess") == 0 || strcmp(item, "T_Kessence") == 0)
+				else if (strcmp(item, "T00_kess") == 0 || strcmp(item, "T00_Kess") == 0)
 					pvalue |= MASK_T_KESS;
-
-				else if (strcmp(item, "Delta_Kess") == 0 || strcmp(item, "delta_Kessence") == 0)
+				else if (strcmp(item, "delta_kess") == 0 || strcmp(item, "Delta_kess") == 0)
 					pvalue |= MASK_DELTA_KESS;
-        else if (strcmp(item, "Cross_dkess_dm") == 0 || strcmp(item, "Cross_dkess_dmatter") == 0)
+        else if (strcmp(item, "Cross_dkess_dm") == 0 || strcmp(item, "cross_dkess_dm") == 0)
           pvalue |= MASK_DELTAKESS_DELTA;
-
 					//Kessence end
 				start = comma+1;
 				while (*start == ' ' || *start == '\t') start++;
@@ -716,7 +714,7 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 				pvalue |= MASK_PHI_PRIME;
 			else if (strcmp(start, "Pi_k") == 0 || strcmp(start, "pi_k") == 0)
 				pvalue |= MASK_PI_K;
-			else if (strcmp(start, "zeta") == 0 || strcmp(start, "zeta") == 0)
+			else if (strcmp(start, "Zeta") == 0 || strcmp(start, "zeta") == 0)
 				pvalue |= MASK_ZETA;
         //Kessence end
 			else if (strcmp(start, "Chi") == 0 || strcmp(start, "chi") == 0)
@@ -748,7 +746,13 @@ bool parseFieldSpecifiers(parameter * & params, const int numparam, const char *
 			else if (strcmp(start, "delta_N") == 0 || strcmp(start, "deltaN") == 0)
 				pvalue |= MASK_DBARE;
 			else if (strcmp(start, "v") == 0 || strcmp(start, "velocity") == 0)
-					pvalue |= MASK_VEL;
+				pvalue |= MASK_VEL;
+      else if (strcmp(start, "T00_kess") == 0 || strcmp(start, "T00_Kess") == 0)
+        pvalue |= MASK_T_KESS;
+      else if (strcmp(start, "delta_kess") == 0 || strcmp(start, "Delta_kess") == 0)
+        pvalue |= MASK_DELTA_KESS;
+      else if (strcmp(start, "Cross_dkess_dm") == 0 || strcmp(start, "cross_dkess_dm") == 0)
+        pvalue |= MASK_DELTAKESS_DELTA;
 
 			params[i].used = true;
 			return true;
