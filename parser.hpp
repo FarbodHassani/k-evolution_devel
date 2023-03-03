@@ -1741,11 +1741,22 @@ parallel.abortForce();
         if(parallel.isRoot())  cout << " \033[1;31m ERROR: You need to specify the speed of sound!  \033[0m"<< endl;
         parallel.abortForce();
     	}
-      if (!parseParameter(params, numparam, "Omega_kessence",  cosmo.Omega_kessence))
-    	{
-        if(parallel.isRoot())  cout << " \033[1;31m ERROR: You need to specify Omega_kess!  \033[0m"<< endl;
+      // k-essence
+      if (parseParameter(params, numparam, "omega_kessence", cosmo.Omega_kessence) || parseParameter(params, numparam, "Omega_kessence", cosmo.Omega_kessence))
+      {
+        if(parallel.isRoot())  cout << " \033[1;31m ERROR: You cannot specify Omega_kessence in the code! It's being obtained through the closed relation! \033[0m"<< endl;
         parallel.abortForce();
-    	}
+      }
+      // Lambda
+      if (parseParameter(params, numparam, "omega_Lambda", cosmo.Omega_Lambda))
+      {
+      	cosmo.Omega_Lambda /= cosmo.h * cosmo.h;
+      }
+      else if (!parseParameter(params, numparam, "Omega_Lambda", cosmo.Omega_Lambda))
+      {
+      	cosmo.Omega_Lambda = 0.;
+      }
+
       if (!parseParameter(params, numparam, "w_kessence",  cosmo.w_kessence))
     	{
         if(parallel.isRoot())  cout << " \033[1;31m ERROR: You need to specify w_kess!  \033[0m"<< endl;
@@ -1811,11 +1822,12 @@ parallel.abortForce();
         if(parallel.isRoot())  cout << " \033[1;31m ERROR: You requested k_essence_power while specified cs2_kessence!  \033[0m"<< endl;
         parallel.abortForce();
       }
-      if (parseParameter(params, numparam, "Omega_kessence",  cosmo.Omega_kessence))
+      if (parseParameter(params, numparam, "Omega_kessence",  cosmo.Omega_kessence) || parseParameter(params, numparam, "omega_kessence",  cosmo.Omega_kessence))
       {
         if(parallel.isRoot())  cout << " \033[1;31m ERROR: You requested k_essence_power while specified Omega_kess!  \033[0m"<< endl;
         parallel.abortForce();
       }
+
       if (parseParameter(params, numparam, "w_kessence",  cosmo.w_kessence))
       {
         if(parallel.isRoot())  cout << " \033[1;31m ERROR: You requested k_essence_power while specified w_kess!  \033[0m"<< endl;
@@ -1830,11 +1842,28 @@ parallel.abortForce();
     if(parallel.isRoot())  cout << " \033[1;31m ERROR: You need to specify the speed of sound!  \033[0m"<< endl;
     parallel.abortForce();
 	}
-	if (!parseParameter(params, numparam, "Omega_kessence",  cosmo.Omega_kessence))
-	{
-    if(parallel.isRoot())  cout << " \033[1;31m ERROR: You need to specify Omega_kess!  \033[0m"<< endl;
+	// if (!parseParameter(params, numparam, "Omega_kessence",  cosmo.Omega_kessence))
+	// {
+  //   if(parallel.isRoot())  cout << " \033[1;31m ERROR: You need to specify Omega_kess!  \033[0m"<< endl;
+  //   parallel.abortForce();
+  // }
+  // k-essence
+
+  if (parseParameter(params, numparam, "omega_kessence", cosmo.Omega_kessence) || parseParameter(params, numparam, "Omega_kessence", cosmo.Omega_kessence))
+  {
+    if(parallel.isRoot())  cout << " \033[1;31m ERROR: You cannot specify Omega_kessence in the code! It's being obtained through the closed relation! \033[0m"<< endl;
     parallel.abortForce();
   }
+  // Lambda
+  if (parseParameter(params, numparam, "omega_Lambda", cosmo.Omega_Lambda))
+  {
+    cosmo.Omega_Lambda /= cosmo.h * cosmo.h;
+  }
+  else if (!parseParameter(params, numparam, "Omega_Lambda", cosmo.Omega_Lambda))
+  {
+    cosmo.Omega_Lambda = 0.;
+  }
+
 	if (!parseParameter(params, numparam, "w_kessence",  cosmo.w_kessence))
 	{
     if(parallel.isRoot())  cout << " \033[1;31m ERROR: You need to specify w_kess!  \033[0m"<< endl;
@@ -2030,21 +2059,26 @@ parallel.abortForce();
     #ifdef HAVE_HICLASS_BG
     if (cosmo.gravity_model == 0)
     {
-      cosmo.Omega_Lambda = 1. - cosmo.Omega_m - cosmo.Omega_kessence - cosmo.Omega_rad;
+      cosmo.Omega_kessence  = 1. - cosmo.Omega_m - cosmo.Omega_Lambda - cosmo.Omega_rad;
     }
     else
     {
       cosmo.Omega_Lambda = 0.;
     }
     #else
-		cosmo.Omega_Lambda = 1. - cosmo.Omega_m - cosmo.Omega_kessence - cosmo.Omega_rad;
+		cosmo.Omega_kessence  = 1. - cosmo.Omega_m - cosmo.Omega_Lambda - cosmo.Omega_rad;
     #endif
 
+  // WARNING:
+  if (cosmo.Omega_Lambda != 0)
+  {
+    COUT << COLORTEXT_YELLOW << " /!\\ warning" << COLORTEXT_RESET << ": You have requested mixed dark energy scenario which is not tested well! Before using this implementaion you need to perfomr some tests!" << endl;
+  }
     #ifdef HAVE_HICLASS_BG
   if (cosmo.gravity_model == 0)
   {
     COUT << "Kessence source gravity = " << sim.Kess_source_gravity<< ", Non-linear kessence = " << sim.NL_kessence<< ", Number of kessence update = " <<sim.nKe_numsteps <<endl;
-    COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad<< ", Omega_g0 = " << cosmo.Omega_g<< ", Omega_ur0 = " << cosmo.Omega_ur << ", h = " << cosmo.h << ", Omega_kessence0= "<<cosmo.Omega_kessence<<", w0_kessence= "<<cosmo.w_kessence<<", wa_kessence= "<<cosmo.w_a_kessence<<", cs^2 (kessence)= "<<cosmo.cs2_kessence<<", alpha_k (hiclass)= "<<3.0 * (1.0 + cosmo.w_kessence)/cosmo.cs2_kessence<< ", Omega_Lambda= "<<cosmo.Omega_Lambda<<" "<<endl;
+    COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad<< ", Omega_g0 = " << cosmo.Omega_g<< ", Omega_ur0 = " << cosmo.Omega_ur << ", h = " << cosmo.h << ", Omega_kessence0 (set from closed relation)= "<<cosmo.Omega_kessence<<", w0_kessence= "<<cosmo.w_kessence<<", wa_kessence= "<<cosmo.w_a_kessence<<", cs^2 (kessence)= "<<cosmo.cs2_kessence<<", alpha_k (hiclass)= "<<3.0 * (1.0 + cosmo.w_kessence)/cosmo.cs2_kessence<< ", Omega_Lambda= "<<cosmo.Omega_Lambda<<" "<<endl;
   }
   else if (cosmo.gravity_model == 1)
   {
@@ -2053,7 +2087,7 @@ parallel.abortForce();
   }
   #else
   COUT << "Kessence source gravity = " << sim.Kess_source_gravity<< ", Non-linear kessence = " << sim.NL_kessence<< ", Number of kessence update = " <<sim.nKe_numsteps <<endl;
-  COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad<< ", Omega_g0 = " << cosmo.Omega_g<< ", Omega_ur0 = " << cosmo.Omega_ur << ", h = " << cosmo.h << ", Omega_kessence0= "<<cosmo.Omega_kessence<<", w0_kessence= "<<cosmo.w_kessence<<", wa_kessence= "<<cosmo.w_a_kessence<<", cs^2 (kessence)= "<<cosmo.cs2_kessence<<", alpha_k (hiclass)= "<<3.0 * (1.0 + cosmo.w_kessence)/cosmo.cs2_kessence<< ", Omega_Lambda= "<<cosmo.Omega_Lambda<<" "<<endl;
+  COUT << " cosmological parameters are: Omega_m0 = " << cosmo.Omega_m << ", Omega_rad0 = " << cosmo.Omega_rad<< ", Omega_g0 = " << cosmo.Omega_g<< ", Omega_ur0 = " << cosmo.Omega_ur << ", h = " << cosmo.h << ", Omega_kessence0 (set from closed relation)= "<<cosmo.Omega_kessence<<", w0_kessence= "<<cosmo.w_kessence<<", wa_kessence= "<<cosmo.w_a_kessence<<", cs^2 (kessence)= "<<cosmo.cs2_kessence<<", alpha_k (hiclass)= "<<3.0 * (1.0 + cosmo.w_kessence)/cosmo.cs2_kessence<< ", Omega_Lambda= "<<cosmo.Omega_Lambda<<" "<<endl;
   #endif
 
 	}

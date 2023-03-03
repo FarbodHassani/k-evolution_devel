@@ -199,7 +199,7 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
   sprintf(class_filecontent.value[i++],"no");
 
   sprintf(class_filecontent.name[i], "Omega_Lambda");
-  sprintf(class_filecontent.value[i++], "%d", 0);
+  sprintf(class_filecontent.value[i++], "%d", cosmo.Omega_Lambda);
 
   sprintf(class_filecontent.name[i], "Omega_smg");
   sprintf(class_filecontent.value[i++], "%d", -1);
