@@ -5,7 +5,7 @@ LIB          := -L/Users/farbod/Documents/GitHub/hi_class_pub_devel/ -L/usr/loca
 # /Users/farbod/Documents/GitHub/hi_class_pub_devel
 # /Users/farbod/Documents/GitHub/class_public-2.7.1/
 # target and source
-EXEC         := gevolution
+EXEC         := kevolution
 SOURCE       := main.cpp
 HEADERS      := $(wildcard *.hpp)
 
