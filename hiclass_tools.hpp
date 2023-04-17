@@ -198,8 +198,9 @@ void initializeCLASSstructures(metadata & sim, icsettings & ic, cosmology & cosm
   sprintf(class_filecontent.name[i], "skip_stability_tests_smg");
   sprintf(class_filecontent.value[i++],"no");
 
+cout<<"Omega_Lambda_hiclass_tools: "<<cosmo.Omega_Lambda<<endl;
   sprintf(class_filecontent.name[i], "Omega_Lambda");
-  sprintf(class_filecontent.value[i++], "%d", cosmo.Omega_Lambda);
+  sprintf(class_filecontent.value[i++], "%e", cosmo.Omega_Lambda);
 
   sprintf(class_filecontent.name[i], "Omega_smg");
   sprintf(class_filecontent.value[i++], "%d", -1);
