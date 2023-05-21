@@ -189,11 +189,28 @@ int main(int argc, char **argv)
 	{
 #endif
 
-	COUT << COLORTEXT_WHITE << endl;
-	COUT << "| /  "<<endl;
-	COUT << "|/    _      _   _  _ , _" << endl;
-	COUT << "|\\  (-' \\/ (_) (_ (_| (  ( (_) /\\/	version 1.0    running on " << n*m << " cores." << endl;
-  COUT << "| \\" << endl << COLORTEXT_RESET << endl;
+
+COUT << COLORTEXT_BLUE << endl;
+COUT << "                                                      "<<endl;
+COUT <<"KKKKKKKKK    KKKKKKK                 EEEEEEEEEEEEEEEEEEEEEE"<<endl;
+COUT <<"K:::::::K    K:::::K                 E::::::::::::::::::::E"<<endl;
+COUT <<"K:::::::K    K:::::K                 E::::::::::::::::::::E"<<endl;
+COUT <<"K:::::::K   K::::::K                 EE::::::EEEEEEEEE::::E"<<endl;
+COUT <<"KK::::::K  K:::::KKK                   E:::::E       EEEEEE"<<endl;
+COUT <<"K:::::K K:::::K                      E:::::E               "<<endl;
+COUT <<"K::::::K:::::K                       E::::::EEEEEEEEEE     "<<endl;
+COUT <<"K:::::::::::K      ---------------   E:::::::::::::::E     volution "<<endl;
+COUT <<"K:::::::::::K      -:::::::::::::-   E:::::::::::::::E     "<<endl;
+COUT <<"K::::::K:::::K     ---------------   E::::::EEEEEEEEEE     "<<endl;
+COUT <<"K:::::K K:::::K                      E:::::E               "<<endl;
+COUT <<"KK::::::K  K:::::KKK                   E:::::E       EEEEEE"<<endl;
+COUT <<"K:::::::K   K::::::K                 EE::::::EEEEEEEE:::::E"<<endl;
+COUT <<"K:::::::K    K:::::K                 E::::::::::::::::::::E"<<endl;
+COUT <<"K:::::::K    K:::::K                 E::::::::::::::::::::E"<<endl;
+COUT <<"KKKKKKKKK    KKKKKKK                 EEEEEEEEEEEEEEEEEEEEEE"<<endl;
+COUT <<COLORTEXT_RESET << endl;
+
+COUT << "running on " << n*m << " cores." << endl;
 
 	if (settingsfile == NULL)
 	{

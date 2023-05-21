@@ -79,3 +79,15 @@ unity_kev_test1.ini
 unity_kev_w_cs_test.ini
 data_settings_used.ini
 .DS_Store
+output/file_classparameters.ini
+output/file_classunused_parameters
+output/file_settings_used.ini
+output/lightcone_0109_cdm
+output/lightcone_0110_cdm
+output/lightcone_0111_cdm
+output/lightcone_0112_cdm
+output/lightcone_0113_cdm
+output/lightcone_0114_cdm
+output/lightcone_0115_cdm
+output/lightcone_0116_cdm
+output/lightcone_info.bin
