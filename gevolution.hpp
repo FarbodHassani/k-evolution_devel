@@ -247,7 +247,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         //************************
         // 0-0-component: (Time,Time)
         T00(xField)       =  + coeff1 * ( -3. * cs2 * Hcon * pi_k(xField) + zeta_half(xField)
-                          /*Non-linear*/ +  non_linearity * (1. - 2. * cs2) * gradientpi_squared / 2.  );
+                          /*Non-linear*/ -  non_linearity * (1. - 2. * cs2) * gradientpi_squared / 2.  ); // Jørgen found a sign mistake behind non-linear part!
         //*************************************************************************************
         // 1-1-component: (X,X)
         Tij(xField, 0, 0) = + coeff2 * (-3.* w * Hcon* pi_k(xField) + zeta_half(xField)
@@ -278,7 +278,7 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         {
           if (non_linearity ==1)
             {
-					// T01:(Time,X)
+					// T01:(Time,X); There should be a^4 factor! CHECK!
             T0i(xField, 0)  =  -coeff2 * (1. - /*Non-linear*/  non_linearity * (1./cs2 -1.) * gradientpi_squared / 2.) *       (pi_k(xField + 0) - pi_k(xField - 0)) / (2. * dx);
             //*************************************************************************************
   					// T02:(Time,Y)
@@ -291,7 +291,6 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
         }
       }
     }
-
 
     //////////////////////////
     //Kessence Stress tensor
@@ -388,19 +387,19 @@ void projection_Tmunu_kessence( Field<FieldType> & T00, Field<FieldType> & T0i, 
             //************************
             // 0-0-component: (Time,Time)
             T00(xField)       =  + coeff1 * ( -3. * cs2 * Hcon * pi_k(xField) + zeta_half(xField)
-                              /*Non-linear*/ +  non_linearity * (1. - 2. * cs2) * gradientpi_squared / 2.  );
+                              /*Non-linear*/ -  non_linearity * (1. - 2. * cs2) * gradientpi_squared / 2.  );  // Jørgen found a sign mistake behind non-linear part!
             //*************************************************************************************
             // 1-1-component: (X,X)
             Tij(xField, 0, 0) = + coeff2 * (-3.* ca2 * Hcon* pi_k(xField) + zeta_half(xField)
-                              /*Non-linear*/ - non_linearity * (gradientpi_squared / 2.  + Dx_pi_Dx_pi) );
+                              /*Non-linear*/ - non_linearity * (gradientpi_squared / 2.  - Dx_pi_Dx_pi) );
             //*************************************************************************************
             // 2-2-component: (Y,Y)
             Tij(xField, 1, 1) = + coeff2 * (-3.* ca2 * Hcon* pi_k(xField) +   zeta_half(xField)
-                              /*Non-linear*/ -  non_linearity * (gradientpi_squared / 2.  + Dy_pi_Dy_pi) );
+                              /*Non-linear*/ -  non_linearity * (gradientpi_squared / 2.  - Dy_pi_Dy_pi) );
             //*************************************************************************************
             // 3-3-component: (Z,Z)
             Tij(xField, 2, 2) = + coeff2 * (-3.* ca2 * Hcon* pi_k(xField) +   zeta_half(xField)
-                              /*Non-linear*/ -  non_linearity * (gradientpi_squared / 2.  + Dz_pi_Dz_pi) );
+                              /*Non-linear*/ -  non_linearity * (gradientpi_squared / 2.  - Dz_pi_Dz_pi) );
             //*************************************************************************************
             // 1-2-component: (X,Y)
             Tij(xField, 0, 1) = + non_linearity *  coeff2 * (/*Non-linear*/ Dx_pi_Dy_pi);
