@@ -17,11 +17,11 @@
 #define GEVOLUTION_VERSION 1.2
 
 #ifndef MAX_OUTPUTS
-#define MAX_OUTPUTS 128
+#define MAX_OUTPUTS 512
 #endif
 
 #ifndef PARAM_MAX_LENGTH
-#define PARAM_MAX_LENGTH 256
+#define PARAM_MAX_LENGTH 512
 #endif
 
 #ifndef PARAM_MAX_LINESIZE
