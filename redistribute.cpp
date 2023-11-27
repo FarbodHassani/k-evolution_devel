@@ -36,11 +36,11 @@ int main(int argc, char **argv)
 #endif
 
 	double offset = 0.;
-
+	
 	if (argc < 2)
 	{
 		cout << " redistributes Gadget-2 binaries" << endl << endl;
-
+		
 		cout << " List of command-line options:" << endl;
 		cout << " -i <filebase>       : input file base (mandatory)" << endl;
 		cout << " -o <filebase>       : output file base (mandatory)" << endl;
@@ -71,8 +71,8 @@ int main(int argc, char **argv)
 	}
 
 	cout << " reading particle header..." << endl << endl;
-
-	sprintf(filename, "%s_114_cdm", iname);
+	
+	sprintf(filename, "%s.0", iname);
 
 	infile = fopen(filename, "rb");
 
@@ -128,9 +128,9 @@ int main(int argc, char **argv)
 	outhdr.npart[1] = (uint32_t) ((((int64_t) numpart_tot) / numfiles) % (1ll << 32));
 	outhdr.mass[1] = hdr.mass[1];
 	outhdr.num_files = numfiles;
-
+	
 	numfiles2 = hdr.num_files;
-
+	
 	posbatch = (float *) malloc(3 * (outhdr.npart[1] + numfiles) * sizeof(float));
 	velbatch = (float *) malloc(3 * (outhdr.npart[1] + numfiles) * sizeof(float));
 #if GADGET_ID_BYTES == 8
@@ -146,7 +146,7 @@ int main(int argc, char **argv)
 	}
 
 	cout << " redistributing particles..." << endl << endl;
-
+	
 	numread = 0;
 
 	for (int nf = 0; nf < numfiles2; nf++)
@@ -154,7 +154,7 @@ int main(int argc, char **argv)
 		cout << " file " << nf << " ..." << endl;
 
 		sprintf(filename, "%s.%d", iname, nf);
-
+			
 		infile = fopen(filename, "rb");
 
 		if (infile != NULL)
@@ -174,7 +174,7 @@ int main(int argc, char **argv)
 				fclose(infile);
 				continue;
 			}
-
+				
 			fread(&blocksize, sizeof(uint32_t), 1, infile);
 			fread(&blocksize, sizeof(uint32_t), 1, infile);
 
@@ -253,16 +253,16 @@ int main(int argc, char **argv)
 						sprintf(ofilename, "%s.%ld", oname, numwrite);
 					else
 						sprintf(ofilename, "%s", oname);
-
+						
 					outfile = fopen(ofilename, "wb");
-
+	
 					if (outfile == NULL)
 					{
 						fclose(infile);
 						cout << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": unable to open file " << ofilename << " for output!" << endl;
 						return -1;
 					}
-
+	
 					blocksize = sizeof(outhdr);
 
 					cout << COLORTEXT_CYAN << " writing" << COLORTEXT_RESET << " output file " << ofilename << " ..." << endl;
@@ -307,13 +307,13 @@ int main(int argc, char **argv)
 						cout << COLORTEXT_RED << " error" << COLORTEXT_RESET << ": unable to write ID block!" << endl;
 						return -1;
 					}
-
+					
 					fwrite(&blocksize, sizeof(uint32_t), 1, outfile);
 
 					fclose(outfile);
 
 					cout << " output file written, contains " << outhdr.npart[1] << " particles." << endl;
-
+	
 					numpart_write += outhdr.npart[1];
 					numwrite++;
 
@@ -323,7 +323,7 @@ int main(int argc, char **argv)
 					numread = 0;
 				}
 			}
-
+				
 			fclose(infile);
 		}
 	}
@@ -338,3 +338,4 @@ int main(int argc, char **argv)
 
 	return 0;
 }
+
